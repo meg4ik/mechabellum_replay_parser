@@ -1,11 +1,80 @@
+import json
+import os
 import time
 from pathlib import Path
 
+from dotenv import load_dotenv
 from watchdog.events import FileCreatedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from .llm import analyze
 from .transformer import replay_to_dict
+
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
+
+
+def _collect_unknowns(obj, path: str = "") -> list[str]:
+    results = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            results.extend(_collect_unknowns(v, f"{path}.{k}"))
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            results.extend(_collect_unknowns(v, f"{path}[{i}]"))
+    elif isinstance(obj, str) and "unknown" in obj:
+        results.append(f"{path} = {obj!r}")
+    return results
+
+
+def _debug_report(parsed: dict) -> None:
+    sep = "=" * 70
+    print(f"\n{sep}")
+    print("DEBUG REPORT")
+    print(sep)
+
+    meta = parsed.get("metadata", {})
+    print(f"Version : {meta.get('version')}  |  Mode: {meta.get('match_mode')}")
+    print(f"Teams   : {parsed.get('teams')}")
+    print(f"Rounds  : {parsed.get('last_round')}")
+
+    # Unknown values across the whole parsed dict
+    unknowns = _collect_unknowns(parsed)
+    if unknowns:
+        print(f"\n[!] UNKNOWN VALUES ({len(unknowns)} total):")
+        for u in unknowns:
+            print(f"  {u}")
+    else:
+        print("\n[✓] No unknown values")
+
+    # Per-round summary
+    for rnd in parsed.get("rounds", []):
+        rnum = rnd["round"]
+        fight = rnd.get("fight_result") or {}
+        print(f"\n{'─'*70}")
+        print(f"ROUND {rnum}" + (f"  fight_result={json.dumps(fight)}" if fight else "  (no fight result)"))
+        for name, pdata in rnd.get("players", {}).items():
+            print(f"\n  ┌─ {name}  HP={pdata.get('hp')}  outcome={pdata.get('fight_outcome')}")
+            print(f"  │  Officers   : {pdata.get('officers')}")
+            print(f"  │  Cmd skills : {[s['name'] for s in pdata.get('commander_skills', [])]}")
+            print(f"  │  Contraption: {[c['name'] for c in pdata.get('contraptions', [])]}")
+            print(f"  │  Constructs : {[c['type'] for c in pdata.get('constructions', [])]}")
+            shop = pdata.get("shop", {})
+            print(f"  │  Shop unlocked: {shop.get('unlocked')}  locked: {shop.get('locked')}")
+            techs = pdata.get("active_techs", [])
+            if techs:
+                for t in techs:
+                    print(f"  │  Tech  : {t['unit']} → {t['tech']}")
+            units = pdata.get("units", [])
+            print(f"  │  Units ({len(units)}):")
+            for u in units:
+                eq = f"  equip={u['equipment']}" if u.get("equipment") else ""
+                print(f"  │    [{u['index']}] {u['name']}  lvl={u['level']}  pos={u['position']}{eq}")
+            actions = pdata.get("actions", [])
+            print(f"  │  Actions ({len(actions)}):")
+            for a in actions:
+                print(f"  │    {a}")
+
+    print(f"\n{sep}\n")
 
 REPLAY_DIR = Path(
     r"C:\Program Files (x86)\Steam\steamapps\common\Mechabellum\ProjectDatas\Replay"
@@ -48,13 +117,17 @@ def process_replay(path: Path) -> None:
         print(f"[!] Файл недоступен: {path.name}")
         return
 
+    debug = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
+
     print("[~] Парсинг...")
-    parsed = None
     try:
         parsed = replay_to_dict(path)
         players = [p for team in parsed["teams"] for p in team]
         print(f"[✓] Парсинг готов. Игроки: {players}, раундов: {parsed['last_round']}")
-        analyze(parsed)
+        if debug:
+            _debug_report(parsed)
+        else:
+            analyze(parsed)
     except (ValueError, KeyError, AttributeError) as e:
         print(f"[!] Ошибка парсинга: {e}")
     finally:

@@ -822,7 +822,7 @@ Countered by:
 
 LLM heuristic: Because Typhoon was recently remade, prefer live patch data over older wiki descriptions.
 
-### 7.23 Void Eye
+### 7.23 d Eye
 
 Role: ranged support/DPS unit with electromagnetic/status identity.
 
