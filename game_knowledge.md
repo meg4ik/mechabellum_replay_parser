@@ -310,7 +310,193 @@ Answers:
 
 This section is intended for machine reasoning. Treat all exact numeric values as `PATCH-SENSITIVE` and prefer live game config/replay mappings when available.
 
-### 6.1 Default unit purchase costs
+
+### 6.1 Supply income and round-by-round budget model
+
+This is the missing economy block the LLM must use before recommending purchases, unlocks, techs, buildings, cards, devices, or sell/rebuy lines.
+
+#### 6.1.1 Base income rule
+
+For standard 1v1 reasoning, assume base income during the deployment phase of UI round `R` is:
+
+```text
+base_income(R) = 200 * R
+```
+
+Round-by-round base income:
+
+| UI round | Base income this round | Cumulative base income if nothing is spent |
+|---:|---:|---:|
+| 1 | 200 | 200 |
+| 2 | 400 | 600 |
+| 3 | 600 | 1,200 |
+| 4 | 800 | 2,000 |
+| 5 | 1,000 | 3,000 |
+| 6 | 1,200 | 4,200 |
+| 7 | 1,400 | 5,600 |
+| 8 | 1,600 | 7,200 |
+| 9 | 1,800 | 9,000 |
+| 10 | 2,000 | 11,000 |
+| 11 | 2,200 | 13,200 |
+| 12 | 2,400 | 15,600 |
+| 13 | 2,600 | 18,200 |
+| 14 | 2,800 | 21,000 |
+| 15 | 3,000 | 24,000 |
+
+Cumulative base income through round `R` is:
+
+```text
+cumulative_base_income(R) = 100 * R * (R + 1)
+```
+
+Important: base income is symmetrical. Winning a round, losing a round, or destroying a tower does not directly change the base supply income. Those events matter through HP damage, tower debuffs, tempo, XP, board position, and unit survival — not through automatic win/loss income.
+
+#### 6.1.2 Carryover rule
+
+Unspent supply carries over to later rounds. The LLM must never assume the player starts each round with only the base income for that round.
+
+Use this budget equation:
+
+```text
+available_supply_at_start_of_deployment(R)
+  = carried_supply_from_previous_round
+  + base_income(R)
+  + persistent_income_modifiers(R)
+  + one_time_income_this_round(R)
+  + refunds_or_sells_this_round(R)
+  - debt_or_delayed_penalties_this_round(R)
+  - mandatory/preselected costs already paid this round
+```
+
+Then subtract proposed actions:
+
+```text
+remaining_supply_after_plan
+  = available_supply
+  - unlock_costs
+  - unit_purchase_costs
+  - tech_costs
+  - building/device/card costs
+  - rank recruitment premiums
+  - other state-specific costs
+```
+
+LLM rule: a recommendation is invalid if `remaining_supply_after_plan < 0`, unless it explicitly says the plan requires Rapid Resupply/loan, a refund/sell, or another legal source of immediate supply.
+
+#### 6.1.4 Regular card economy
+
+Cards/reinforcement choices start appearing from round 2. Skipping a normal card grants supply, commonly treated as +50 supply. Therefore, every chosen card has an opportunity cost: even a `FREE` card can effectively cost the skipped-card supply.
+
+LLM card-economy rules:
+
+- If a card is skipped, add skip supply to the current round's budget.
+- If a card is chosen, subtract its visible cost and also consider the lost skip value as opportunity cost when evaluating long-term efficiency.
+- Do not evaluate economy cards only by their visible price. Compare against the skip value and the expected number of remaining rounds.
+- In early rounds, 50 supply is strategically large because it can decide whether a player can buy a chaff unit, unlock, tech, or defend a flank.
+
+Common economy cards / card-like effects to model:
+
+| Card/effect | Budget effect | Timing | LLM note |
+|---|---:|---|---|
+| Skip normal card | +50 supply | Current round | Often correct early if offered cards do not solve the board. |
+| Supply Specialist card | +50 supply per round | Persistent after purchase | Different from starting Supply Specialist, but same income shape. Include card cost and skip opportunity cost. |
+| Top/Super Supply-type card | +150 supply per round | Usually starts next round | Long-term scaling. Bad if the game is likely to end before it pays back. |
+| Tech Specialist / Efficient Tech Research | Reduces tech upgrade costs | Persistent or card-defined | Not income, but improves affordability of tech-heavy plans. Apply before tech-cost checks. |
+| Junior Recruitment / Efficient Light Manufacturing | Reduces non-giant/light unit recruitment costs | Persistent or card-defined | Not income, but can make mass low-cost units economically correct. Apply to affected unit purchases only. |
+| Senior Manufacturing / Efficient Giant Manufacturing | Reduces giant unit recruitment costs | Persistent or stack-based/card-defined | Not income, but changes giant timing. Apply to Fortress/Melting Point/Raiden/Sandworm/Vulcan/Overlord and titans only if current card text says so. |
+| Subsidized unit cards | Reduces one unit's recruitment or upgrade cost | Persistent or card-defined | Track exact affected unit and whether it affects recruitment, unlock, tech, or upgrade EXP. Do not generalize. |
+| Additional Deployment Slot / Deployment Specialist card | More units can be bought this round or every round | Capacity, not income | Prevents floating money when deploy slots are the bottleneck. |
+
+PATCH-SENSITIVE: card names and exact values can change. If replay parser can extract card ID/text, use that over these generic descriptions.
+
+#### 6.1.5 Unit reinforcement / unit drop economy
+
+Unit reinforcement offers happen in scheduled windows and can create hidden economic value because the offered unit is free and also unlocks that unit type. In recent Season 8 notes, Unit Reinforcement gained a skip button whose supply reward increases with later rounds; exact skip values should be read from live game data or replay if available.
+
+LLM rules:
+
+- A free unit is not the same as cash, but it can be converted into tempo, unlock value, board value, or sometimes refund value if selling is legal.
+- If a reinforcement unit is taken, model it as: `+free_unit_body + unit_unlocked`, not as immediate supply.
+- If a reinforcement is skipped, add the exact skip reward if known. If unknown, mark as `unknown_unit_drop_skip_supply` instead of guessing.
+- A unit already deployed or already unlocked may be blocked from future offers depending on the current reinforcement rules; use the parsed state.
+- Cost-altering cards can block or modify offers; do not assume every unit is eligible for a future drop.
+
+#### 6.1.6 Command Center and Research Center economy effects
+
+Core building powers can directly change the budget or enable refunds:
+
+| Source | Cost / effect | Timing | LLM note |
+|---|---|---|---|
+| Command Center: Rapid Resupply | Cost 0; immediately gain +200 supply; get -300 supply next round | Current round loan, next round penalty | This is a tempo loan, not free income. Recommend only if the immediate swing is worth being down 300 next round. |
+| Command Center: Mass Recruitment | Cost 50; +1 purchasable unit this round | Current round | Capacity increase. Useful when money is high but deploy slots are limiting. |
+| Command Center: Elite Recruitment | Cost 100; units bought this round have +1 rank | Current round | Rank premium/tempo tool. Check actual affordability of higher-rank units. |
+| Research Center: Field Recovery | Cost 100 to unlock; then can destroy a friendly squad and refund invested supply | Current/future deployment phases | This is the legal sell/refund mechanism. It can convert misplaced or obsolete units/items into supply, but costs an unlock and deletes board value. |
+| Research Center: Attack/Defense Enhancement | Costs supply for permanent stat buffs | Permanent | Not income, but common sink for excess cash. Compare to units/tech. |
+
+LLM Rapid Resupply rule: if using Rapid Resupply this round, the next-round budget must include `-300 delayed_penalty`. Never describe it as “free 200”.
+
+#### 6.1.7 Starting specialist economy modifiers
+
+Apply starting specialist effects before normal purchases. Some are direct income; others are cost reduction or free assets.
+
+| Starting specialist | Economy effect to apply | Timing | Direct cash? |
+|---|---|---|---|
+| Supply Specialist | +50 supply every round | Every round | Yes |
+| Cost Control Specialist | +100 supply every round | Every round | Yes, with -11% ATK/HP penalty to all units |
+| Quick Supply Specialist | +200 supply in round 1 | Round 1 only | Yes |
+| Elite Specialist | +100 supply in round 1; can immediately recruit Rank 2 units | Round 1 and ongoing rank access | Partly; rank access changes costs |
+| Training Specialist | +50 supply in round 1; free Intensive Training | Round 1 | Partly |
+| Giant Specialist | Giant/Titan unlock cost -200 | When unlocking eligible units | Cost reduction, not income |
+| Aerial Specialist | Aerial unit unlock cost -200; aerial units gain stats | When unlocking eligible air units | Cost reduction, not income |
+| Sabertooth Specialist | Sabertooth tech costs -50; free Rank 1 Sabertooth on round 3 | Round 3 and tech purchases | Free unit / discount |
+| Fire Badger Specialist | Fire Badger tech costs -50; free Rank 1 Fire Badger on round 3 | Round 3 and tech purchases | Free unit / discount |
+| Marksman Specialist | Free Rank 3 Marksman on round 2 | Round 2 | Free unit |
+| Rhino Specialist | Free Rank 2 Rhino on round 4 | Round 4 | Free unit |
+| Typhoon Specialist | Free Rank 1 Typhoon on round 4 | Round 4 | Free unit |
+| Amplify Specialist | Free Small Amplifying Cores on round 1 | Round 1 | Free items, not cash |
+| Missile Specialist | Free Missile Strikes on round 2 | Round 2 | Free powers, not cash |
+
+LLM rule: direct income and discounts are different. A discount can make a purchase affordable only if the player is buying that affected thing. A free unit creates board value but does not help pay for an unrelated tech unless it is legally sold/refunded.
+
+#### 6.1.8 Economic break-even heuristics
+
+When evaluating an economy choice, compute the payback round.
+
+```text
+net_cost = visible_cost + skipped_card_opportunity_cost
+payback_rounds = ceil(net_cost / income_gain_per_round)
+```
+
+Examples:
+
+- A +50/round card with visible cost 50 has effective early opportunity cost around 100 if skipping would give +50. It pays back slowly unless taken early.
+- A +150/round card with visible cost 200 has effective opportunity cost around 250 if skipping would give +50. It needs roughly 2 rounds to recover nominal cost, but usually 3 rounds to feel clearly profitable after tempo loss.
+- A -50/unit manufacturing card pays back after enough affected units are purchased. If it affects 4 future units, it is worth about 200 supply minus its cost/opportunity cost.
+- A tech discount card pays back only if the player will buy enough techs. If it reduces tech by 50 and costs 50 plus a 50 skip opportunity, it needs about two relevant tech purchases to break even.
+
+LLM rule: economy cards are strongest when:
+
+1. taken early;
+2. the game is likely to last multiple more rounds;
+3. the current board can survive the tempo loss;
+4. the player has enough deployment slots and tech/unit sinks to actually spend the extra supply.
+
+#### 6.1.9 Budget validation checklist for every LLM recommendation
+
+Before giving an action plan, the LLM must answer internally:
+
+1. What is the current UI round?
+2. What is the player’s actual available supply from replay, if present?
+3. If not present, what is the reconstructed budget using carryover + income?
+4. Which specialist/card modifiers apply this round?
+5. Are any delayed penalties active next round, especially Rapid Resupply?
+6. Are proposed units already unlocked? If not, include unlock cost.
+7. Do proposed units have modified recruitment cost from cards/specialists?
+8. Do proposed techs have modified tech cost from specialist/cards?
+9. Is the player limited by deployment slots rather than supply?
+10. After all costs, is the plan affordable?
+
+### 6.2 Default unit purchase costs
 
 The public wiki groups the current roster by supply purchase cost as follows:
 
@@ -323,7 +509,7 @@ The public wiki groups the current roster by supply purchase cost as follows:
 | 500 | Overlord |
 | 800 | Abyss, Death Knell, Mountain, War Factory |
 
-### 6.2 Unit unlock costs and upgrade EXP
+### 6.3 Unit unlock costs and upgrade EXP
 
 | Unit | Buy cost | Unlock cost | Upgrade EXP | Notes |
 |---|---:|---:|---:|---|
@@ -361,7 +547,7 @@ The public wiki groups the current roster by supply purchase cost as follows:
 | Mountain | 800 | 350 | 3200 | Ground titan with huge HP/DPS. |
 | War Factory | 800 | 350 | 3200 | Titan mobile factory. |
 
-### 6.3 Specialist economy and cost modifiers
+### 6.4 Specialist economy and cost modifiers
 
 The LLM must apply these before evaluating affordability. These are not always direct unit-price changes; many specialists give free units, supply, unlock discounts, or tech discounts.
 
@@ -386,7 +572,7 @@ The LLM must apply these before evaluating affordability. These are not always d
 
 LLM affordability rule: when specialist is known, compute economy in this order: starting/round supply modifiers -> free units/items/powers -> unlock discounts -> tech discounts -> rank recruitment rules -> normal unit/tech costs. If the exact rank-recruit cost is not present in the parsed state, say it is unknown instead of guessing.
 
-### 6.4 Legal movement / repositioning constraint
+### 6.5 Legal movement / repositioning constraint
 
 Critical rule for recommendations: existing deployed units are normally fixed after placement. Do **not** recommend moving/repositioning existing units unless the current state includes a legal movement mechanism such as Jump Drive, Mobile Beacon/pathing, a reposition card, a unit-specific movement ability, or another explicit mechanic.
 
@@ -399,7 +585,7 @@ Legal positioning advice may apply to:
 - units with techs that explicitly allow redeployment, such as Phoenix Jump Drive, Wasp Jump Drive, or Overlord Jump Drive;
 - selling/rebuying only when legal and economically justified.
 
-### 6.5 Full unit technology catalog
+### 6.6 Full unit technology catalog
 
 Use this catalog to understand what each unit can become after tech. Costs are supply costs for researching that technology on that unit type. Descriptions are paraphrased for LLM reasoning, not copied as UI text.
 
@@ -1905,6 +2091,15 @@ Key public URLs used during preparation:
 - https://wiki.mbxmas.com/mechanics/targeting/
 - https://wiki.mbxmas.com/mechanics/unit-orientation/
 - https://wiki.mbxmas.com/mechanics/unit-reinforcements/
+- https://wiki.mbxmas.com/buildings/command-center/
+- https://wiki.mbxmas.com/buildings/research-center/
+- https://wiki.mbxmas.com/specialists/supply-specialist/
+- https://wiki.mbxmas.com/specialists/quick-supply-specialist/
+- https://wiki.mbxmas.com/specialists/cost-control-specialist/
+- https://wiki.mbxmas.com/specialists/elite-specialist/
+- https://mechamonarch.com/guide/mechabellum-card-guide/
+- https://steamcommunity.com/app/669330/discussions/0/3833172420311906149/
+- https://steamcommunity.com/app/669330/discussions/0/521962388138841184/
 - https://mechamonarch.com/unit/
 - https://mechamonarch.com/guide/mechabellum-counters/
 

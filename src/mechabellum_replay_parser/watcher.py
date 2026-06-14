@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from watchdog.events import FileCreatedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
-from .display import show_board_async
+from .display import ask_supply, show_board_async
 from .llm import analyze
 from .transformer import dump_player_data_xml_fields, replay_to_dict
 
@@ -129,10 +129,11 @@ def process_replay(path: Path) -> None:
             dump_player_data_xml_fields(path)
             _debug_report(parsed)
         else:
-            placement = analyze(parsed)
+            last_round = parsed["last_round"]
+            supply = ask_supply(last_round)
+            placement = analyze(parsed, supply=supply)
             if placement:
                 player_name = os.getenv("PLAYER_NAME", "")
-                last_round = parsed["last_round"]
                 last = next(
                     (r for r in parsed["rounds"] if r["round"] == last_round),
                     parsed["rounds"][-1],

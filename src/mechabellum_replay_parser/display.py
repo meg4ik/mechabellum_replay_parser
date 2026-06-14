@@ -1,11 +1,27 @@
 import threading
 import tkinter as tk
+from tkinter import simpledialog
 
 _X_MIN, _X_MAX = -285, 285
 _CANVAS_W = 600
 _CANVAS_H = 520
 _MARGIN = 50
 _RADIUS = 14
+
+
+def ask_supply(round_num: int | str) -> int | None:
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    result = simpledialog.askinteger(
+        "Supply",
+        f"Round {round_num}: enter your current supply amount:",
+        parent=root,
+        minvalue=0,
+        maxvalue=99999,
+    )
+    root.destroy()
+    return result
 
 
 def _detect_zone(units: list[dict]) -> tuple[int, int]:

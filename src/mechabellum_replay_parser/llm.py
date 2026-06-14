@@ -128,12 +128,14 @@ def parse_placement(text: str) -> list[dict] | None:
     return result or None
 
 
-def analyze(parsed: dict) -> list[dict] | None:
+def analyze(parsed: dict, supply: int | None = None) -> list[dict] | None:
     player_name = os.getenv("PLAYER_NAME", "")
     if not player_name:
         raise ValueError("PLAYER_NAME not set in .env")
 
-    game_json = json.dumps(parsed, ensure_ascii=False)
+    _MAX_ROUNDS = 3
+    trimmed = {**parsed, "rounds": parsed["rounds"][-_MAX_ROUNDS:]}
+    game_json = json.dumps(trimmed, ensure_ascii=False)
 
     last_round = parsed.get("last_round", "?")
     teams = parsed.get("teams", [])
@@ -142,11 +144,17 @@ def analyze(parsed: dict) -> list[dict] | None:
     print("[AI] Ожидаем ответ от OpenAI...\n")
     print("-" * 60)
 
+    supply_line = (
+        f"\n\n{player_name}'s current supply this round: **{supply}**. "
+        f"Your plan MUST NOT exceed this budget."
+        if supply is not None
+        else ""
+    )
     user_message = (
         f"Here is the Mechabellum replay data in JSON format:\n\n"
         f"```json\n{game_json}\n```\n\n"
         f"The replay was saved at the start of round {last_round} before {player_name} took any actions. "
-        f"Give {player_name} the exact plan for round {last_round}."
+        f"Give {player_name} the exact plan for round {last_round}.{supply_line}"
     )
 
     model = os.getenv("OPENAI_MODEL", "gpt-4o")
