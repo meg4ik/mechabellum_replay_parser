@@ -93,9 +93,11 @@ def analyze(parsed: dict) -> None:
         f"Give {player_name} the exact plan for round {last_round}."
     )
 
+    model = os.getenv("OPENAI_MODEL", "gpt-4o")
+
     client = _get_client()
     stream = client.chat.completions.create(
-        model="gpt-4o",
+        model=model,
         messages=[
             {"role": "system", "content": _build_system_prompt(player_name)},
             {"role": "user", "content": user_message},
