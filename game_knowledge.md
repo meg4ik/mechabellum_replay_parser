@@ -1204,12 +1204,23 @@ Ask:
 
 Prefer low-cost tactical fixes before expensive pivots:
 
-1. Reposition.
+1. Use legal positioning: place new units correctly, adjust orientation/pathing if allowed, use flanks/beacon if available. Do not assume existing units can be moved.
 2. Add chaff or delayed chaff.
 3. Add one efficient counter unit.
 4. Add tech to existing multiple squads.
 5. Unlock new unit if existing roster cannot solve issue.
 6. Add giant/titan only if it creates a new win condition.
+
+Important movement constraint:
+In Mechabellum, deployed units are normally fixed after placement. The LLM must not recommend moving or repositioning existing units unless the current game state includes a valid repositioning ability, card, item, specialist effect, mobile beacon/pathing option, or another explicit mechanic that allows it.
+
+When no such ability exists, "positioning advice" may only apply to:
+- newly purchased units;
+- flanking deployments;
+- unit orientation if still allowed during placement;
+- mobile beacon/pathing if available;
+- future purchases;
+- selling/rebuying only if economically justified and legally possible.
 
 ### Step 4: Check counter-counter
 
@@ -1223,16 +1234,9 @@ Examples:
 - If you add Fortress, opponent may add Melting Point/Hacker/Scorpion.
 - If you add Hacker, opponent may add air/chaff/flanks.
 
-### Step 5: Recommend action set
+### Step 5: Recommend a specific action plan
 
-Output should include:
-
-- `primary_problem`: biggest current board issue.
-- `recommended_purchase`: unit/tech/positioning.
-- `why`: expected target interaction.
-- `positioning`: front/back/side/flank/depth/orientation.
-- `risk`: opponent’s likely counter.
-- `fallback`: next plan if opponent counters.
+State the most important fix first. Cover: what to buy or tech, where to place it, and what it solves. Include the most likely opponent counter and how to stay ahead of it.
 
 ---
 
@@ -1317,83 +1321,7 @@ Prioritize:
 
 ---
 
-## 11. Replay-parser output schema recommendation
-
-For LLM analysis, convert `.grbr` replay state into a normalized JSON-like object and attach this knowledge file.
-
-Recommended state shape:
-
-```json
-{
-  "patch_version": "unknown_or_game_version",
-  "round": 6,
-  "mode": "1v1_or_2v2_or_other",
-  "players": [
-    {
-      "name": "PlayerA",
-      "hp": null,
-      "supply": null,
-      "specialist": null,
-      "selected_cards": [],
-      "units": [
-        {
-          "unit_id": 31,
-          "unit_name": "Crawler",
-          "unit_index": 0,
-          "level": 1,
-          "exp": 461,
-          "x": -10,
-          "y": -70,
-          "grid_x": null,
-          "grid_y": null,
-          "orientation": "horizontal_or_vertical_or_unknown",
-          "techs": [],
-          "items": [],
-          "is_flank": false
-        }
-      ],
-      "active_technologies": {},
-      "devices": [],
-      "buildings": [],
-      "recent_actions": []
-    }
-  ]
-}
-```
-
-### 11.1 Important parsing guidance
-
-- Keep raw numeric IDs and human-readable names.
-- Keep original coordinates and normalized grid coordinates.
-- Store whether a unit is on flank/center.
-- Store round-by-round action records separately from final unit snapshots.
-- Unknown IDs should not be discarded. Use `UnknownUnit(31)` / `UnknownTech(10212)`.
-- Do not assume exact unit names without a mapping table from game data or validated community parser.
-
----
-
-## 12. Prompt template for the LLM
-
-Use this as a wrapper prompt when asking the model to analyze a board:
-
-```text
-You are a Mechabellum strategic analyst. Use the provided game_knowledge.md as your rules and strategy context. Analyze the given board state. Do not just list hard counters; reason about target access, chaff, chaff clear, air, anti-giant, missile interception, flanks, techs, levels, and likely opponent response.
-
-Output format:
-1. Current board diagnosis.
-2. Main reason our side wins/loses the next round.
-3. Best 1-3 actions for this deployment phase.
-4. Exact positioning/orientation guidance.
-5. Risks and opponent counter-counter.
-6. If uncertain, list missing data needed.
-
-Board state:
-<JSON>
-```
-
----
-
-## 13. Compact counter matrix
+## 11. Compact counter matrix
 
 This is a practical heuristic matrix, not a deterministic simulator.
 
@@ -1418,7 +1346,7 @@ This is a practical heuristic matrix, not a deterministic simulator.
 
 ---
 
-## 14. Strategic dos and don’ts
+## 12. Strategic dos and don’ts
 
 ### Do
 
@@ -1443,7 +1371,7 @@ This is a practical heuristic matrix, not a deterministic simulator.
 
 ---
 
-## 15. Known patch-sensitive topics
+## 13. Known patch-sensitive topics
 
 The following should be checked against live game data before using exact values:
 
@@ -1460,7 +1388,7 @@ The following should be checked against live game data before using exact values
 
 ---
 
-## 16. Source notes for future refresh
+## 14. Source notes for future refresh
 
 Recommended source hierarchy:
 
@@ -1489,7 +1417,7 @@ Key public URLs used during preparation:
 
 ---
 
-## 17. Final instruction to LLM using this file
+## 15. Final instruction to LLM using this file
 
 When analyzing Mechabellum, always reason from mechanics and board state first. A unit is only a counter if:
 

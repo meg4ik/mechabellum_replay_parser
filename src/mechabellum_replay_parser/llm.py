@@ -7,6 +7,20 @@ from openai import OpenAI
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
+_GAME_KNOWLEDGE_PATH = Path(__file__).parent.parent.parent / "game_knowledge.md"
+_game_knowledge: str | None = None
+
+
+def _get_game_knowledge() -> str:
+    global _game_knowledge
+    if _game_knowledge is None:
+        if _GAME_KNOWLEDGE_PATH.exists():
+            _game_knowledge = _GAME_KNOWLEDGE_PATH.read_text(encoding="utf-8")
+        else:
+            _game_knowledge = ""
+    return _game_knowledge
+
+
 _client: OpenAI | None = None
 
 
@@ -21,7 +35,9 @@ def _get_client() -> OpenAI:
 
 
 def _build_system_prompt(player_name: str) -> str:
-    return f"""You are an expert Mechabellum coach. Your job is to give {player_name} one single optimal action plan for the current round — no alternatives, no "you could also", no hedging.
+    knowledge = _get_game_knowledge()
+    knowledge_block = f"\n\n## Mechabellum game knowledge\n{knowledge}" if knowledge else ""
+    return f"""You are an expert Mechabellum coach. Your job is to give {player_name} one single optimal action plan for the current round — no alternatives, no "you could also", no hedging.{knowledge_block}
 
 ## Game context
 Mechabellum is a 2v2 auto-battler. Each round has a preparation phase (buy, upgrade, position units) followed by an automatic battle. The board is a grid; unit positions are x/y coordinates. Players share a team area and coordinate their army composition.
