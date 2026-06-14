@@ -496,7 +496,7 @@ class Unit:
 
     @classmethod
     def from_name(cls, name: str) -> "Unit":
-        data = UNIT_DATA.get(name)
+        data = UNIT_DATA.get(name, {})
 
         return cls(
             unit_name=name,
@@ -506,8 +506,8 @@ class Unit:
         )
 
     def set_level(self, level: int) -> "Unit":
-        upgrade_cost = self.sell_supply // 2
-        base_value = UNIT_DATA.get(self.unit_name).get("value")
+        upgrade_cost = (self.sell_supply or 0) // 2
+        base_value = UNIT_DATA.get(self.unit_name, {}).get("value", 0)
         self.sell_supply = base_value + (level - 1) * upgrade_cost
         return self
 
@@ -952,11 +952,13 @@ class DeploymentTracker:
 
     def move(self, move: MoveUnitAction, units: UnitCollection):
         unit = units.get_unit(move.unit_index)
+        if unit is None:
+            return
         unit.position = move.position
 
     def buy(self, round_number: int, buy: BuyAction, units: UnitCollection):
         self.count[round_number] += 1
-        self.value[round_number] += UNIT_DATA.get(buy.unit).get("value")
+        self.value[round_number] += UNIT_DATA.get(buy.unit, {}).get("value", 0)
         units.add_unit(Unit.from_name(buy.unit))
 
     def upgrade(self, round_number: int, upgrade: UpgradeAction):
@@ -1182,7 +1184,7 @@ def _setup_pretty_table_with_players(players: List[PlayerRecord]):
 def _player_start_to_string(player: PlayerRecord) -> str:
     return "\n".join(
         [player.starting_officer]
-        + [unit.unit_name for unit in player.starting_units.units.values()]
+        + [unit.unit_name or f"unknown({unit.ident})" for unit in player.starting_units.units.values()]
     )
 
 
