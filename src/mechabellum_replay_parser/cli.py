@@ -5,6 +5,7 @@ from prettytable import PrettyTable
 
 from . import parse_battle_record
 from . import battle_record_to_string
+from .watcher import watch, REPLAY_DIR
 
 
 def show_battle_record(args):
@@ -27,6 +28,11 @@ def show_tech(args):
         print()
 
 
+def start_watch(args):
+    replay_dir = Path(args.dir) if args.dir else REPLAY_DIR
+    watch(replay_dir)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Mechabellum replay file parser")
     subparsers = parser.add_subparsers(dest="command")
@@ -44,6 +50,14 @@ def main():
     )
     tech_parser.add_argument("file", help="Path to the Mechabellum replay file (.grbr)")
     tech_parser.set_defaults(func=show_tech)
+
+    watch_parser = subparsers.add_parser(
+        "watch", help="Monitor replay folder and auto-process new replays."
+    )
+    watch_parser.add_argument(
+        "--dir", help=f"Replay folder to monitor (default: {REPLAY_DIR})", default=None
+    )
+    watch_parser.set_defaults(func=start_watch)
 
     args = parser.parse_args()
 
