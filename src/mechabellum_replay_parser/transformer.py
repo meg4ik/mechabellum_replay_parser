@@ -16,9 +16,9 @@ from . import (
 )
 
 CONSTRUCTION_LOOKUP = {
+    1: "Supply Tower",
     2: "Command Tower",
     3: "Research Tower",
-    4: "Supply Tower",
 }
 
 
@@ -338,13 +338,17 @@ def replay_to_dict(path: Path) -> dict:
             pd = rr_el.find("playerData")
             skills = _parse_commander_skills(pd)
             pre_result_el = pd.find("preRoundFightResult")
+            supply_el = pd.find("supply") or pd.find("Supply") or pd.find("energy") or pd.find("Energy")
+            units = _parse_units(pd)
 
             players_data[name] = {
                 "hp": int(pd.find("reactorCore").text),
+                "supply": int(supply_el.text) if supply_el is not None else None,
+                "army_value": sum(u["sell_supply"] for u in units),
                 "fight_outcome": pre_result_el.text if pre_result_el is not None else None,
                 "officers": _parse_officers(pd),
                 "commander_skills": list(skills.values()),
-                "units": _parse_units(pd),
+                "units": units,
                 "active_techs": _parse_active_techs(pd),
                 "contraptions": _parse_contraptions(pd),
                 "constructions": _parse_constructions(pd),
@@ -371,3 +375,19 @@ def replay_to_dict(path: Path) -> dict:
 
 def replay_to_json(path: Path, indent: int = 2) -> str:
     return json.dumps(replay_to_dict(path), ensure_ascii=False, indent=indent)
+
+
+def dump_player_data_xml_fields(path: Path) -> None:
+    """Debug helper: prints all XML child tags in playerData for the first round of each player."""
+    xml_str = extract_xml(path)
+    root = ET.fromstring(xml_str)
+    for pr in root.findall("playerRecords/PlayerRecord"):
+        name = pr.find("name").text
+        rr = pr.findall("playerRoundRecords/PlayerRoundRecord")
+        if not rr:
+            continue
+        pd = rr[0].find("playerData")
+        print(f"\n=== playerData XML fields for '{name}' ===")
+        for child in pd:
+            val = child.text.strip() if child.text and child.text.strip() else f"[{len(list(child))} children]"
+            print(f"  <{child.tag}> = {val[:80]}")

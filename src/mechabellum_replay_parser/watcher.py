@@ -9,7 +9,7 @@ from watchdog.observers import Observer
 
 from .display import show_board_async
 from .llm import analyze
-from .transformer import replay_to_dict
+from .transformer import dump_player_data_xml_fields, replay_to_dict
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
@@ -126,6 +126,7 @@ def process_replay(path: Path) -> None:
         players = [p for team in parsed["teams"] for p in team]
         print(f"[✓] Парсинг готов. Игроки: {players}, раундов: {parsed['last_round']}")
         if debug:
+            dump_player_data_xml_fields(path)
             _debug_report(parsed)
         else:
             placement = analyze(parsed)
