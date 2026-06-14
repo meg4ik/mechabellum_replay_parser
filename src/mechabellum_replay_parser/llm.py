@@ -5,8 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 
-_ENV_PATH = Path(__file__).parent.parent.parent.parent / ".env"
-load_dotenv(_ENV_PATH)
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 _client: OpenAI | None = None
 
@@ -22,23 +21,38 @@ def _get_client() -> OpenAI:
 
 
 def _build_system_prompt(player_name: str) -> str:
-    return f"""You are an expert Mechabellum coach analyzing a game replay.
+    return f"""You are an expert Mechabellum coach. Your job is to give {player_name} one single optimal action plan for the current round — no alternatives, no "you could also", no hedging.
 
-Mechabellum is a strategy auto-battler where two teams of two players compete.
-Each round, players spend supply to buy, upgrade, and position units. Rounds alternate
-between the preparation phase (buying/moving units) and the fight phase (automatic battle).
-Players start with reactor cores (HP) and lose them when enemy units deal damage.
+## Game context
+Mechabellum is a 2v2 auto-battler. Each round has a preparation phase (buy, upgrade, position units) followed by an automatic battle. The board is a grid; unit positions are x/y coordinates. Players share a team area and coordinate their army composition.
 
-Your task:
-- Analyze the full game history provided in JSON format.
-- Identify patterns: what units each team built, what techs they researched, how they
-  positioned their units, what synergies or counters were used.
-- Focus especially on the last recorded round to understand the current board state.
-- Advise the player named "{player_name}" on the optimal strategy for the NEXT round
-  (the round after the last one in the replay).
+## Replay data format
+You will receive a JSON with:
+- `teams`: two teams of player names
+- `rounds`: full history — each round contains each player's HP, units (with positions), active techs, commander skills, contraptions, and every action they took (buys, upgrades, moves, techs, skill uses)
+- `last_round`: the round number that was just saved
 
-Be specific: name concrete units to buy, upgrades to prioritize, positioning advice
-(based on x/y coordinates where relevant), and counter-strategies against the opponent.
+## Critical timing rule
+The replay is saved at the VERY START of a round, BEFORE the player has done anything. So `last_round` is the round {player_name} is currently playing RIGHT NOW, not a completed round. The actions list for `last_round` will be empty or minimal — that is expected.
+
+## Your output format
+Give exactly one plan. Structure it as:
+
+**Round [N] plan for {player_name}**
+
+**Buy / Upgrade**
+Numbered list. Each item: `1. [action] — [reason in 5 words max]`
+
+**Positioning**
+Numbered list. Each item: `1. [unit name] → (x, y)` Use the coordinate system from the replay data. Be precise.
+
+**Tech / Skills**
+Numbered list. Which tech to research or commander skill to activate, if any.
+
+**Priority order**
+Numbered list. If supply is limited, rank actions by importance: 1 = do first.
+
+Do not explain the opponent's strategy. Do not list what the opponent might do. Do not offer alternatives. Give the plan and stop.
 """
 
 
@@ -51,16 +65,16 @@ def analyze(parsed: dict) -> None:
 
     last_round = parsed.get("last_round", "?")
     teams = parsed.get("teams", [])
-    print(f"\n[AI] Анализ игры (раундов: {last_round}, команды: {teams})")
+    print(f"\n[AI] Анализ игры (текущий раунд: {last_round}, команды: {teams})")
     print(f"[AI] Советую игроку: {player_name}")
     print("[AI] Ожидаем ответ от OpenAI...\n")
     print("-" * 60)
 
     user_message = (
-        f"Here is the full Mechabellum game replay data in JSON format:\n\n"
+        f"Here is the Mechabellum replay data in JSON format:\n\n"
         f"```json\n{game_json}\n```\n\n"
-        f"Please analyze the entire game history and advise {player_name} "
-        f"on what to do in round {last_round + 1 if isinstance(last_round, int) else 'next'}."
+        f"The replay was saved at the start of round {last_round} before {player_name} took any actions. "
+        f"Give {player_name} the exact plan for round {last_round}."
     )
 
     client = _get_client()
