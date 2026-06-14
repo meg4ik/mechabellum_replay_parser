@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from watchdog.events import FileCreatedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
+from .display import show_board_async
 from .llm import analyze
 from .transformer import replay_to_dict
 
@@ -127,7 +128,16 @@ def process_replay(path: Path) -> None:
         if debug:
             _debug_report(parsed)
         else:
-            analyze(parsed)
+            placement = analyze(parsed)
+            if placement:
+                player_name = os.getenv("PLAYER_NAME", "")
+                last_round = parsed["last_round"]
+                last = next(
+                    (r for r in parsed["rounds"] if r["round"] == last_round),
+                    parsed["rounds"][-1],
+                )
+                current_units = last["players"].get(player_name, {}).get("units", [])
+                show_board_async(current_units, placement, last_round, player_name)
     except (ValueError, KeyError, AttributeError) as e:
         print(f"[!] Ошибка парсинга: {e}")
     finally:

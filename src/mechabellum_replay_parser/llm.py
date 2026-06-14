@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -51,6 +52,12 @@ You will receive a JSON with:
 ## Critical timing rule
 The replay is saved at the VERY START of a round, BEFORE the player has done anything. So `last_round` is the round {player_name} is currently playing RIGHT NOW, not a completed round. The actions list for `last_round` will be empty or minimal — that is expected.
 
+## Coordinate system
+{player_name}'s deployment zone: x from -285 to +285, y from -295 to -45.
+- x = 0 is the horizontal center of the zone.
+- y = -45 is the front line (closest to the enemy), y = -295 is the back.
+- Left flank: x around -285. Right flank: x around +285. Center: x near 0.
+
 ## Your output format
 Give exactly one plan. Structure it as:
 
@@ -60,7 +67,9 @@ Give exactly one plan. Structure it as:
 Numbered list. Each item: `1. [action] — [reason in 5 words max]`
 
 **Positioning**
-Numbered list. Each item: `1. [unit name] → (x, y)` Use the coordinate system from the replay data. Be precise.
+Numbered list. Each item must include explicit coordinates:
+`1. [unit name] → (x, y)  — [what it does there]`
+Every unit that needs placing or moving MUST have a coordinate. No exceptions.
 
 **Tech / Skills**
 Numbered list. Which tech to research or commander skill to activate, if any.
@@ -69,10 +78,57 @@ Numbered list. Which tech to research or commander skill to activate, if any.
 Numbered list. If supply is limited, rank actions by importance: 1 = do first.
 
 Do not explain the opponent's strategy. Do not list what the opponent might do. Do not offer alternatives. Give the plan and stop.
+
+## REQUIRED: placement block
+After the plan, output this exact block with ALL units {player_name} should have on the board after this round (both existing and newly placed). No exceptions — every recommended unit must appear here.
+
+PLACEMENT:
+```json
+[
+  {{"unit": "<unit_name>", "x": <int>, "y": <int>, "action": "<keep|move|new>"}},
+  ...
+]
+```
+
+- `keep` — unit stays at its current position (copy x/y from replay data)
+- `move` — unit moves to new position
+- `new` — newly bought unit placed at this position
+- x and y must be integers within the zone bounds (-285..285 for x, -295..-45 for y)
 """
 
 
-def analyze(parsed: dict) -> None:
+_PLACEMENT_RE = re.compile(r"PLACEMENT:\s*```json\s*(\[.*?\])\s*```", re.DOTALL)
+
+
+def parse_placement(text: str) -> list[dict] | None:
+    m = _PLACEMENT_RE.search(text)
+    if not m:
+        return None
+    try:
+        items = json.loads(m.group(1))
+    except json.JSONDecodeError:
+        return None
+    result = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        try:
+            entry = {
+                "unit": str(item["unit"]),
+                "x": int(item["x"]),
+                "y": int(item["y"]),
+                "action": str(item.get("action", "keep")),
+            }
+        except (KeyError, ValueError, TypeError):
+            continue
+        # clamp to zone bounds
+        entry["x"] = max(-285, min(285, entry["x"]))
+        entry["y"] = max(-295, min(-45, entry["y"]))
+        result.append(entry)
+    return result or None
+
+
+def analyze(parsed: dict) -> list[dict] | None:
     player_name = os.getenv("PLAYER_NAME", "")
     if not player_name:
         raise ValueError("PLAYER_NAME not set in .env")
@@ -105,9 +161,18 @@ def analyze(parsed: dict) -> None:
         stream=True,
     )
 
+    chunks: list[str] = []
     for chunk in stream:
         delta = chunk.choices[0].delta
         if delta.content:
             print(delta.content, end="", flush=True)
+            chunks.append(delta.content)
 
     print("\n" + "-" * 60)
+
+    placement = parse_placement("".join(chunks))
+    if placement is None:
+        print("[!] PLACEMENT блок не найден или невалиден")
+    else:
+        print(f"[✓] Размещение распарсено: {len(placement)} юнитов")
+    return placement

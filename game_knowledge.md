@@ -306,18 +306,511 @@ Answers:
 
 ---
 
-## 6. Unit roster by cost bracket
+## 6. Economy reference: unit prices, unlock costs, specialist cost effects, and unit technologies
 
-The wiki unit overview groups units by supply cost:
+This section is intended for machine reasoning. Treat all exact numeric values as `PATCH-SENSITIVE` and prefer live game config/replay mappings when available.
 
-- **100 supply**: Arclight, Crawler, Fang, Hound, Marksman.
-- **200 supply**: Fire Badger, Hacker, Mustang, Phantom Ray, Phoenix, Rhino, Sabertooth, Sledgehammer, Steel Ball, Stormcaller, Tarantula, Wasp.
-- **300 supply**: Farseer, Scorpion, Typhoon, Wraith.
-- **400 supply**: Fortress, Melting Point, Raiden, Sandworm, Vulcan.
-- **500 supply**: Overlord.
-- **800 supply**: Abyss, Death Knell, Mountain, War Factory.
+### 6.1 Default unit purchase costs
 
-Note: unlock costs and availability differ. Some units may appear in starter packs, reinforcements, specialist effects, or special modes. Update 1.11 says Vortex is in starter packs and Typhoon was moved/remade into the core roster; check live game data for exact availability.
+The public wiki groups the current roster by supply purchase cost as follows:
+
+| Purchase cost | Units |
+|---:|---|
+| 100 | Arclight, Crawler, Fang, Hound, Marksman, Void Eye, Vortex |
+| 200 | Fire Badger, Hacker, Mustang, Phantom Ray, Phoenix, Rhino, Sabertooth, Sledgehammer, Steel Ball, Stormcaller, Tarantula, Wasp |
+| 300 | Farseer, Scorpion, Typhoon, Wraith |
+| 400 | Fortress, Melting Point, Raiden, Sandworm, Vulcan |
+| 500 | Overlord |
+| 800 | Abyss, Death Knell, Mountain, War Factory |
+
+### 6.2 Unit unlock costs and upgrade EXP
+
+| Unit | Buy cost | Unlock cost | Upgrade EXP | Notes |
+|---|---:|---:|---:|---|
+| Arclight | 100 | 0 | 750 | Ground chaff clear. |
+| Crawler | 100 | 0 | 450 | Fast melee chaff. |
+| Fang | 100 | 0 | 600 | Cheap ranged chaff / light AA. |
+| Hound | 100 | 0 | 750 | Fast bruiser/chaff-clear hybrid. |
+| Marksman | 100 | 0 | 650 | Long-range single-target DPS. |
+| Void Eye | 100 | 0 | 650 | 100-cost specialist ranged unit; patch-sensitive. |
+| Vortex | 100 | 0 | 700 | 100-cost support/DPS unit; patch-sensitive. |
+| Fire Badger | 200 | 0 | 1400 | Fire-based chaff clear. |
+| Hacker | 200 | 100 | 560 | Ground-unit control / shields. |
+| Mustang | 200 | 0 | 1200 | Anti-air and light clear. |
+| Phantom Ray | 200 | 50 | 1000 | Flying missile/burst unit. |
+| Phoenix | 200 | 50 | 1300 | Flying sniper. |
+| Rhino | 200 | 50 | 1150 | Fast melee bruiser. |
+| Sabertooth | 200 | 0 | 1300 | Medium ranged tank / anti-medium. |
+| Sledgehammer | 200 | 0 | 1300 | Medium tank line. |
+| Steel Ball | 200 | 0 | 1000 | Scaling anti-heavy beam/laser unit. |
+| Stormcaller | 200 | 50 | 1100 | Long-range artillery. |
+| Tarantula | 200 | 0 | 1500 | Ground anti-swarm bruiser. |
+| Wasp | 200 | 50 | 900 | Flying light swarm. |
+| Farseer | 300 | 50 | 1800 | Missile support / AA / range utility. |
+| Scorpion | 300 | 50 | 1500 | Heavy ranged artillery/anti-medium. |
+| Typhoon | 300 | 50 | 1950 | 300-cost ranged unit; current version is patch-sensitive. |
+| Wraith | 300 | 50 | 2250 | Flying AoE/support cruiser. |
+| Fortress | 400 | 200 | 1600 | Ground giant anchor. |
+| Melting Point | 400 | 200 | 1400 | Anti-giant beam DPS. |
+| Raiden | 400 | 200 | 2400 | Flying giant multi-target lightning. |
+| Sandworm | 400 | 200 | 2000 | Burrowing melee giant. |
+| Vulcan | 400 | 200 | 2200 | Giant anti-swarm flame unit. |
+| Overlord | 500 | 200 | 1750 | Long-range flying giant. |
+| Abyss | 800 | 350 | 4800 | Flying titan laser sweeper. |
+| Death Knell | 800 | 350 | 3200 | Ranged titan with multi-direction ramping beams. |
+| Mountain | 800 | 350 | 3200 | Ground titan with huge HP/DPS. |
+| War Factory | 800 | 350 | 3200 | Titan mobile factory. |
+
+### 6.3 Specialist economy and cost modifiers
+
+The LLM must apply these before evaluating affordability. These are not always direct unit-price changes; many specialists give free units, supply, unlock discounts, or tech discounts.
+
+| Specialist | Economy / cost effect | Combat/stat effect | HP modifier | Strategic implication |
+|---|---|---|---:|---|
+| Giant Specialist | Giant and Titan unlock costs reduced by 200. | None listed. | +100 | Earlier giants/titans; can use unlocks to block giant unit reinforcements. |
+| Aerial Specialist | Aerial unit unlock costs reduced by 200. | Aerial units gain +13% ATK and +13% HP. | +400 | Enables early air unlocks and stronger air-based scaling. |
+| Speed Specialist | No direct supply/cost change. | All units gain +3 movement speed. | +300 | Tempo/aggression specialist; speed can be good or harmful depending on targeting. |
+| Marksman Specialist | Free Rank 3 Marksman on round 2. | None listed. | -200 | Strong round-2 tempo but can feed XP if exposed. |
+| Elite Specialist | +100 supplies in round 1; can immediately recruit Rank 2 units. | Rank-2 access can create early tempo. | +500 | Do not assume Rank 2 purchases have base cost; live game cost formula should be read from game state/config. |
+| Rhino Specialist | Free Rank 2 Rhino on round 4. | None listed. | -300 | Round-4 power spike; can also be sold for a supply injection if not useful. |
+| Cost Control Specialist | +100 supplies every round. | All units suffer -11% ATK and -11% HP. | +100 | Economic scaling at permanent stat penalty; favors stat-agnostic tech/powers. |
+| Fortified Specialist | No direct supply/cost change. | All units gain +17% HP. | +300 | More value on HP breakpoints and durable starts. |
+| Sabertooth Specialist | Sabertooth tech upgrade costs reduced by 50; free Rank 1 Sabertooth on round 3. | None listed. | 0 | Build around Sabertooth only if it will actually affect tempo or scaling. |
+| Fire Badger Specialist | Fire Badger tech upgrade costs reduced by 50; free Rank 1 Fire Badger on round 3. | None listed. | 0 | Best if the board can exploit another Badger and cheaper Badger tech. |
+| Typhoon Specialist | Free Rank 1 Typhoon on round 4. | None listed. | -300 | Delayed 300-supply tempo spike; weak before round 4. |
+| Supply Specialist | +50 supplies every round. | None listed. | -600 | Flexible economy, but lower starting HP makes early damage dangerous. |
+| Quick Supply Specialist | +200 supplies in round 1. | None listed. | -500 | Round-1 tempo spike; little persistent economy afterward. |
+| Missile Specialist | Two free Missile Strikes on round 2. | None listed. | +100 | Temporary tempo/punish tool; not a permanent economy engine. |
+| Amplify Specialist | Three free Small Amplifying Cores on round 1. | Equipment stats depend on the item. | +500 | Best on early durable units that use both HP and damage. |
+| Training Specialist | +50 supplies in round 1 and one free Intensive Training. | Enables early level/EXP pressure. | +300 | Valuable with aggressive units that convert early levels into tempo. |
+
+LLM affordability rule: when specialist is known, compute economy in this order: starting/round supply modifiers -> free units/items/powers -> unlock discounts -> tech discounts -> rank recruitment rules -> normal unit/tech costs. If the exact rank-recruit cost is not present in the parsed state, say it is unknown instead of guessing.
+
+### 6.4 Legal movement / repositioning constraint
+
+Critical rule for recommendations: existing deployed units are normally fixed after placement. Do **not** recommend moving/repositioning existing units unless the current state includes a legal movement mechanism such as Jump Drive, Mobile Beacon/pathing, a reposition card, a unit-specific movement ability, or another explicit mechanic.
+
+Legal positioning advice may apply to:
+
+- newly purchased units;
+- flanking deployments;
+- orientation/facing if still allowed;
+- Mobile Beacon or other legal pathing tools;
+- units with techs that explicitly allow redeployment, such as Phoenix Jump Drive, Wasp Jump Drive, or Overlord Jump Drive;
+- selling/rebuying only when legal and economically justified.
+
+### 6.5 Full unit technology catalog
+
+Use this catalog to understand what each unit can become after tech. Costs are supply costs for researching that technology on that unit type. Descriptions are paraphrased for LLM reasoning, not copied as UI text.
+
+#### 100-cost units
+
+**Arclight**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Range Enhancement | 300 | +40 range; makes Arclight safer and more consistent as chaff clear. |
+| Electromagnetic Shot | 400 | Hits apply EMP: disables tech and slows movement. |
+| Charged Shot | 200 | Much higher attack damage, slower attack cycle; better into medium units, worse if overkill/chaff is the issue. |
+| Armor Enhancement | 100 | More HP plus flat damage block that scales with rank. |
+| Anti-Aircraft Ammunition | 300 | Allows Arclight to attack air. |
+| Elite Marksman | 400 | Per-rank range and ATK scaling. |
+| Shockwave | 200 | Shorter range but attacks create a small shockwave AoE near the target. |
+
+**Crawler**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Mechanical Rage | 150 | Faster movement and shorter attack interval. |
+| Replicate | 250 | Enemy kills can create more Crawlers, increasing swarm snowball. |
+| Subterranean Blitz | 350 | Faster movement; burrows when not near enemies, reducing incoming damage while closing distance. |
+| Acidic Explosion | 150 | On death leaves acid, punishing high-HP units and increasing damage taken by affected units. |
+| Impact Drill | 150 | Large attack increase; improves Crawler damage when they actually connect. |
+| Loose Formation | 250 | Less HP but wider spread, making AoE/chaff clear less efficient. |
+
+**Fang**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Ignite | 150 | Attacks can burn targets for percentage HP damage and block healing. |
+| Range Enhancement | 300 | +40 range; improves delayed chaff/AA contribution. |
+| Mechanical Rage | 300 | Faster movement and much faster attack cycle. |
+| Portable Shield | 500 | Each Fang gains a personal shield; strong defensive chaff tech. |
+| Armor-Piercing Bullets | 100 | Higher ATK; makes high-level Fangs real DPS. |
+| Grenade Launcher | 150 | Adds ground splash and range, but removes air targeting. |
+
+**Hound**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Mechanical Rage | 300 | Faster movement and shorter attack interval. |
+| Range Enhancement | 300 | +40 range. |
+| Fire Extinguisher | 200 | Clears fire, acid and smoke zones near Hounds; useful support into ground effects. |
+| Incendiary Bomb | 200 | Periodically launches ground-fire bombs at long range. |
+| Armor Enhancement | 250 | More HP plus flat damage block scaling with rank. |
+| Chamber Compression | 200 | Attack charges up over time, then resets after attacking; rewards timing and target access. |
+
+**Marksman**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Doubleshot | 250 | Fires two shots per attack with reload penalty; improves burst. |
+| Range Enhancement | 300 | +40 range; key backline scaling tech. |
+| Quick Reload | 250 | Faster attacks but lower damage; better into medium/light targets than pure giants. |
+| Electromagnetic Shot | 250 | Applies EMP on hit. |
+| Elite Marksman | 400 | Per-rank range and ATK scaling. |
+| Shooting Squad | 300 | Summons Fangs at the start of combat. |
+| Assault Mode | 150 | Converts Marksman into short-range durable AoE assault unit; extremely role-changing. |
+| Aerial Specialization | 250 | Stronger and longer-ranged versus air targets. |
+
+**Void Eye**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Range Enhancement | 300 | +40 range. |
+| Energy Shield | 250 | Personal shield equal to HP; blocks at least one damage instance. |
+| Charged Shot | 100 | Higher ATK with slower attack interval. |
+| Aerial Mode | 200 | Converts to flying, enables air targeting, increases speed, lowers range. |
+| Energy Absorption | 50 | More HP and lifesteal from damage dealt. |
+| Suppression Shots | 100 | Longer range and reduces target range temporarily. |
+| Electromagnetic Armor | 300 | Enemies attacking it receive EMP-like interference. |
+
+**Vortex**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Range Enhancement | 300 | +40 range. |
+| Mobile Power Station | 250 | Adds range and buffs nearby ground allies' ATK; non-stacking aura. |
+| Electromagnetic Cloud | 400 | Attacks apply EMP in an area around the target. |
+| Electromagnetic Twin | 400 | Spawns a fragile Vortex Mirage behind itself at battle start. |
+| Accumulator Shield | 200 | Periodically deploys an AoE shield after enough attacks; shield scales with Vortex level. |
+| Grid Integration | 200 | Linked nearby Vortex units gain ATK per additional link, up to a cap. |
+| Emergency Armor | 100 | First time HP drops below half, becomes untargetable/damage-resistant for a short time. |
+| Field Maintenance | 100 | More HP and self-regeneration after taking damage. |
+
+#### 200-cost units
+
+**Fire Badger**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Range Enhancement | 300 | +40 range. |
+| Napalm | 300 | Less HP, but attacks create burning ground zones. |
+| Ignite | 100 | Burns targets for percentage HP damage and prevents healing. |
+| Field Maintenance | 150 | More HP and self-regeneration after damage. |
+| Scorching Fire | 300 | Much higher ATK. |
+| Scorching Charge | 200 | More HP; at low HP charges and detonates, igniting an area. |
+| Counter-Fire | 200 | More HP; taking damage temporarily gives a large range boost. |
+
+**Hacker**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Multi Control | 250 | Lower range, but splits control into multiple weaker beams. |
+| Barrier | 400 | Deploys a shield dome; shield HP scales with rank. |
+| Range Enhancement | 300 | +40 range. |
+| Enhanced Control | 300 | Hacked units recover to full HP immediately. |
+| Electromagnetic Interference | 100 | Control/hit applies EMP-style tech disable and movement slow. |
+
+**Mustang**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Missile Interceptor | 200 | Intercepts missiles in a radius; efficiency decays under continuous load. |
+| Range Enhancement | 300 | +40 range. |
+| High-Explosive Ammo | 50 | Adds splash at the cost of lower ATK; improves chaff clear. |
+| Aerial Specialization | 300 | Stronger and longer-ranged against air. |
+| Armor-Piercing Bullets | 300 | Higher ATK. |
+| Culling Rounds | 200 | Executes low-current-HP targets but lowers ATK; strong into swarms/finishers. |
+
+**Phantom Ray**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Burst Mode | 200 | Fires a large missile burst with a much longer reload. |
+| Range Enhancement | 300 | +40 range. |
+| Armor Enhancement | 250 | More HP plus flat damage block scaling with rank. |
+| Sticky Oil Bomb | 100 | Periodically launches slowing oil; fire can ignite oil. |
+| Stealth Cloak | 100 | More ATK/HP and begins cloaked; revealed when attacking. |
+| High-Explosive Ammo | 150 | Adds splash, lowers ATK. |
+| Energy Shield | 400 | Personal HP-sized shield. |
+| Ground Targeting | 150 | Longer ground range but lower ATK. |
+
+**Phoenix**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Quantum Reassembly | 150 | Once destroyed, can rebuild near allied Phoenix after a delay. |
+| Range Enhancement | 300 | +40 range. |
+| Launcher Overload | 200 | Much faster attacks, shorter range. |
+| Energy Shield | 200 | Personal HP-sized shield. |
+| Jump Drive | 100 | Faster and can be freely redeployed during deployment. |
+| Electromagnetic Shot | 200 | Applies EMP on hit. |
+| Elite Marksman | 400 | Per-rank range and ATK scaling. |
+| Charged Shot | 200 | Much higher ATK, shorter range. |
+
+**Rhino**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Whirlwind | 250 | When surrounded, spins for sustained AoE melee damage. |
+| Photon Coating | 300 | Temporary damage reduction and immunity to EMP, fire, acid and degeneration. |
+| Field Maintenance | 200 | Self-regeneration after damage. |
+| Final Blitz | 250 | Explodes on death, dealing max-HP-based area damage. |
+| Mechanical Rage | 150 | Faster movement and shorter attack interval. |
+| Wreckage Recycling | 100 | More ATK and heals on kill. |
+| Power Armor | 300 | More HP and slow immunity. |
+| Armor Enhancement | 200 | More HP plus flat block scaling with rank. |
+| Combat Evolvement | 200 | Gains HP and ATK over time during battle. |
+
+**Sabertooth**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Range Enhancement | 300 | +40 range. |
+| Field Maintenance | 300 | More HP and self-regeneration. |
+| Missile Interceptor | 150 | Local missile interception. |
+| Doubleshot | 150 | Fires two shells with reload penalty. |
+| Secondary Armament | 200 | Adds side guns with rank-scaling damage. |
+| Field Entrenchment | 200 | Starts entrenched: cannot move, but gains HP/range/attack speed until it leaves. |
+
+**Sledgehammer**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Field Maintenance | 200 | More HP and self-regeneration. |
+| Damage Sharing | 200 | Nearby Sledgehammers chain, gain HP, and share damage. |
+| Mechanical Rage | 250 | Faster movement and shorter attack interval. |
+| Range Enhancement | 300 | +40 range. |
+| Electromagnetic Shot | 350 | Applies EMP on hit. |
+| Armor-Piercing Bullets | 200 | Much higher ATK with slower attack interval. |
+| Armor Enhancement | 250 | More HP plus flat block scaling with rank. |
+
+**Steel Ball**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Energy Absorption | 200 | More HP and lifesteal from damage. |
+| Damage Sharing | 250 | Nearby Steel Balls chain, gain HP, and share damage. |
+| Range Enhancement | 300 | +40 range. |
+| Mechanical Division | 300 | On death, spawns Crawlers. |
+| Armor Enhancement | 300 | More HP plus flat block scaling with rank. |
+| Fortified Target Lock | 200 | On target switch, prioritizes the highest-HP enemy in range. |
+| Kinetic Charge | 150 | Gains range based on distance traveled, up to a cap. |
+
+**Stormcaller**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Incendiary Bomb | 350 | Shorter range, but missiles ignite ground zones. |
+| Range Enhancement | 300 | +40 range. |
+| Launcher Overload | 250 | Faster firing, shorter range, faster movement. |
+| High-Explosive Ammo | 150 | Larger splash, lower ATK. |
+| Electromagnetic Explosion | 300 | Missiles apply EMP on hit. |
+| High Explosive Anti-tank Shells | 150 | Much higher ATK, slower attack cycle. |
+
+**Tarantula**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Spider Mine | 300 | Periodically fires mines that explode for area damage; mine stats scale with rank. |
+| Range Enhancement | 300 | +40 range. |
+| Mechanical Rage | 400 | Faster movement and shorter attack interval. |
+| Armor-Piercing Bullets | 150 | Higher ATK. |
+| Field Maintenance | 150 | More HP and self-regeneration. |
+| Armor Enhancement | 200 | More HP plus flat block scaling with rank. |
+| Anti-Aircraft Ammunition | 150 | Allows Tarantula to attack air. |
+| High-Explosive Ammo | 300 | Adds splash, lowers ATK. |
+
+**Wasp**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Energy Shield | 300 | Personal HP-sized shield. |
+| Range Enhancement | 300 | +40 range. |
+| Jump Drive | 100 | Faster and can be freely redeployed during deployment. |
+| Ground Specialization | 200 | Greatly higher ATK against ground. |
+| Elite Marksman | 400 | Per-rank range and ATK scaling. |
+| Ignite | 100 | Burns targets and blocks healing. |
+| Electromagnetic Shot | 100 | Applies EMP on hit. |
+| High-Explosive Ammo | 100 | Adds splash, lowers ATK. |
+| Armor-Piercing Bullets | 100 | Higher ATK. |
+| Aerial Specialization | 200 | Stronger and longer-ranged against air. |
+
+#### 300-cost units
+
+**Farseer**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Photon Emission | 400 | Temporarily protects nearby ground allies with damage reduction and status immunity. |
+| Scanning Radar | 300 | Nearby allies gain range; aura does not stack. |
+| Missile Interceptor | 200 | Local missile interception. |
+| Electromagnetic Explosion | 150 | Applies EMP on missile hits. |
+| Range Enhancement | 300 | +40 range. |
+| Burst Mode | 200 | Fires a larger missile burst with much longer reload. |
+| Aerial Specialization | 200 | Stronger and longer-ranged against air. |
+
+**Scorpion**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Acid Attack | 300 | Attacks create acid zones that deal percentage HP damage and amplify incoming damage. |
+| Siege Mode | 300 | Much longer range, lower ATK, longer attack interval, and minimum range limitation. |
+| Range Enhancement | 300 | +40 range. |
+| Doubleshot | 100 | Fires two shells with reload penalty. |
+| Field Maintenance | 150 | More HP and self-regeneration. |
+| Armor Enhancement | 100 | More HP plus flat block scaling with rank. |
+
+**Typhoon**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Mechanical Rage | 300 | Faster movement and higher ATK. |
+| Aerial Specialization | 250 | Stronger and longer-ranged against air. |
+| Barrier | 400 | Deploys a shield dome; shield scales with rank. |
+| Homing Missile | 300 | Periodically launches homing missiles at distant enemies; damage scales with level/rank. |
+
+**Wraith**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Floating Artillery Array | 400 | Doubles the number of floating cannons. |
+| Range Enhancement | 300 | +40 range. |
+| Armor Enhancement | 200 | More HP plus flat block scaling with rank. |
+| Degeneration Beam | 200 | Debuffs nearby enemies: movement, attack, and damage taken. |
+| Field Maintenance | 200 | More HP and self-regeneration. |
+| High-Explosive Ammo | 150 | Cannon splash increases, ATK decreases. |
+| Land Cruiser | 300 | Converts to ground-only, with longer range but slower attacks and no air targeting. |
+
+#### 400/500-cost giant units
+
+**Fortress**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Barrier | 500 | Large shield dome; shield HP scales heavily with rank. |
+| Range Enhancement | 300 | +40 range. |
+| Anti-Air Barrage | 200 | Periodic anti-air missiles; useful but interceptable. |
+| Fang Production | 300 | Periodically produces Fangs during battle. |
+| Launcher Overload | 150 | Faster attacks, shorter range. |
+| Elite Marksman | 150 | Per-rank range and ATK scaling. |
+| Doubleshot | 100 | Fires two shells with reload penalty. |
+| Armor Enhancement | 150 | More HP plus flat block scaling with rank. |
+| Rocket Punch | 300 | Fires powerful fists at HP thresholds for high area burst. |
+| Solid Shot | 200 | Longer range and slower attacks with smaller splash. |
+
+**Melting Point**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Energy Absorption | 200 | More HP and lifesteal from damage dealt. |
+| Range Enhancement | 300 | +40 range. |
+| Energy Diffraction | 150 | Shorter range, but splits beam into multiple weaker rays. |
+| Electromagnetic Barrage | 300 | Periodically launches EMP projectiles with heavy shield damage. |
+| Crawler Production | 300 | Periodically produces Crawlers during battle. |
+| Armor Enhancement | 100 | More HP plus flat block scaling with rank. |
+
+**Raiden**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Fork | 250 | Shorter range, more lightning bolts per attack. |
+| Chain | 200 | Shorter range, bolts can jump to nearby enemies for reduced damage. |
+| Ionization | 100 | Greatly lowers ATK but adds percentage-current-HP damage. |
+| Range Enhancement | 300 | +40 range. |
+| Electromagnetic Shot | 300 | Applies EMP on hit. |
+
+**Sandworm**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Mechanical Rage | 150 | Faster movement and shorter attack interval. |
+| Armor Enhancement | 250 | More HP plus flat block scaling with rank. |
+| Mechanical Division | 200 | On death, creates Larvas. |
+| Anti-Aerial | 100 | Allows Sandworm to attack air with extra range. |
+| Burrow Maintenance | 150 | More HP and rapid healing while burrowed. |
+| Replicate | 250 | Creates Larvas whenever it emerges from the ground. |
+| Sandstorm | 200 | Emerging creates a sandstorm that reduces range and ranged damage taken inside. |
+| Strike | 150 | Emerges faster and empowers first attack after emergence. |
+
+**Vulcan**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Ignite | 250 | Attacks ignite targets for percentage HP burn and healing prevention. |
+| Range Enhancement | 300 | +40 range. |
+| Incendiary Bomb | 300 | Periodically launches long-range fire bombs. |
+| Scorching Fire | 300 | Higher ATK. |
+| Best Partner | 250 | Summons a same-rank Marksman at battle start. |
+| Sticky Oil Bomb | 200 | Periodically launches slowing oil bombs that can be ignited. |
+| Armor Enhancement | 150 | More HP plus flat block scaling with rank. |
+
+**Overlord**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Overlord Artillery | 300 | Adds ground-only cannons with rank-scaling damage. |
+| Launcher Overload | 300 | Faster missile attacks, shorter range. |
+| Mothership | 250 | Periodically produces Wasps. |
+| Jump Drive | 300 | Faster and can be freely redeployed during deployment. |
+| Photon Emission | 300 | Temporarily protects nearby allies with damage reduction and status immunity. |
+| Range Enhancement | 300 | +40 range. |
+| Armor Enhancement | 150 | More HP plus flat block scaling with rank. |
+| Field Maintenance | 150 | More HP and self-regeneration. |
+| High-Explosive Ammo | 200 | Larger missile splash, lower ATK. |
+
+#### 800-cost titan units
+
+**Abyss**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Range Enhancement | 500 | +40 range. |
+| Dark Companion | 300 | Summons a same-rank Wraith at battle start. |
+| Photon Coating | 300 | Temporary damage reduction and status immunity. |
+| Disintegration | 350 | Periodically damages nearby ground enemies by percentage current HP and slows them. |
+| Swarm Missiles | 500 | Periodically launches many missiles at nearby ground enemies; damage scales with rank. |
+| Wreckage Recycling | 300 | Higher ATK and heals after kills. |
+| Vertical Sweep | 350 | Higher ATK and changes beam sweep direction to vertical. |
+
+**Death Knell**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Energy Diffraction | 500 | Shorter range, but fires many weaker rays. |
+| Range Enhancement | 500 | +40 range. |
+| Steel Ball Production | 450 | Periodically produces Steel Balls. |
+| Barrier | 700 | Large shield dome with huge rank-scaling shield HP. |
+| Energy Absorption | 400 | More HP and lifesteal from damage. |
+| Electromagnetic Bomb | 500 | Periodically launches many EMP shots with heavy shield damage. |
+
+**Mountain**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Gun-launched Missile | 400 | Periodically fires a high-damage area rocket; damage scales with rank. |
+| Mountain Plating | 400 | Large flat damage block scaling with rank. |
+| Saturation Bombardment | 500 | Wider splash and many shells per attack, but much slower attack interval. |
+| Extended Range Ammo | 400 | Greatly longer range with much lower ATK. |
+| Smoke Bomb | 250 | Periodically launches smoke that reduces unit range. |
+| Photon Loop | 400 | Periodic self photon coating: damage reduction and status immunity. |
+| Anti-Aircraft Ammunition | 300 | Allows Mountain to attack air with large ATK penalty. |
+| Range Enhancement | 500 | +40 range. |
+
+**War Factory**
+
+| Tech | Cost | Effect / strategic meaning |
+|---|---:|---|
+| Range Enhancement | 500 | +40 range. |
+| Phoenix Production | 500 | Periodically produces Phoenixes. |
+| Steel Ball Production | 450 | Periodically produces Steel Balls. |
+| Sledgehammer Production | 400 | Periodically produces Sledgehammers. |
+| Missile Interceptor | 350 | Strong local missile interception. |
+| Launcher Overload | 350 | Faster attacks, shorter range. |
+| Photon Coating | 300 | Temporary damage reduction and status immunity. |
+| Armor Enhancement | 400 | More HP plus flat block scaling with rank. |
+| High-Explosive Ammo | 350 | Larger main-gun splash, lower ATK. |
 
 ---
 
@@ -822,7 +1315,7 @@ Countered by:
 
 LLM heuristic: Because Typhoon was recently remade, prefer live patch data over older wiki descriptions.
 
-### 7.23 d Eye
+### 7.23 Void Eye
 
 Role: ranged support/DPS unit with electromagnetic/status identity.
 
@@ -1297,7 +1790,7 @@ Possible plan:
 - Add chaff in front of hack targets.
 - Add air damage or long-range snipe.
 - Add artillery/Stormcaller pressure if Hacker is static.
-- Reposition high-value ground units away from Hacker line.
+- For newly bought or legally movable units, avoid feeding high-value ground units into the Hacker line.
 - EMP or kill Hacker before control completes.
 
 ### 10.7 “Enemy flanks are killing towers”
@@ -1414,6 +1907,23 @@ Key public URLs used during preparation:
 - https://wiki.mbxmas.com/mechanics/unit-reinforcements/
 - https://mechamonarch.com/unit/
 - https://mechamonarch.com/guide/mechabellum-counters/
+
+Additional exact-cost / tech-catalog refresh URLs:
+
+- https://wiki.mbxmas.com/specialists/giant-specialist/
+- https://wiki.mbxmas.com/specialists/aerial-specialist/
+- https://wiki.mbxmas.com/specialists/elite-specialist/
+- https://wiki.mbxmas.com/specialists/cost-control-specialist/
+- https://wiki.mbxmas.com/specialists/supply-specialist/
+- https://wiki.mbxmas.com/units/ground/arclight/
+- https://wiki.mbxmas.com/units/ground/crawler/
+- https://wiki.mbxmas.com/units/ground/fang/
+- https://wiki.mbxmas.com/units/ground/hound/
+- https://wiki.mbxmas.com/units/ground/marksman/
+- https://wiki.mbxmas.com/units/ground/void-eye/
+- https://wiki.mbxmas.com/units/ground/vortex/
+- https://wiki.mbxmas.com/units/air/abyss/
+- https://wiki.mbxmas.com/units/ground/war-factory/
 
 ---
 
