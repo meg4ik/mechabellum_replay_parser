@@ -138,8 +138,10 @@ def process_replay(path: Path) -> None:
                     (r for r in parsed["rounds"] if r["round"] == last_round),
                     parsed["rounds"][-1],
                 )
-                current_units = last["players"].get(player_name, {}).get("units", [])
-                show_board_async(current_units, placement, last_round, player_name)
+                player_data = last["players"].get(player_name, {})
+                current_units = player_data.get("units", [])
+                constructions = player_data.get("constructions", [])
+                show_board_async(current_units, placement, last_round, player_name, constructions)
     except (ValueError, KeyError, AttributeError) as e:
         print(f"[!] Ошибка парсинга: {e}")
     finally:

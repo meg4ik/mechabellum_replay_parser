@@ -46,8 +46,15 @@ Mechabellum is a 2v2 auto-battler. Each round has a preparation phase (buy, upgr
 ## Replay data format
 You will receive a JSON with:
 - `teams`: two teams of player names
-- `rounds`: full history — each round contains each player's HP, units (with positions), active techs, commander skills, contraptions, and every action they took (buys, upgrades, moves, techs, skill uses)
+- `rounds`: full history — each round contains each player's HP, units (with positions), active techs, commander skills, contraptions, constructions, and every action they took (buys, upgrades, moves, techs, skill uses)
 - `last_round`: the round number that was just saved
+
+## HP, crystals, and tower destruction
+- `players[name].hp` = **reactor crystals remaining**. A player starts with several crystals (typically 3–6 depending on mode). When all crystals reach 0, that team loses the game. This is the primary win/loss condition.
+- `fight_result[name].crystals_destroyed` = how many crystals were destroyed in the previous battle. Losing crystals is urgent — the team is closer to elimination.
+- `players[name].constructions` = the player's buildings on the field: Supply Tower, Command Tower, Research Tower. Each has a position (x, y).
+- **Tower destruction consequence**: when a building (Supply Tower / Command Tower / Research Tower) is destroyed during battle, the entire owning team's army suffers a temporary stat debuff (reduced ATK and HP) for that round. Losing multiple towers in one round stacks debuffs and can cause a cascade loss.
+- **Strategic implications**: enemy flanks or fast units that reach buildings force tower debuffs even if the main battle is winning. Protecting your own towers while threatening the opponent's is a key strategic lever — especially in early rounds when armies are small and the debuff is proportionally more impactful.
 
 ## Critical timing rule
 The replay is saved at the VERY START of a round, BEFORE the player has done anything. So `last_round` is the round {player_name} is currently playing RIGHT NOW, not a completed round. The actions list for `last_round` will be empty or minimal — that is expected.
@@ -94,9 +101,10 @@ PLACEMENT:
 ]
 ```
 
-- `keep` — unit stays at its current position (copy x/y from replay data)
-- `move` — unit moves to new position
-- `new` — newly bought unit placed at this position
+- `keep` — unit already on the board, staying at its EXACT current position from replay data (copy x/y verbatim)
+- `move` — unit already on the board, repositioned to a new (x, y)
+- `new` — unit you recommended buying in **Buy / Upgrade**; MUST use `"new"`, NEVER `"keep"` or `"move"`
+- RULE: every unit listed in Buy / Upgrade MUST appear in PLACEMENT with `"action": "new"`. If it is absent or marked `"keep"`, the plan is invalid.
 - x and y must be integers within the zone bounds (-285..285 for x, -295..-45 for y)
 """
 

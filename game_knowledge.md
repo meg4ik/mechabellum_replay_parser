@@ -29,6 +29,8 @@ Core mental model:
 - **Board**: deployable battlefield area.
 - **Round**: deployment phase plus automated battle phase.
 - **Supply**: main resource used for units, unlocks, techs, buildings/devices, and some powers.
+- **Building**: a destructible structure that exists on the board. Buildings can be core buildings/towers or defensive constructions. Buildings can block, shoot, provide purchasable abilities, grant EXP when destroyed, trigger debuffs, or be permanently lost depending on type.
+- **Core building / tower**: the player's important starting structures, especially Command Center and Research Center. Destroying a core building during combat triggers a severe temporary debuff on its owner and can decide the fight even if the army composition is otherwise stronger.
 - **Unit unlock**: paying to make a unit available for purchase.
 - **Tech / technology**: upgrade researched for an entire unit type, not for one squad. Once researched, it applies immediately to all of your existing squads of that unit type and to future/spawned squads of that unit type for the rest of the match. Tech choice can completely change a unit’s role.
 - **Equipment / item**: an effect attached to one specific squad, not to the whole unit type. Equipment is different from unit tech.
@@ -43,7 +45,7 @@ Core mental model:
 - **Aggro**: pushing near the line, applying tower pressure, forcing the opponent to defend early.
 - **Standard**: balanced, slower composition that protects DPS, adds chaff, and scales through tech/levels.
 - **Asym / crossfire**: both players are set up on opposite sides, causing armies to cross or attack at angles.
-- **Tower debuff**: destroying a tower temporarily weakens the opponent’s army; many “cheese” and flank plays exist to force this.
+- **Tower debuff**: destroying an enemy core building/tower temporarily weakens the owner’s army during the current battle. The exact numeric values/duration are patch-sensitive and should be parsed from game state/config when possible, but strategically it is a round-swinging event. Many aggro, flank, Wasp/Rhino, and Mobile Beacon plays exist specifically to trigger this before the main armies collide.
 - **EMP**: electromagnetic disable effect; temporarily disables tech and slows movement.
 - **AA**: anti-air.
 - **AM**: anti-missile / missile interception.
@@ -264,6 +266,137 @@ LLM commander-ability rules:
 - Do not recommend removing or relocating a core unless the replay/game state explicitly exposes a legal undo before deployment lock.
 
 ---
+
+
+### 3.12 Buildings, towers, and destruction consequences
+
+Buildings are not normal units. They can be targets, blockers, ability sources, defensive weapons, EXP sources, and trigger conditions for powerful debuffs. The LLM must reason about buildings explicitly instead of treating them as background scenery.
+
+#### 3.12.1 Building categories
+
+Use these categories when parsing or reasoning:
+
+| Category | Examples | Respawn / permanence | Strategic meaning |
+|---|---|---|---|
+| Core building / tower | Command Center, Research Center | Destructible; normally respawns at the start of the next round unless sold | Destroying it during combat applies a severe temporary debuff to its owner. Tower safety is a primary win condition. |
+| Defensive weapon building | Anti-Armor Cannon, Rapid-Fire Cannon | Permanently lost after being destroyed | Defensive fire support. Losing it removes that defense for future rounds and gives EXP to the destroyer. |
+| Blocking / control building | Defensive Wall, Magnetic Barricade | Type-specific: Defensive Wall is lost after being destroyed twice; Magnetic Barricade self-destructs after activation | Shapes pathing, line of sight/fire, tempo, and tower defense. |
+| Purchased/unlocked building ability | Command Center and Research Center abilities | State-gated; only available if the relevant building/ability is present/unlocked | These are not default actions and must not be assumed if not in the parsed state. |
+
+General building rules:
+
+- Buildings are destructible.
+- Buildings can grant EXP when destroyed.
+- Core buildings/towers are much more important than normal defensive constructions because their destruction applies a temporary owner debuff.
+- Destroying a building does **not** directly change base supply income unless a specific ability/effect says so.
+- Destruction state matters for the current battle; respawn/permanence matters for the next deployment phase.
+- A sold building should be treated as gone unless the current game state says it can return.
+
+#### 3.12.2 Core buildings / towers: Command Center and Research Center
+
+Command Center and Research Center are core buildings/towers. Public wiki data lists both as 3400 HP buildings with 100 EXP reward. Both are described as significantly debuffing their owner for a duration when destroyed.
+
+| Core building | HP | EXP reward | Main function while alive | Destruction consequence |
+|---|---:|---:|---|---|
+| Command Center | 3400 | 100 | Purchasable temporary combat/economy buffs such as Rapid Resupply, Mass Recruitment, Elite Recruitment, Enhanced Range, High Mobility | Applies severe temporary tower debuff to owner during combat. |
+| Research Center | 3400 | 100 | Purchasable permanent upgrades/unlocks such as Attack Enhancement, Defense Enhancement, Field Recovery, Mobile Beacon, Sticky Oil Bomb | Applies severe temporary tower debuff to owner during combat. |
+
+Tower-debuff reasoning rules:
+
+- If your core building is destroyed first, your army may lose a fight it would otherwise win because the debuff can reduce combat effectiveness during the most important seconds of the battle.
+- If the enemy core building is destroyed first, fast/tower-pressure plays can snowball the fight even if they do not kill many units directly.
+- The LLM must treat “can break tower before main engagement” as a real win condition.
+- The LLM must treat “enemy can break our tower early” as an urgent failure point.
+- Tower damage and tower HP are strategic resources, not cosmetic state.
+- The exact debuff values and duration should be taken from replay/game config if available. If not available, the model should describe the effect qualitatively as `severe temporary tower debuff` rather than inventing exact numbers.
+- The model must not claim that tower destruction gives extra supply income or changes the base income curve.
+- The model should consider EXP reward from tower destruction when high-level snowball matters.
+
+LLM tower-debuff rule:
+
+```text
+If a core building/tower is likely to fall early:
+  prioritize preventing or exploiting that tower break before making normal unit-counter recommendations.
+```
+
+#### 3.12.3 Command Center abilities
+
+Command Center abilities are temporary/state-gated. They must be recommended only if the parsed state says they are available.
+
+| Ability | Cost | Effect | Duration / economy meaning | LLM note |
+|---|---:|---|---|---|
+| Rapid Resupply | 0 | Immediately obtain 200 supplies and get 300 fewer supplies next round | Current-round loan, next-round debt | Use only if the current round swing is worth the next-round penalty. Never call it free money. |
+| Mass Recruitment | 50 | Increases the number of units that can be purchased in this round by 1 | Current round | Solves deployment-slot bottleneck, not combat by itself. |
+| Elite Recruitment | 100 | Units bought this round can be purchased at +1 rank | Current round | Good for tempo. Include rank/recruitment costs if exposed by parser. |
+| Enhanced Range | 100 | Increases range of all ranged units by 15 for this round | Current round | Temporary combat buff; not a permanent unit tech. |
+| High Mobility | 50 | Increases movement speed of all units by 3 for this round | Current round | Can help or hurt because speed changes timing, targeting, and chaff waves. |
+
+#### 3.12.4 Research Center abilities and permanent upgrades
+
+Research Center powers include both unlocks/tools and permanent stat upgrades. The model must separate one-time unlocks/tools from permanent army buffs.
+
+| Ability / upgrade | Cost | Effect | Duration / meaning | LLM note |
+|---|---:|---|---|---|
+| Sticky Oil Bomb | 150 | Unlocks sticky oil line effect that slows units within it by 55%; oil lasts 2 rounds | Persistent unlock / battlefield control | Oil can combine with fire effects; do not treat as direct damage alone. |
+| Field Recovery | 100 | Allows destroying a friendly squad to refund supplies invested in it | Persistent unlock / legal refund mechanic | This is the legal sell/refund tool. Use when an obsolete/misplaced squad is worse than its refund value. |
+| Mobile Beacon | 100 | Allows selected unit movement pathing | Persistent unlock / pathing tool | Enables legal pathing/tower-pressure advice; not free repositioning of every unit. |
+| Attack Enhancement | 100 | Increases ATK of all units by 12% | Permanent army buff | Additive positive buff; compare to buying units/tech. |
+| Defense Enhancement | 100 | Increases HP of all units by 15% | Permanent army buff | Can change breakpoints and tower-defense survivability. |
+| Attack Enhancement II | 300 | Increases ATK of all units by 24% | Permanent army buff | Larger late-game sink; check budget and board need. |
+| Defense Enhancement II | 300 | Increases HP of all units by 30% | Permanent army buff | Strong when army already has useful bodies/carries. |
+
+Buff-stacking rule:
+
+- Positive stat buffs are additive with other positive stat buffs.
+- Do not overvalue a small Research Center buff on a unit that already has large item/card/stat buffs.
+- Research Center buffs are army-wide, not unit-type techs.
+- Some unit-tech attacks may not benefit from generic ATK buffs. If exact interaction matters, prefer live config/testing.
+
+#### 3.12.5 Defensive constructions
+
+These buildings should be represented separately from core towers because they do not trigger the same owner tower-debuff logic.
+
+| Building | HP | EXP reward | Key behavior | Destruction consequence |
+|---|---:|---:|---|---|
+| Anti-Armor Cannon | 5028 | 60 | Slow-firing defense effective against heavy units; range 125m; reloads after firing 6 shots | Permanently lost after being destroyed. |
+| Rapid-Fire Cannon | 3650 | 60 | Fast-firing defense effective against light units; range 115m; reloads after firing 10 shots | Permanently lost after being destroyed. |
+| Defensive Wall | 1446 | 6 | Blocks enemy fire; retracts when friendly units approach so they can pass | Permanently lost after being destroyed twice. |
+| Magnetic Barricade | 300 | 3 | Retracted and untargetable until enemies approach; then slows nearby enemies and self-destructs after 5s | One-shot control/slow structure; expect it to disappear after activation. |
+
+LLM defensive-building rules:
+
+- Do not treat defensive cannons as permanent if they were destroyed; they are explicitly lost.
+- Do not treat Defensive Wall as gone after its first destruction if state tracks remaining wall lives; it is lost after being destroyed twice.
+- Do not treat Magnetic Barricade as a durable wall. It is a timed slow/control trigger and self-destructs after activation.
+- Defensive constructions can be strategically sacrificed, but the model should mention future-round consequences if they are permanently lost.
+- A plan that wins the current round by sacrificing a cannon/wall may still be correct, but the LLM should call out the tradeoff.
+
+#### 3.12.6 Tower-pressure and tower-defense heuristics
+
+Tower pressure should be evaluated before ordinary unit trades when it can trigger a core-building debuff.
+
+Common ways to pressure towers:
+
+- fast ground units such as Crawlers/Rhinos;
+- air flanks such as Wasps/Phoenixes/Phantom Rays/Overlords when AA is weak;
+- Mobile Beacon pathing to redirect a group around the main fight;
+- flank deployments that force enemy units to turn away;
+- delayed chaff that pulls defenders away from the tower;
+- artillery or long-range pressure if the tower is exposed.
+
+Common ways to defend towers:
+
+- cheap flank defenders: Fangs, Crawlers, Arclights, Mustangs, Marksmen, or relevant AA;
+- positioning new units so they intercept the attack before it touches the core building;
+- Mobile Beacon/pathing defense if available;
+- missile/ability use only if it prevents an early tower break;
+- not overdefending a bait flank if the real threat is center or opposite tower.
+
+LLM tower-defense rule:
+
+```text
+A cheap tower defense is often worth more than a more efficient main-board counter if it prevents early tower debuff.
+```
 
 ## 4. High-level game plan by phase
 
@@ -1988,6 +2121,7 @@ For each side, list:
 - anti-giant package;
 - support/shields/EMP/AM;
 - flank/tower pressure;
+- own and enemy core-building/tower status, including whether a tower can be broken early;
 - current tech commitments.
 
 ### Step 2: Identify failure points
@@ -2002,7 +2136,9 @@ Ask:
 - Are enemy giants uncontested?
 - Is artillery being intercepted or allowed to land?
 - Are flanks defended cheaply?
-- Is any high-level unit feeding too much XP?
+- Is any core building/tower exposed to early break and tower debuff?
+- Are any defensive constructions permanently lost or about to be sacrificed?
+- Is any high-level unit or building feeding too much XP?
 
 ### Step 3: Find cheapest sufficient fix
 
@@ -2125,6 +2261,26 @@ Prioritize:
 
 ---
 
+
+### 10.9 “Enemy can break my tower early” / “I can break enemy tower early”
+
+If enemy can break your core building early:
+
+- Treat this as urgent even if your main army matchup is good.
+- Add cheap targeted defense instead of overinvesting in the main line.
+- Prefer units that intercept the actual tower threat: AA for air flank, chaff clear for Crawlers, single-target DPS for Rhino, etc.
+- Avoid spending all supply on slow backline units if they do not stop the tower touch.
+- If Mobile Beacon/pathing is available, consider defensive pathing only if legal and state-supported.
+
+If you can break enemy core building early:
+
+- Tower break can be a valid win condition even if it looks inefficient by unit trades.
+- Prefer cheap commitment if it forces the enemy to overdefend or suffer debuff.
+- Do not overcommit if the enemy can defend with a cheaper response next round.
+- After forcing tower-defense purchases, pivot back to main-board efficiency if the flank/tower line is now answered.
+
+LLM rule: whenever a tower is likely to fall before the main armies finish their first exchange, evaluate tower-debuff timing before normal counter matrix logic.
+
 ## 11. Compact counter matrix
 
 This is a practical heuristic matrix, not a deterministic simulator.
@@ -2201,6 +2357,18 @@ Recommended source hierarchy:
 3. **Mechabellum Wiki / mbxmas wiki**: good for unit pages, mechanics, costs, tech lists, glossary.
 4. **MechaMonarch guides/counter list**: useful high-MMR community heuristics and counter relationships.
 5. **Steam guides / Reddit / YouTube**: useful for meta and examples, but should be treated as opinion and patch-sensitive.
+
+
+Additional building/tower validation sources:
+
+- https://wiki.mbxmas.com/glossary/
+- https://wiki.mbxmas.com/buildings/
+- https://wiki.mbxmas.com/buildings/command-center/
+- https://wiki.mbxmas.com/buildings/research-center/
+- https://wiki.mbxmas.com/buildings/anti-armor-cannon/
+- https://wiki.mbxmas.com/buildings/rapid-fire-cannon/
+- https://wiki.mbxmas.com/buildings/defensive-wall/
+- https://wiki.mbxmas.com/buildings/magnetic-barricade/
 
 Key public URLs used during preparation:
 
