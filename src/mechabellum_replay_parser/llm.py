@@ -56,6 +56,10 @@ You will receive a JSON with:
 - **Tower destruction consequence**: when a building (Supply Tower / Command Tower / Research Tower) is destroyed during battle, the entire owning team's army suffers a temporary stat debuff (reduced ATK and HP) for that round. Losing multiple towers in one round stacks debuffs and can cause a cascade loss.
 - **Strategic implications**: enemy flanks or fast units that reach buildings force tower debuffs even if the main battle is winning. Protecting your own towers while threatening the opponent's is a key strategic lever — especially in early rounds when armies are small and the debuff is proportionally more impactful.
 
+## Deployment slots
+- `players[name].shop.buys_remaining` = **maximum number of units that can be bought this round**. This is the deployment slot limit. Do NOT recommend buying more units than this value. If supply is available but `buys_remaining` is 0, no new units can be deployed — spend on techs, upgrades, or Command Center abilities instead.
+- `players[name].shop.unlocks_remaining` = how many new unit types can still be unlocked this round.
+
 ## Critical timing rule
 The replay is saved at the VERY START of a round, BEFORE the player has done anything. So `last_round` is the round {player_name} is currently playing RIGHT NOW, not a completed round. The actions list for `last_round` will be empty or minimal — that is expected.
 
