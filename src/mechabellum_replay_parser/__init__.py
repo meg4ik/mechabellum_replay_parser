@@ -225,7 +225,9 @@ UNIT_LOOKUP = {
     27: "raiden",
     28: "hound",
     29: "abyss",
+    30: "void eye",
     31: "vortex",
+    2002: "mountain",
 }
 
 UNIT_DATA = _load_data_file("unit_data.json")
