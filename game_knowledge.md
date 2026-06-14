@@ -30,7 +30,10 @@ Core mental model:
 - **Round**: deployment phase plus automated battle phase.
 - **Supply**: main resource used for units, unlocks, techs, buildings/devices, and some powers.
 - **Unit unlock**: paying to make a unit available for purchase.
-- **Tech / technology**: upgrade applied to a unit type. Tech choice can completely change a unit’s role.
+- **Tech / technology**: upgrade researched for an entire unit type, not for one squad. Once researched, it applies immediately to all of your existing squads of that unit type and to future/spawned squads of that unit type for the rest of the match. Tech choice can completely change a unit’s role.
+- **Equipment / item**: an effect attached to one specific squad, not to the whole unit type. Equipment is different from unit tech.
+- **Core / Amplifying Core / Dominion Core**: a special equipment-like item attached to one specific squad. Treat core placement as a locked, one-time commitment unless the current game state explicitly allows undoing before deployment is locked or a legal sell/refund removes the squad.
+
 - **Rank / level**: unit progression from experience. In replay data this may be zero-based; display level may be `stored_level + 1`.
 - **Chaff**: cheap expendable units that distract enemy DPS and manipulate targeting. Crawlers, Fangs, and Wasps are the main examples.
 - **Chaff clear**: units that kill many small bodies quickly. Arclight, Vulcan, Fire Badger, Mustang, Typhoon, Wraith, Tarantula, Sledgehammer, and Stormcaller can serve this role depending on context.
@@ -161,6 +164,104 @@ Rules of thumb:
 Unit reinforcement offers happen in windows: once between rounds 2-4, 5-7, 8-10, and 11-13. Each time, four units are offered; picking one unlocks that unit for the rest of the game. Reinforcements cannot happen back to back. A unit already deployed on the battlefield is blocked from being offered as a reinforcement. Cost-altering cards can also block units from offers.
 
 LLM rule: when planning unlocks, consider whether waiting for a drop is better than paying unlock cost now. Conversely, deploying a unit can intentionally block it from future offers.
+
+
+### 3.10 Unit technology scope: global, immediate, and permanent
+
+Unit technology is researched for a **unit type**, not for a single squad. This is one of the most important rules for LLM strategy reasoning.
+
+Rules:
+
+- If you research a technology for Crawlers, it applies to all of your Crawlers, not only the Crawler squad that was selected in the UI.
+- The effect applies immediately for the next combat after purchase.
+- The effect persists for the rest of the match.
+- The effect also applies to future squads of that same unit type bought later.
+- The effect also applies to spawned/produced squads of that same unit type, for example unit-production techs that create Crawlers/Fangs/Wasps/etc.
+- It does **not** apply to other unit types.
+- It does **not** apply to your teammate’s units unless a special game mode or explicit effect says otherwise.
+- It cannot be selectively disabled for one squad while staying active for another squad of the same type.
+
+Economy rule:
+
+- Techs have a base price, but each additional tech already researched on the same unit type increases the price of remaining techs for that unit type. In many public references this increment is described as `+200 supply per previous tech` on that unit type. Treat the exact increment as `PATCH-SENSITIVE` and prefer live game data/replay values if available.
+- The price increase is local to that unit type. For example, researching Crawler tech increases the future price of other Crawler techs, not Marksman techs.
+
+Strategic implications:
+
+- Tech is most efficient when the player already has multiple squads of that unit type, expects to buy more, or has production techs that will spawn more of that unit type.
+- Tech is risky when the player has only one squad, that squad is already hard-countered, or the enemy can answer the entire unit type cheaply.
+- A single global tech can be stronger than buying another squad if it fixes the exact bottleneck across many existing/future squads.
+- A single global tech can be worse than buying a counter unit if the problem is not related to that unit type’s role.
+
+LLM rules:
+
+- Never describe unit tech as “put this upgrade on this one squad.”
+- Always say “research `<tech>` for `<unit type>`.”
+- When evaluating affordability, include the current tech price after previous techs on that unit type.
+- When evaluating value, count all current and expected future squads affected by the tech.
+- If the replay state contains activeTechnologies for a unit type, assume every squad of that unit type has those technologies, even if individual squad records do not list them.
+
+
+### 3.11 Equipment, cores, and commander/building abilities
+
+Do not confuse **unit tech**, **equipment/core items**, and **commander/building abilities**.
+
+#### 3.11.1 Equipment and core items
+
+Equipment-like effects apply to a specific squad, not to the whole unit type.
+
+Important equipment/core rules:
+
+- A squad can normally hold only one equipment/item/core slot.
+- Equipment affects only the equipped squad.
+- Equipment does not automatically apply to other squads of the same unit type.
+- Equipment cannot normally be removed or swapped after being equipped.
+- If an equipped squad is sold through a legal sell/refund mechanism, the equipment is removed together with that squad unless the current game state explicitly says otherwise.
+- If the squad dies during combat but remains part of the army for future rounds, the item/core assignment should still be treated as attached to that squad.
+- Core placement is a one-time commitment: once a core is attached to a squad and the deployment is locked, the LLM must not suggest moving that core to another squad or removing it.
+
+LLM core rule:
+
+```text
+If state.items/core_assignments shows Core on squad X:
+  treat Core as locked to squad X for all future recommendations.
+  do not recommend "move Core", "remove Core", or "put the same Core elsewhere".
+```
+
+Examples:
+
+- **Amplifying Core / Small Amplifying Core**: should be treated as a squad-specific item that increases that squad’s value. It is not a global unit tech.
+- **Dominion Core**: should be treated as an extremely high-commitment core. Public anomaly text describes a unit equipped with Dominion Core gaining large stats and generating supply, but if that unit is destroyed during battle, the entire army is destroyed. Therefore, the LLM must treat Dominion Core holder protection as a primary win/loss condition.
+
+Strategic implications:
+
+- Core should usually go on a squad that is likely to survive, scale, and stay relevant.
+- Do not put a core on disposable chaff unless the plan explicitly uses it as bait and accepts the risk.
+- Do not put a core on a squad that is already hard-countered by the enemy board.
+- Protect core holders with chaff, shields, anti-air/anti-giant support, and flank defense.
+- If the core holder is vulnerable to Hacker, EMP, Melting Point, Stormcaller, or air/sniper pressure, recommend protection/counterplay before more greed.
+
+#### 3.11.2 Commander / captain / Command Center abilities
+
+The replay may encode these as commander skills, command-center powers, officer effects, cards, or building abilities. The LLM must treat them as state-gated actions, not default actions available every round.
+
+Common Command Center-style effects:
+
+| Ability | Typical effect | Duration / economy rule | LLM implication |
+|---|---|---|---|
+| Rapid Resupply | Gain immediate supply, then suffer a next-round supply penalty | Current-round loan, next-round debt | Use only for decisive tempo or lethal defense/offense. Always subtract the next-round penalty. |
+| Mass Recruitment | Increase number of purchasable units this round | Current round only | Solves deployment-slot bottleneck, not combat by itself. |
+| Elite Recruitment | Units bought this round can be higher rank | Current round only | Good for tempo; include rank premium/cost if applicable. |
+| Enhanced Range | Increase range of ranged units | Current round only | Temporary combat buff, not permanent tech. |
+| High Mobility | Increase movement speed of all units | Current round only | Can help or hurt because speed changes targeting/timing. |
+
+LLM commander-ability rules:
+
+- Do not recommend a commander/building ability unless the parsed state says it is available.
+- Do not treat temporary captain/command-center buffs as permanent unit techs.
+- Do not treat Rapid Resupply as free money; it creates next-round debt.
+- Do not recommend core placement more than once if the state shows the core/item has already been used.
+- Do not recommend removing or relocating a core unless the replay/game state explicitly exposes a legal undo before deployment lock.
 
 ---
 
@@ -435,6 +536,29 @@ Core building powers can directly change the budget or enable refunds:
 
 LLM Rapid Resupply rule: if using Rapid Resupply this round, the next-round budget must include `-300 delayed_penalty`. Never describe it as “free 200”.
 
+LLM commander/captain ability rule: Command Center-style abilities are state-gated and usually temporary. The model must not assume they are always available. If a parser exposes `available_commander_skills`, `used_commander_skills`, `core_assignments`, or `building_abilities`, use those exact fields rather than guessing from generic knowledge.
+
+Recommended parser fields:
+
+```json
+{
+  "available_commander_skills": ["rapid_resupply", "mass_recruitment"],
+  "used_commander_skills_this_round": [],
+  "temporary_buffs_this_round": [],
+  "delayed_economy_penalties": [],
+  "core_assignments": [
+    {
+      "core_id": "dominion_core",
+      "unit_type": "Marksman",
+      "unit_index": 3,
+      "locked": true,
+      "removable": false
+    }
+  ]
+}
+```
+
+
 #### 6.1.7 Starting specialist economy modifiers
 
 Apply starting specialist effects before normal purchases. Some are direct income; others are cost reduction or free assets.
@@ -494,7 +618,8 @@ Before giving an action plan, the LLM must answer internally:
 7. Do proposed units have modified recruitment cost from cards/specialists?
 8. Do proposed techs have modified tech cost from specialist/cards?
 9. Is the player limited by deployment slots rather than supply?
-10. After all costs, is the plan affordable?
+10. Are any one-time cores/items already assigned and therefore unavailable for reuse?
+11. After all costs, is the plan affordable?
 
 ### 6.2 Default unit purchase costs
 
@@ -1935,7 +2060,7 @@ Fix target access:
 
 - Add/tech Arclight/Fire Badger/Vulcan/Typhoon/Tarantula.
 - Add your own chaff to delay enemy chaff clear.
-- Move single-target DPS further/sideways so chaff clear engages first.
+- For legal future placement, put newly bought single-target DPS further back/sideways so chaff clear engages first. Do not assume existing DPS can be moved unless a legal redeploy effect exists.
 - Avoid buying more Marksmen/Melting Points until the chaff issue is solved.
 
 ### 10.3 “Enemy has Fortress/Vulcan/War Factory/Mountain/Death Knell”
@@ -2092,6 +2217,9 @@ Key public URLs used during preparation:
 - https://wiki.mbxmas.com/mechanics/unit-orientation/
 - https://wiki.mbxmas.com/mechanics/unit-reinforcements/
 - https://wiki.mbxmas.com/buildings/command-center/
+- https://wiki.mbxmas.com/updates/update-190-season-6-dimensional-rift-new-techs-and-festivals/
+- https://steamcommunity.com/sharedfiles/filedetails/?id=2945166401
+- https://wiki.mbxmas.com/buildings/command-center/
 - https://wiki.mbxmas.com/buildings/research-center/
 - https://wiki.mbxmas.com/specialists/supply-specialist/
 - https://wiki.mbxmas.com/specialists/quick-supply-specialist/
@@ -2133,3 +2261,12 @@ When analyzing Mechabellum, always reason from mechanics and board state first. 
 5. it fits the player’s existing economy and composition.
 
 The best recommendation is usually a small set of coordinated changes: one purchase, one tech, and one positioning adjustment.
+
+
+Additional hard constraints for LLM recommendations:
+
+- Treat unit techs as global/permanent for that unit type.
+- Treat equipment/cores as squad-specific and locked after assignment.
+- Treat commander/captain/building abilities as available only when the parsed state explicitly says they are available.
+- Never recommend reusing, moving, or removing a core unless the current state explicitly says that action is legal.
+
