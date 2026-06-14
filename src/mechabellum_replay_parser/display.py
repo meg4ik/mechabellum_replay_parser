@@ -102,18 +102,20 @@ def show_board(
     canvas.create_text(zx0 - 8, zy0, text="▲ front", fill="#999", font=("Arial", 7), anchor="e")
     canvas.create_text(zx0 - 8, zy1, text="▼ back", fill="#999", font=("Arial", 7), anchor="e")
 
-    # LLM recommendations (green, new/move)
+    # LLM recommendations: on round 1 draw everything (all units are freely repositionable),
+    # on other rounds draw only new/move entries.
     for u in placement:
-        if u["action"] in ("new", "move"):
+        if round_num == 1 or u["action"] in ("new", "move"):
             _draw_unit(canvas, u["x"], u["y"], y_front, y_back, u["unit"], "#22aa55", "#116633")
 
-    # Current units from replay (dark gray)
-    for u in current_units:
-        pos = u.get("position") or {}
-        x, y = pos.get("x"), pos.get("y")
-        if x is None or y is None:
-            continue
-        _draw_unit(canvas, x, y, y_front, y_back, u.get("name", "?"), "#555555", "#333333")
+    # Current units from replay (dark gray) — skipped on round 1 since all are freely repositioned
+    if round_num != 1:
+        for u in current_units:
+            pos = u.get("position") or {}
+            x, y = pos.get("x"), pos.get("y")
+            if x is None or y is None:
+                continue
+            _draw_unit(canvas, x, y, y_front, y_back, u.get("name", "?"), "#555555", "#333333")
 
     lx, ly = total_w - 120, 18
     canvas.create_oval(lx, ly - 6, lx + 12, ly + 6, fill="#555555", outline="#333333")

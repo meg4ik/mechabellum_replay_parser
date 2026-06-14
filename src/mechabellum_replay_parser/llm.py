@@ -35,7 +35,7 @@ def _get_client() -> OpenAI:
     return _client
 
 
-def _build_system_prompt(player_name: str) -> str:
+def _build_system_prompt(player_name: str, last_round: int | str) -> str:
     knowledge = _get_game_knowledge()
     knowledge_block = f"\n\n## Mechabellum game knowledge\n{knowledge}" if knowledge else ""
     return f"""You are an expert Mechabellum coach. Your job is to give {player_name} one single optimal action plan for the current round — no alternatives, no "you could also", no hedging.{knowledge_block}
@@ -57,6 +57,10 @@ The replay is saved at the VERY START of a round, BEFORE the player has done any
 - x = 0 is the horizontal center of the zone.
 - y = -45 is the front line (closest to the enemy), y = -295 is the back.
 - Left flank: x around -285. Right flank: x around +285. Center: x near 0.
+
+## Unit movement rules
+{"## ROUND 1 — FREE PLACEMENT" if last_round == 1 else "## Movement constraint"}
+{"This is round 1. Before the first battle, ALL starting units can be placed freely anywhere in the deployment zone. There are no fixed units. Every single unit in the replay data for this round MUST be given an explicit (x, y) coordinate in your plan. Use action `move` for all of them in the PLACEMENT block — none should be `keep`." if last_round == 1 else f"Deployed units are normally fixed after placement. Only newly bought units (action `new`) or units with a valid reposition mechanic (mobile beacon, redeployment card, etc.) can be moved. Do NOT use action `move` for existing units unless {player_name} has an explicit mechanic that allows it. Use `keep` with the current coordinates for all other existing units."}
 
 ## Your output format
 Give exactly one plan. Structure it as:
@@ -133,8 +137,17 @@ def analyze(parsed: dict, supply: int | None = None) -> list[dict] | None:
     if not player_name:
         raise ValueError("PLAYER_NAME not set in .env")
 
-    _MAX_ROUNDS = 3
-    trimmed = {**parsed, "rounds": parsed["rounds"][-_MAX_ROUNDS:]}
+    def _strip_actions(rounds: list[dict]) -> list[dict]:
+        result = []
+        for rnd in rounds:
+            stripped_players = {
+                name: {k: v for k, v in pdata.items() if k != "actions"}
+                for name, pdata in rnd.get("players", {}).items()
+            }
+            result.append({**rnd, "players": stripped_players})
+        return result
+
+    trimmed = {**parsed, "rounds": _strip_actions(parsed["rounds"][-3:])}
     game_json = json.dumps(trimmed, ensure_ascii=False)
 
     last_round = parsed.get("last_round", "?")
@@ -163,7 +176,7 @@ def analyze(parsed: dict, supply: int | None = None) -> list[dict] | None:
     stream = client.chat.completions.create(
         model=model,
         messages=[
-            {"role": "system", "content": _build_system_prompt(player_name)},
+            {"role": "system", "content": _build_system_prompt(player_name, last_round)},
             {"role": "user", "content": user_message},
         ],
         stream=True,
