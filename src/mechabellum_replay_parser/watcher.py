@@ -4,6 +4,7 @@ from pathlib import Path
 from watchdog.events import FileCreatedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
+from .llm import analyze
 from .transformer import replay_to_dict
 
 REPLAY_DIR = Path(
@@ -53,13 +54,11 @@ def process_replay(path: Path) -> None:
         parsed = replay_to_dict(path)
         players = [p for team in parsed["teams"] for p in team]
         print(f"[✓] Парсинг готов. Игроки: {players}, раундов: {parsed['last_round']}")
-        # TODO: send parsed to LLM and print analysis
+        analyze(parsed)
     except (ValueError, KeyError, AttributeError) as e:
         print(f"[!] Ошибка парсинга: {e}")
     finally:
         _delete(path)
-
-    return parsed
 
 
 class _ReplayHandler(FileSystemEventHandler):
