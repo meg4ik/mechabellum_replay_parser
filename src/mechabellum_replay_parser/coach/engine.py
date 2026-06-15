@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ..knowledge.parser import parse_knowledge_file
 from ..knowledge.retriever import KnowledgeRetriever
@@ -12,9 +14,19 @@ from .judge import Judge
 from .legal_actions import LegalActionGenerator
 from .planner import Planner
 from .recommendation_builder import RecommendationBuilder
-from .schemas import CoachRecommendation
+from .schemas import CandidatePlan, CoachRecommendation, JudgeOutput, PlanValidationResult
 from .state_view import StateViewBuilder
 from .validator import PlanValidator
+
+
+@dataclass
+class CoachAnalysis:
+    """Full pipeline result — recommendation plus all intermediate data for persistence."""
+
+    recommendation: CoachRecommendation
+    validated_plans: list[tuple[CandidatePlan, PlanValidationResult]] = field(default_factory=list)
+    judge_output: JudgeOutput | None = None
+    model_name: str | None = None
 
 _PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 # game_knowledge.md lives two levels above the src/ tree root
@@ -63,6 +75,14 @@ class CoachEngine:
         supply: int | None,
         player_name: str,
     ) -> CoachRecommendation:
+        return (await self.analyze_replay_detailed(parsed, supply, player_name)).recommendation
+
+    async def analyze_replay_detailed(
+        self,
+        parsed: dict,
+        supply: int | None,
+        player_name: str,
+    ) -> CoachAnalysis:
         state = self._state_view_builder.build(parsed, supply, player_name)
         features = self._feature_extractor.extract(state)
         legal_actions, action_groups = self._legal_action_generator.generate(state, features)
@@ -82,8 +102,16 @@ class CoachEngine:
             state, features, validated_plans, knowledge_chunks
         )
 
-        return self._recommendation_builder.build(
+        recommendation = self._recommendation_builder.build(
             judge_output, validated_plans, features, state
+        )
+
+        model_name = os.getenv("OPENAI_MODEL", "gpt-4o")
+        return CoachAnalysis(
+            recommendation=recommendation,
+            validated_plans=validated_plans,
+            judge_output=judge_output,
+            model_name=model_name,
         )
 
     def build_state_view(self, parsed: dict, supply: int | None, player_name: str):

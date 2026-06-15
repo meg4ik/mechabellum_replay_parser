@@ -17,6 +17,7 @@ from watchdog.events import FileCreatedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from .coach.engine import CoachEngine
+from .db.service import PersistenceService
 from .events.in_memory import InMemoryBroker
 from .events.schemas import RecommendationReadyPayload, SupplyRequestPayload, UIEvent
 from .transformer import dump_player_data_xml_fields, replay_to_dict
@@ -146,6 +147,7 @@ async def process_replay(
     path: Path,
     broker: InMemoryBroker,
     pending_supplies: dict[str, asyncio.Future],
+    persistence: PersistenceService | None = None,
 ) -> None:
     print(f"\n[→] Replay detected: {path.name}")
 
@@ -192,7 +194,22 @@ async def process_replay(
         finally:
             pending_supplies.pop(rec_id, None)
 
-        recommendation = await _coach_engine.analyze_replay(parsed, supply, player_name)
+        analysis = await _coach_engine.analyze_replay_detailed(parsed, supply, player_name)
+        recommendation = analysis.recommendation
+
+        if persistence is not None:
+            try:
+                await persistence.save_match_analysis(
+                    rec_id=rec_id,
+                    source_file=path.name,
+                    parsed=parsed,
+                    round_number=last_round,
+                    player_name=player_name,
+                    supply=supply,
+                    analysis=analysis,
+                )
+            except Exception as pe:
+                print(f"[!] Persistence error (non-fatal): {pe}")
 
         if recommendation.placement:
             last = next(
@@ -235,15 +252,22 @@ class _ReplayHandler(FileSystemEventHandler):
         loop: asyncio.AbstractEventLoop,
         broker: InMemoryBroker,
         pending_supplies: dict,
+        persistence: PersistenceService | None = None,
     ) -> None:
         self._loop = loop
         self._broker = broker
         self._pending_supplies = pending_supplies
+        self._persistence = persistence
 
     def on_created(self, event):
         if isinstance(event, FileCreatedEvent) and event.src_path.endswith(".grbr"):
             asyncio.run_coroutine_threadsafe(
-                process_replay(Path(event.src_path), self._broker, self._pending_supplies),
+                process_replay(
+                    Path(event.src_path),
+                    self._broker,
+                    self._pending_supplies,
+                    self._persistence,
+                ),
                 self._loop,
             )
 
@@ -252,6 +276,7 @@ async def watch(
     replay_dir: Path = REPLAY_DIR,
     broker: InMemoryBroker | None = None,
     pending_supplies: dict | None = None,
+    persistence: PersistenceService | None = None,
 ) -> None:
     if broker is None:
         broker = InMemoryBroker()
@@ -269,9 +294,9 @@ async def watch(
 
     # Handle any files already present at startup
     for existing in replay_dir.glob("*.grbr"):
-        asyncio.ensure_future(process_replay(existing, broker, pending_supplies))
+        asyncio.ensure_future(process_replay(existing, broker, pending_supplies, persistence))
 
-    handler = _ReplayHandler(loop, broker, pending_supplies)
+    handler = _ReplayHandler(loop, broker, pending_supplies, persistence)
     observer = Observer()
     observer.schedule(handler, str(replay_dir), recursive=False)
     observer.start()
