@@ -1,0 +1,34 @@
+{
+  "plans": [
+    {
+      "id": "plan_buy_arclight",
+      "title": "Buy Arclight to counter air threat",
+      "action_ids": ["buy_arclight"],
+      "total_cost": 100,
+      "main_goal": "Counter enemy air pressure",
+      "why_it_works": "Arclight has strong anti-air capabilities.",
+      "risks": ["Arclight is expensive"],
+      "expected_enemy_response": ["Enemy may switch to ground"],
+      "placement": [
+        {"unit": "arclight", "x": 0, "y": -90, "action": "new"},
+        {"unit": "crawler", "x": -40, "y": -80, "action": "keep"}
+      ],
+      "confidence": 0.8
+    },
+    {
+      "id": "plan_buy_mustang",
+      "title": "Buy Mustang for versatility",
+      "action_ids": ["buy_mustang"],
+      "total_cost": 80,
+      "main_goal": "Flexible response to air threat",
+      "why_it_works": "Mustang is a versatile anti-air option.",
+      "risks": ["Weaker against heavy air stacks"],
+      "expected_enemy_response": ["Enemy continues air push"],
+      "placement": [
+        {"unit": "mustang", "x": 40, "y": -80, "action": "new"},
+        {"unit": "crawler", "x": -40, "y": -80, "action": "keep"}
+      ],
+      "confidence": 0.6
+    }
+  ]
+}

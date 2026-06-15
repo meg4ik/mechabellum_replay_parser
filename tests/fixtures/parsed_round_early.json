@@ -1,0 +1,77 @@
+{
+  "metadata": {"version": "1.0.0", "match_mode": "VS_1_1"},
+  "teams": [["Player1"], ["Player2"]],
+  "last_round": 2,
+  "rounds": [
+    {
+      "round": 1,
+      "fight_result": {"winner": "Player1"},
+      "players": {
+        "Player1": {
+          "hp": 3,
+          "fight_outcome": "win",
+          "officers": [],
+          "commander_skills": [],
+          "contraptions": [],
+          "constructions": [],
+          "active_techs": [],
+          "units": [
+            {"name": "crawler", "index": 0, "level": 1, "position": {"x": -40, "y": -80}, "equipment": null}
+          ],
+          "shop": {"unlocked": ["crawler"], "locked": ["arclight", "wasp"], "buys_remaining": 3, "unlocks_remaining": 1},
+          "actions": []
+        },
+        "Player2": {
+          "hp": 3,
+          "fight_outcome": "loss",
+          "officers": [],
+          "commander_skills": [],
+          "contraptions": [],
+          "constructions": [],
+          "active_techs": [],
+          "units": [
+            {"name": "crawler", "index": 0, "level": 1, "position": {"x": -40, "y": 80}, "equipment": null}
+          ],
+          "shop": {"unlocked": ["crawler"], "locked": ["arclight"], "buys_remaining": 3, "unlocks_remaining": 1},
+          "actions": []
+        }
+      }
+    },
+    {
+      "round": 2,
+      "fight_result": null,
+      "players": {
+        "Player1": {
+          "hp": 3,
+          "fight_outcome": null,
+          "officers": [],
+          "commander_skills": [],
+          "contraptions": [],
+          "constructions": [],
+          "active_techs": [],
+          "units": [
+            {"name": "crawler", "index": 0, "level": 1, "position": {"x": -40, "y": -80}, "equipment": null},
+            {"name": "crawler", "index": 1, "level": 1, "position": {"x": 0, "y": -80}, "equipment": null}
+          ],
+          "shop": {"unlocked": ["crawler", "arclight"], "locked": ["wasp", "mustang"], "buys_remaining": 3, "unlocks_remaining": 1},
+          "actions": []
+        },
+        "Player2": {
+          "hp": 3,
+          "fight_outcome": null,
+          "officers": [],
+          "commander_skills": [],
+          "contraptions": [],
+          "constructions": [],
+          "active_techs": [],
+          "units": [
+            {"name": "crawler", "index": 0, "level": 1, "position": {"x": -40, "y": 80}, "equipment": null},
+            {"name": "crawler", "index": 1, "level": 1, "position": {"x": 0, "y": 80}, "equipment": null}
+          ],
+          "shop": {"unlocked": ["crawler"], "locked": ["arclight"], "buys_remaining": 3, "unlocks_remaining": 1},
+          "actions": []
+        }
+      }
+    }
+  ]
+}

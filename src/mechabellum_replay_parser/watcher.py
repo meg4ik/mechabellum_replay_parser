@@ -8,6 +8,7 @@ via WebSocket events (supply_request / recommendation_ready).
 """
 import asyncio
 import json
+import logging
 import os
 import uuid
 from pathlib import Path
@@ -22,6 +23,7 @@ from .events.in_memory import InMemoryBroker
 from .events.schemas import RecommendationReadyPayload, SupplyRequestPayload, UIEvent
 from .transformer import dump_player_data_xml_fields, replay_to_dict
 
+_log = logging.getLogger(__name__)
 _coach_engine = CoachEngine()
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
@@ -34,8 +36,25 @@ _STABLE_INTERVAL = 0.5
 _STABLE_COUNT = 3
 
 
+_DEBUG_DIR = Path(".debug")
+
+
 def _supply_timeout() -> float:
     return float(os.getenv("SUPPLY_TIMEOUT", "300"))
+
+
+def _write_debug(name: str, data) -> None:
+    if os.getenv("DEBUG", "").lower() not in ("1", "true", "yes"):
+        return
+    try:
+        _DEBUG_DIR.mkdir(exist_ok=True)
+        path = _DEBUG_DIR / name
+        if isinstance(data, str):
+            path.write_text(data, encoding="utf-8")
+        else:
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    except Exception as exc:
+        _log.debug("Debug artifact write failed for %s: %s", name, exc)
 
 
 # ── Debug helpers ─────────────────────────────────────────────────────────────
@@ -149,18 +168,23 @@ async def process_replay(
     pending_supplies: dict[str, asyncio.Future],
     persistence: PersistenceService | None = None,
 ) -> None:
+    _log.info("stage=replay_detected file=%s", path.name)
     print(f"\n[→] Replay detected: {path.name}")
 
     if not await _wait_for_file_stable(path):
+        _log.warning("stage=replay_stabilized_failed file=%s", path.name)
         print(f"[!] File unavailable: {path.name}")
         return
 
+    _log.info("stage=replay_stabilized file=%s", path.name)
     debug = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
 
     print("[~] Parsing...")
     try:
         parsed = replay_to_dict(path)
         players = [p for team in parsed["teams"] for p in team]
+        _log.info("stage=replay_parsed file=%s players=%s rounds=%d", path.name, players, parsed["last_round"])
+        _write_debug("latest_parsed.json", parsed)
         print(f"[✓] Parsed. Players: {players}, rounds: {parsed['last_round']}")
 
         if debug:
@@ -185,11 +209,14 @@ async def process_replay(
                 player_name=player_name,
             ).model_dump(),
         ))
+        _log.info("stage=supply_requested rec_id=%s round=%d player=%s", rec_id, last_round, player_name)
 
         supply: int | None = None
         try:
             supply = await asyncio.wait_for(supply_future, timeout=_supply_timeout())
+            _log.info("stage=supply_received rec_id=%s supply=%s", rec_id, supply)
         except asyncio.TimeoutError:
+            _log.warning("stage=supply_timeout rec_id=%s — proceeding without supply", rec_id)
             print("[!] Supply timeout — proceeding without supply")
         finally:
             pending_supplies.pop(rec_id, None)
@@ -233,6 +260,7 @@ async def process_replay(
                     coach_text=recommendation.coach_text,
                 ).model_dump(),
             ))
+            _log.info("stage=ui_event_sent type=recommendation_ready rec_id=%s", rec_id)
 
     except (ValueError, KeyError, AttributeError) as e:
         print(f"[!] Pipeline error: {e}")

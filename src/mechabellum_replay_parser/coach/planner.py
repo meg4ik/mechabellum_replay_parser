@@ -144,12 +144,18 @@ class Planner:
             _log.warning("Planner LLM call failed: %s", exc)
             return [_make_fallback_plan(state)]
 
+        plans_raw = raw.get("plans", [])
+        if not isinstance(plans_raw, list):
+            _log.warning("Planner returned non-list plans value (%s) — using fallback", type(plans_raw).__name__)
+            return [_make_fallback_plan(state)]
+
         plans: list[CandidatePlan] = []
-        for raw_plan in raw.get("plans", []):
+        for raw_plan in plans_raw:
             try:
                 plans.append(CandidatePlan.model_validate(raw_plan))
             except Exception as exc:  # noqa: BLE001
-                _log.debug("Skipping invalid plan from LLM: %s — %s", raw_plan.get("id"), exc)
+                plan_id = raw_plan.get("id") if isinstance(raw_plan, dict) else repr(raw_plan)
+                _log.debug("Skipping invalid plan from LLM: %s — %s", plan_id, exc)
 
         if not plans:
             _log.warning("Planner returned 0 valid plans — using fallback")

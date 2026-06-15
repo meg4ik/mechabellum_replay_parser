@@ -35,6 +35,27 @@ class CoreAPIClient:
                 timeout=10.0,
             )
 
+    async def post_feedback(
+        self,
+        recommendation_id: str,
+        rating: int | None = None,
+        label: str | None = None,
+        comment: str | None = None,
+        followed_plan: bool | None = None,
+    ) -> None:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"{self.base_url}/feedback",
+                json={
+                    "recommendation_id": recommendation_id,
+                    "rating": rating,
+                    "label": label,
+                    "comment": comment,
+                    "followed_plan": followed_plan,
+                },
+                timeout=10.0,
+            )
+
     async def events(self) -> AsyncGenerator[UIEvent, None]:
         """Yields UIEvents from the WebSocket; reconnects automatically on failure."""
         while True:

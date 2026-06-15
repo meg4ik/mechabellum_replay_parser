@@ -1,22 +1,31 @@
 from __future__ import annotations
 
+import asyncio
+import json
+import logging
 import os
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from ..knowledge.parser import parse_knowledge_file
 from ..knowledge.retriever import KnowledgeRetriever
 from ..llm.client import LLMProvider
 from ..llm.providers.openai_provider import OpenAIProvider
 from .feature_extractor import FeatureExtractor
-from .judge import Judge
+from .judge import Judge, _make_fallback_judge_output
 from .legal_actions import LegalActionGenerator
-from .planner import Planner
+from .planner import Planner, _make_fallback_plan
 from .recommendation_builder import RecommendationBuilder
 from .schemas import CandidatePlan, CoachRecommendation, JudgeOutput, PlanValidationResult
 from .state_view import StateViewBuilder
 from .validator import PlanValidator
+
+_log = logging.getLogger(__name__)
+
+_PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+_DEFAULT_KNOWLEDGE_FILE = Path(__file__).parent.parent.parent.parent / "game_knowledge.md"
+_DEBUG_DIR = Path(".debug")
 
 
 @dataclass
@@ -27,10 +36,6 @@ class CoachAnalysis:
     validated_plans: list[tuple[CandidatePlan, PlanValidationResult]] = field(default_factory=list)
     judge_output: JudgeOutput | None = None
     model_name: str | None = None
-
-_PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
-# game_knowledge.md lives two levels above the src/ tree root
-_DEFAULT_KNOWLEDGE_FILE = Path(__file__).parent.parent.parent.parent / "game_knowledge.md"
 
 
 def _load_prompt(name: str) -> str:
@@ -48,6 +53,24 @@ def _load_retriever() -> KnowledgeRetriever:
 
 def _default_provider() -> LLMProvider:
     return OpenAIProvider()
+
+
+def _is_debug() -> bool:
+    return os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
+
+
+def _write_debug(name: str, data) -> None:
+    if not _is_debug():
+        return
+    try:
+        _DEBUG_DIR.mkdir(exist_ok=True)
+        path = _DEBUG_DIR / name
+        if isinstance(data, str):
+            path.write_text(data, encoding="utf-8")
+        else:
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    except Exception as exc:
+        _log.debug("Debug artifact write failed for %s: %s", name, exc)
 
 
 class CoachEngine:
@@ -83,30 +106,99 @@ class CoachEngine:
         supply: int | None,
         player_name: str,
     ) -> CoachAnalysis:
+        _start = time.monotonic()
+        timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
+        model_name = os.getenv("OPENAI_MODEL", "gpt-4o")
+
         state = self._state_view_builder.build(parsed, supply, player_name)
+        _log.info(
+            "stage=state_view_built round=%s player=%s supply=%s",
+            state.round, player_name, supply,
+        )
+        _write_debug("latest_state_view.json", state.model_dump())
+
         features = self._feature_extractor.extract(state)
+        _log.info(
+            "stage=features_extracted threats=%d tempo=%s posture=%s",
+            len(features.threats), features.tempo_state, features.board_posture,
+        )
+        _write_debug("latest_features.json", features.model_dump())
+
         legal_actions, action_groups = self._legal_action_generator.generate(state, features)
+        _log.info(
+            "stage=legal_actions_generated count=%d groups=%d",
+            len(legal_actions), len(action_groups),
+        )
+        _write_debug("latest_legal_actions.json", [a.model_dump() for a in legal_actions])
 
         knowledge_chunks = self._retriever.retrieve(state, features)
+        _log.info("stage=knowledge_retrieved chunks=%d", len(knowledge_chunks))
 
-        plans = await self._planner.generate_plans(
-            state, features, action_groups, knowledge_chunks
-        )
+        _log.info("stage=planner_started timeout_s=%s model=%s", timeout, model_name)
+        try:
+            plans = await asyncio.wait_for(
+                self._planner.generate_plans(state, features, action_groups, knowledge_chunks),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            _log.warning("stage=planner_timeout seconds=%s — using fallback plan", timeout)
+            plans = [_make_fallback_plan(state)]
+        _log.info("stage=planner_completed plans=%d", len(plans))
+        _write_debug("latest_planner_response.json", [p.model_dump() for p in plans])
 
         validated_plans = [
             (plan, self._plan_validator.validate_placement(plan.placement, state, legal_actions))
             for plan in plans
         ]
-
-        judge_output = await self._judge.select_plan(
-            state, features, validated_plans, knowledge_chunks
+        valid_count = sum(1 for _, r in validated_plans if r.is_valid)
+        _log.info(
+            "stage=validation_completed total=%d valid=%d",
+            len(validated_plans), valid_count,
         )
+        _write_debug("latest_validation.json", [
+            {
+                "plan_id": p.id,
+                "is_valid": r.is_valid,
+                "issues": [i.model_dump() for i in r.issues],
+            }
+            for p, r in validated_plans
+        ])
+
+        try:
+            judge_output = await asyncio.wait_for(
+                self._judge.select_plan(state, features, validated_plans, knowledge_chunks),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            _log.warning(
+                "stage=judge_timeout seconds=%s — picking highest-confidence valid plan", timeout,
+            )
+            judge_output = _make_fallback_judge_output(validated_plans)
+        _log.info(
+            "stage=judge_completed best_plan_id=%s confidence=%s",
+            judge_output.best_plan_id, judge_output.confidence,
+        )
+        _write_debug("latest_judge_response.json", judge_output.model_dump())
 
         recommendation = self._recommendation_builder.build(
             judge_output, validated_plans, features, state
         )
+        _log.info(
+            "stage=recommendation_ready summary=%r placement_items=%d",
+            recommendation.summary, len(recommendation.placement or []),
+        )
+        _write_debug("latest_recommendation.json", {
+            "summary": recommendation.summary,
+            "coach_text": recommendation.coach_text,
+            "placement": recommendation.placement,
+        })
 
-        model_name = os.getenv("OPENAI_MODEL", "gpt-4o")
+        elapsed_ms = int((time.monotonic() - _start) * 1000)
+        _log.info(
+            "pipeline_complete elapsed_ms=%d model=%s",
+            elapsed_ms, model_name,
+        )
+
         return CoachAnalysis(
             recommendation=recommendation,
             validated_plans=validated_plans,
