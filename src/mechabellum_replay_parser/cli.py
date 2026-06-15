@@ -34,6 +34,26 @@ def start_watch(args):
     asyncio.run(watch(replay_dir))
 
 
+def ingest_knowledge(args):
+    from .knowledge.parser import parse_knowledge_file
+    path = Path(args.file).absolute()
+    if not path.exists():
+        print(f"File not found: {path}")
+        return
+    chunks = parse_knowledge_file(path)
+    print(f"Parsed {len(chunks)} knowledge chunks from {path.name}")
+    by_topic: dict[str, int] = {}
+    for c in chunks:
+        by_topic[c.topic] = by_topic.get(c.topic, 0) + 1
+    for topic, count in sorted(by_topic.items()):
+        print(f"  {topic}: {count} chunks")
+    always = [
+        c for c in chunks
+        if c.topic in {"base_rules", "deployment_rules", "towers"} and c.priority >= 2
+    ]
+    print(f"Always-include chunks (base_rules/deployment_rules/towers, priority>=2): {len(always)}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Mechabellum replay file parser")
     subparsers = parser.add_subparsers(dest="command")
@@ -60,9 +80,20 @@ def main():
     )
     watch_parser.set_defaults(func=start_watch)
 
+    knowledge_parser = subparsers.add_parser(
+        "knowledge", help="Knowledge base management commands."
+    )
+    k_subparsers = knowledge_parser.add_subparsers(dest="k_command")
+    ingest_parser = k_subparsers.add_parser(
+        "ingest", help="Parse a knowledge markdown file and report chunk statistics."
+    )
+    ingest_parser.add_argument("file", help="Path to the knowledge markdown file")
+    ingest_parser.set_defaults(func=ingest_knowledge)
+    knowledge_parser.set_defaults(func=lambda a: knowledge_parser.print_help())
+
     args = parser.parse_args()
 
-    if args.command:
+    if hasattr(args, "func"):
         args.func(args)
     else:
         parser.print_help()

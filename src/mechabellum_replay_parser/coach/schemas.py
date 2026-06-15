@@ -103,6 +103,91 @@ class TacticalFeatures(BaseModel):
     priority_questions: list[str]
 
 
+# ── Legal actions ─────────────────────────────────────────────────────────────
+
+ActionType = Literal[
+    "buy_unit",
+    "unlock_unit",
+    "research_tech",
+    "move_unit",
+    "keep_unit",
+    "use_skill",
+    "build_construction",
+    "skip",
+]
+
+
+class LegalAction(BaseModel):
+    id: str
+    type: ActionType
+    cost: int = 0
+    unit: str | None = None
+    unit_index: int | None = None
+    tech: str | None = None
+    construction: str | None = None
+    allowed_positions: list[dict] = []
+    reason_tags: list[str] = []
+    constraints: list[str] = []
+
+
+class ActionGroup(BaseModel):
+    id: str
+    title: str
+    purpose: str
+    actions: list[LegalAction]
+    total_cost: int
+    addresses_threats: list[str]
+    risks: list[str] = []
+
+
+# ── Candidate plan ────────────────────────────────────────────────────────────
+
+class CandidatePlan(BaseModel):
+    id: str
+    title: str
+    action_ids: list[str]
+    total_cost: int
+    main_goal: str
+    why_it_works: str
+    risks: list[str]
+    expected_enemy_response: list[str]
+    placement: list[dict]
+    confidence: float
+
+
+# ── Validation ────────────────────────────────────────────────────────────────
+
+class ValidationIssue(BaseModel):
+    severity: Literal["error", "warning"]
+    code: str
+    message: str
+
+
+class PlanValidationResult(BaseModel):
+    plan_id: str
+    is_valid: bool
+    issues: list[ValidationIssue]
+    normalized_plan: CandidatePlan | None = None
+
+
+# ── Judge output ─────────────────────────────────────────────────────────────
+
+class RejectedPlan(BaseModel):
+    plan_id: str
+    reason: str
+
+
+class JudgeOutput(BaseModel):
+    best_plan_id: str
+    confidence: float = 0.5
+    main_reason: str
+    why_not_others: list[RejectedPlan] = []
+    final_actions: list[dict] = []
+    placement: list[dict] = []
+    watch_next_round: list[str] = []
+    mistake_to_avoid: str = ""
+
+
 # ── CoachRecommendation ───────────────────────────────────────────────────────
 
 class PlannedAction(BaseModel):
@@ -123,3 +208,4 @@ class CoachRecommendation(BaseModel):
     risks: list[str] = []
     watch_next_round: list[str] = []
     coach_text: str = ""
+    validation: PlanValidationResult | None = None
