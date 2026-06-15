@@ -322,7 +322,7 @@ def replay_to_dict(path: Path) -> dict:
     rounds = []
     for rnd in all_rounds:
         snap = snapshots.get(rnd)
-        fight_result = _parse_fight_result(snap, player_names) if snap else None
+        fight_result = _parse_fight_result(snap, player_names) if snap is not None else None
 
         players_data = {}
         for pr in player_elements:
@@ -338,7 +338,10 @@ def replay_to_dict(path: Path) -> dict:
             pd = rr_el.find("playerData")
             skills = _parse_commander_skills(pd)
             pre_result_el = pd.find("preRoundFightResult")
-            supply_el = pd.find("supply") or pd.find("Supply") or pd.find("energy") or pd.find("Energy")
+            supply_el = next(
+                (pd.find(tag) for tag in ("supply", "Supply", "energy", "Energy") if pd.find(tag) is not None),
+                None,
+            )
             units = _parse_units(pd)
 
             players_data[name] = {
