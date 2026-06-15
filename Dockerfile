@@ -17,6 +17,7 @@ COPY src/ src/
 COPY game_knowledge.md .
 
 ENV PYTHONPATH=/app/src
+ENV PYTHONUNBUFFERED=1
 
 CMD ["uv", "run", "--no-sync", "uvicorn", "mechabellum_replay_parser.api.app:app", \
      "--host", "0.0.0.0", "--port", "8000"]

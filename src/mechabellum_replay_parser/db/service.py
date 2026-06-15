@@ -130,6 +130,10 @@ def create_persistence_service() -> PersistenceService:
         print("[db] DEBUG_NO_DB=true — persistence disabled")
         return PersistenceService(None)
 
-    from .session import get_session_factory
-    factory = get_session_factory()
-    return PersistenceService(factory)
+    try:
+        from .session import get_session_factory
+        factory = get_session_factory()
+        return PersistenceService(factory)
+    except Exception as exc:
+        print(f"[db] Cannot initialise DB engine (non-fatal): {exc}")
+        return PersistenceService(None)

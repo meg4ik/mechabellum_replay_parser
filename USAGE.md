@@ -138,7 +138,7 @@ uv run alembic upgrade head
 ### Шаг 5 — Загрузи базу знаний
 
 ```bash
-uv run mechabellum knowledge ingest
+uv run mechabellum-replay-parser knowledge ingest game_knowledge.md
 ```
 
 Это разбивает `game_knowledge.md` на 95 смысловых кусков — тренер будет брать только нужные разделы для каждой ситуации.

@@ -7,6 +7,8 @@ services:
       # Always use asyncpg driver and the Docker-internal postgres hostname.
       # Overrides any DATABASE_URL from .env that might lack the driver or use localhost.
       DATABASE_URL: "postgresql+asyncpg://mechabellum:mechabellum@postgres:5432/mechabellum"
+      # Tell the watcher where replays are mounted inside the container.
+      REPLAY_DIR: /data/replays
     ports:
       - "8000:8000"
     volumes:

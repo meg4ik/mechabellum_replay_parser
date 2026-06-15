@@ -16,6 +16,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from watchdog.events import FileCreatedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 
 from .coach.engine import CoachEngine
 from .db.service import PersistenceService
@@ -312,11 +313,11 @@ async def watch(
         pending_supplies = {}
 
     if not replay_dir.exists():
-        print(f"[!] Replay dir not found: {replay_dir}")
+        _log.warning("stage=watcher_start_failed replay_dir=%s — directory not found", replay_dir)
         return
 
-    print(f"[*] Watching: {replay_dir}")
-    print("[*] Press Ctrl+C to stop\n")
+    _log.info("stage=watcher_started replay_dir=%s", replay_dir)
+    print(f"[*] Watching: {replay_dir}", flush=True)
 
     loop = asyncio.get_running_loop()
 
@@ -325,7 +326,8 @@ async def watch(
         asyncio.ensure_future(process_replay(existing, broker, pending_supplies, persistence))
 
     handler = _ReplayHandler(loop, broker, pending_supplies, persistence)
-    observer = Observer()
+    # PollingObserver works across Docker bind-mounts (inotify events don't fire on Windows-mounted dirs)
+    observer = PollingObserver(timeout=2)
     observer.schedule(handler, str(replay_dir), recursive=False)
     observer.start()
 

@@ -3,9 +3,17 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections.abc import AsyncIterator
 
 from openai import AsyncOpenAI
+
+# o-series reasoning models don't accept a custom temperature parameter.
+_O_SERIES_RE = re.compile(r"^o\d")
+
+
+def _supports_temperature(model: str) -> bool:
+    return not _O_SERIES_RE.match(model)
 
 
 class OpenAIProvider:
@@ -38,28 +46,32 @@ class OpenAIProvider:
         temperature: float = 0.2,
     ) -> dict:
         _ = schema  # not yet used; future: pass as json_schema to the API
-        response = await self._get_client().chat.completions.create(
-            model=self._model,
-            messages=[
+        kwargs: dict = {
+            "model": self._model,
+            "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            response_format={"type": "json_object"},
-            temperature=temperature,
-        )
+            "response_format": {"type": "json_object"},
+        }
+        if _supports_temperature(self._model):
+            kwargs["temperature"] = temperature
+        response = await self._get_client().chat.completions.create(**kwargs)
         content = response.choices[0].message.content or "{}"
         return json.loads(content)
 
     async def _stream_gen(self, system: str, user: str, temperature: float) -> AsyncIterator[str]:
-        stream = await self._get_client().chat.completions.create(
-            model=self._model,
-            messages=[
+        kwargs: dict = {
+            "model": self._model,
+            "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            stream=True,
-            temperature=temperature,
-        )
+            "stream": True,
+        }
+        if _supports_temperature(self._model):
+            kwargs["temperature"] = temperature
+        stream = await self._get_client().chat.completions.create(**kwargs)
         async for chunk in stream:
             delta = chunk.choices[0].delta
             if delta.content:
