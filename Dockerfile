@@ -8,13 +8,15 @@ RUN apt-get update \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
+# Install dependencies first (cached layer — only re-runs when pyproject.toml/uv.lock change)
+COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --frozen --no-dev --no-install-project
 
+# Copy source after dependencies (changing src/ doesn't bust the dependency cache)
 COPY src/ src/
 COPY game_knowledge.md .
 
 ENV PYTHONPATH=/app/src
 
-CMD ["uv", "run", "uvicorn", "mechabellum_replay_parser.api.app:app", \
+CMD ["uv", "run", "--no-sync", "uvicorn", "mechabellum_replay_parser.api.app:app", \
      "--host", "0.0.0.0", "--port", "8000"]

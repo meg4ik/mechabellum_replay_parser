@@ -401,7 +401,6 @@ class CoachWindow:
         round_num: int | str,
     ) -> None:
         y_front, y_back = self._detect_zone(current_units)
-        total_w = _BOARD_W + 2 * _MARGIN
 
         # Legend row at top of canvas
         legend_y = 16

@@ -3,6 +3,10 @@ services:
     build: .
     env_file:
       - .env
+    environment:
+      # Always use asyncpg driver and the Docker-internal postgres hostname.
+      # Overrides any DATABASE_URL from .env that might lack the driver or use localhost.
+      DATABASE_URL: "postgresql+asyncpg://mechabellum:mechabellum@postgres:5432/mechabellum"
     ports:
       - "8000:8000"
     volumes:

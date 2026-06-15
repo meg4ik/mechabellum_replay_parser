@@ -27,7 +27,6 @@ class StateViewBuilder:
         )
         players_data: dict[str, dict] = current_round.get("players", {})
 
-        my_team: list[str] = next((t for t in teams if player_name in t), [])
         enemy_team: list[str] = next((t for t in teams if player_name not in t), [])
 
         my_raw = players_data.get(player_name, {})

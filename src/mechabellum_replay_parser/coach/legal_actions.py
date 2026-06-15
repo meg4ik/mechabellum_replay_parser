@@ -7,8 +7,6 @@ from .feature_extractor import (
     AIR_UNITS,
     ANTI_AIR_UNITS,
     ANTI_CHAFF_UNITS,
-    ARTILLERY_UNITS,
-    CHAFF_UNITS,
 )
 from .schemas import ActionGroup, LegalAction, StateView, TacticalFeatures
 

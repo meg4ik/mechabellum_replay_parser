@@ -26,10 +26,11 @@ async def lifespan(application: FastAPI):
 
     if persistence.enabled:
         from sqlalchemy.ext.asyncio import create_async_engine as _create_engine
-        _db_url = os.getenv(
+        from mechabellum_replay_parser.db.session import _ensure_asyncpg
+        _db_url = _ensure_asyncpg(os.getenv(
             "DATABASE_URL",
             "postgresql+asyncpg://mechabellum:mechabellum@localhost:5432/mechabellum",
-        )
+        ))
         _engine = _create_engine(_db_url)
         try:
             async with _engine.begin() as conn:
