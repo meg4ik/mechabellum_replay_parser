@@ -29,8 +29,9 @@ def show_tech(args):
 
 
 def start_watch(args):
+    import asyncio
     replay_dir = Path(args.dir) if args.dir else REPLAY_DIR
-    watch(replay_dir)
+    asyncio.run(watch(replay_dir))
 
 
 def main():

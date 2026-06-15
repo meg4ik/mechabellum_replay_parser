@@ -1,18 +1,43 @@
+"""Replay folder monitor.
+
+In Docker mode: runs as an asyncio background task inside the FastAPI lifespan.
+In CLI mode: launched via asyncio.run(watch(...)) from cli.py.
+
+No Tkinter imports — supply and board visualization are delegated to native_ui
+via WebSocket events (supply_request / recommendation_ready).
+"""
+import asyncio
 import json
 import os
-import time
+import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
 from watchdog.events import FileCreatedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
-from .display import ask_supply, show_board_async
-from .llm import analyze
+from .coach.engine import CoachEngine
+from .events.in_memory import InMemoryBroker
+from .events.schemas import RecommendationReadyPayload, SupplyRequestPayload, UIEvent
 from .transformer import dump_player_data_xml_fields, replay_to_dict
+
+_coach_engine = CoachEngine()
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
+REPLAY_DIR = Path(
+    r"C:\Program Files (x86)\Steam\steamapps\common\Mechabellum\ProjectDatas\Replay"
+)
+
+_STABLE_INTERVAL = 0.5
+_STABLE_COUNT = 3
+
+
+def _supply_timeout() -> float:
+    return float(os.getenv("SUPPLY_TIMEOUT", "300"))
+
+
+# ── Debug helpers ─────────────────────────────────────────────────────────────
 
 def _collect_unknowns(obj, path: str = "") -> list[str]:
     results = []
@@ -38,7 +63,6 @@ def _debug_report(parsed: dict) -> None:
     print(f"Teams   : {parsed.get('teams')}")
     print(f"Rounds  : {parsed.get('last_round')}")
 
-    # Unknown values across the whole parsed dict
     unknowns = _collect_unknowns(parsed)
     if unknowns:
         print(f"\n[!] UNKNOWN VALUES ({len(unknowns)} total):")
@@ -47,11 +71,10 @@ def _debug_report(parsed: dict) -> None:
     else:
         print("\n[✓] No unknown values")
 
-    # Per-round summary
     for rnd in parsed.get("rounds", []):
         rnum = rnd["round"]
         fight = rnd.get("fight_result") or {}
-        print(f"\n{'─'*70}")
+        print(f"\n{'─' * 70}")
         print(f"ROUND {rnum}" + (f"  fight_result={json.dumps(fight)}" if fight else "  (no fight result)"))
         for name, pdata in rnd.get("players", {}).items():
             print(f"\n  ┌─ {name}  HP={pdata.get('hp')}  outcome={pdata.get('fight_outcome')}")
@@ -61,10 +84,8 @@ def _debug_report(parsed: dict) -> None:
             print(f"  │  Constructs : {[c['type'] for c in pdata.get('constructions', [])]}")
             shop = pdata.get("shop", {})
             print(f"  │  Shop unlocked: {shop.get('unlocked')}  locked: {shop.get('locked')}")
-            techs = pdata.get("active_techs", [])
-            if techs:
-                for t in techs:
-                    print(f"  │  Tech  : {t['unit']} → {t['tech']}")
+            for t in pdata.get("active_techs", []):
+                print(f"  │  Tech  : {t['unit']} → {t['tech']}")
             units = pdata.get("units", [])
             print(f"  │  Units ({len(units)}):")
             for u in units:
@@ -77,16 +98,11 @@ def _debug_report(parsed: dict) -> None:
 
     print(f"\n{sep}\n")
 
-REPLAY_DIR = Path(
-    r"C:\Program Files (x86)\Steam\steamapps\common\Mechabellum\ProjectDatas\Replay"
-)
 
-_STABLE_INTERVAL = 0.5
-_STABLE_COUNT = 3
+# ── File handling ─────────────────────────────────────────────────────────────
 
-
-def _wait_for_file_stable(path: Path) -> bool:
-    """Wait until the file size stops changing — Steam may still be writing."""
+async def _wait_for_file_stable(path: Path) -> bool:
+    """Wait until the file size stops changing (Steam may still be writing)."""
     prev_size = -1
     stable = 0
     while stable < _STABLE_COUNT:
@@ -99,83 +115,173 @@ def _wait_for_file_stable(path: Path) -> bool:
         else:
             stable = 0
             prev_size = size
-        time.sleep(_STABLE_INTERVAL)
+        await asyncio.sleep(_STABLE_INTERVAL)
     return True
 
 
-def _delete(path: Path) -> None:
-    try:
-        path.unlink()
-        print(f"[✓] Удалён: {path.name}")
-    except OSError as e:
-        print(f"[!] Не удалось удалить {path.name}: {e}")
+def _handle_after_process(path: Path) -> None:
+    """Delete, archive, or keep the replay file after processing."""
+    policy = os.getenv("REPLAY_AFTER_PROCESS", "delete").lower()
+    if policy == "keep":
+        return
+    if policy == "archive":
+        archive_dir = path.parent / "processed"
+        archive_dir.mkdir(exist_ok=True)
+        try:
+            path.rename(archive_dir / path.name)
+            print(f"[✓] Archived: {path.name}")
+        except OSError as e:
+            print(f"[!] Archive failed {path.name}: {e}")
+    else:
+        try:
+            path.unlink()
+            print(f"[✓] Deleted: {path.name}")
+        except OSError as e:
+            print(f"[!] Delete failed {path.name}: {e}")
 
 
-def process_replay(path: Path) -> None:
-    print(f"\n[→] Обнаружен реплей: {path.name}")
+# ── Core pipeline ─────────────────────────────────────────────────────────────
 
-    if not _wait_for_file_stable(path):
-        print(f"[!] Файл недоступен: {path.name}")
+async def process_replay(
+    path: Path,
+    broker: InMemoryBroker,
+    pending_supplies: dict[str, asyncio.Future],
+) -> None:
+    print(f"\n[→] Replay detected: {path.name}")
+
+    if not await _wait_for_file_stable(path):
+        print(f"[!] File unavailable: {path.name}")
         return
 
     debug = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
 
-    print("[~] Парсинг...")
+    print("[~] Parsing...")
     try:
         parsed = replay_to_dict(path)
         players = [p for team in parsed["teams"] for p in team]
-        print(f"[✓] Парсинг готов. Игроки: {players}, раундов: {parsed['last_round']}")
+        print(f"[✓] Parsed. Players: {players}, rounds: {parsed['last_round']}")
+
         if debug:
             dump_player_data_xml_fields(path)
             _debug_report(parsed)
-        else:
-            last_round = parsed["last_round"]
-            supply = ask_supply(last_round)
-            placement = analyze(parsed, supply=supply)
-            if placement:
-                player_name = os.getenv("PLAYER_NAME", "")
-                last = next(
-                    (r for r in parsed["rounds"] if r["round"] == last_round),
-                    parsed["rounds"][-1],
-                )
-                player_data = last["players"].get(player_name, {})
-                current_units = player_data.get("units", [])
-                constructions = player_data.get("constructions", [])
-                show_board_async(current_units, placement, last_round, player_name, constructions)
-    except (ValueError, KeyError, AttributeError) as e:
-        print(f"[!] Ошибка парсинга: {e}")
-    finally:
-        _delete(path)
+            return
 
+        last_round = parsed["last_round"]
+        player_name = os.getenv("PLAYER_NAME", "")
+        rec_id = f"rec_{uuid.uuid4().hex}"
+
+        # Publish supply_request; native UI will respond via POST /ui/supply-response
+        loop = asyncio.get_running_loop()
+        supply_future: asyncio.Future = loop.create_future()
+        pending_supplies[rec_id] = supply_future
+
+        await broker.publish(UIEvent(
+            type="supply_request",
+            payload=SupplyRequestPayload(
+                recommendation_id=rec_id,
+                round=last_round,
+                player_name=player_name,
+            ).model_dump(),
+        ))
+
+        supply: int | None = None
+        try:
+            supply = await asyncio.wait_for(supply_future, timeout=_supply_timeout())
+        except asyncio.TimeoutError:
+            print("[!] Supply timeout — proceeding without supply")
+        finally:
+            pending_supplies.pop(rec_id, None)
+
+        recommendation = await _coach_engine.analyze_replay(parsed, supply, player_name)
+
+        if recommendation.placement:
+            last = next(
+                (r for r in parsed["rounds"] if r["round"] == last_round),
+                parsed["rounds"][-1],
+            )
+            player_data = last["players"].get(player_name, {})
+            current_units = player_data.get("units", [])
+            constructions = player_data.get("constructions", [])
+
+            await broker.publish(UIEvent(
+                type="recommendation_ready",
+                payload=RecommendationReadyPayload(
+                    recommendation_id=rec_id,
+                    round=last_round,
+                    player_name=player_name,
+                    summary=recommendation.summary,
+                    current_units=current_units,
+                    constructions=constructions,
+                    placement=recommendation.placement,
+                    coach_text=recommendation.coach_text,
+                ).model_dump(),
+            ))
+
+    except (ValueError, KeyError, AttributeError) as e:
+        print(f"[!] Pipeline error: {e}")
+        await broker.publish(UIEvent(
+            type="error",
+            payload={"message": str(e), "details": ""},
+        ))
+    finally:
+        _handle_after_process(path)
+
+
+# ── Watchdog integration ──────────────────────────────────────────────────────
 
 class _ReplayHandler(FileSystemEventHandler):
+    def __init__(
+        self,
+        loop: asyncio.AbstractEventLoop,
+        broker: InMemoryBroker,
+        pending_supplies: dict,
+    ) -> None:
+        self._loop = loop
+        self._broker = broker
+        self._pending_supplies = pending_supplies
+
     def on_created(self, event):
         if isinstance(event, FileCreatedEvent) and event.src_path.endswith(".grbr"):
-            process_replay(Path(event.src_path))
+            asyncio.run_coroutine_threadsafe(
+                process_replay(Path(event.src_path), self._broker, self._pending_supplies),
+                self._loop,
+            )
 
 
-def watch(replay_dir: Path = REPLAY_DIR) -> None:
+async def watch(
+    replay_dir: Path = REPLAY_DIR,
+    broker: InMemoryBroker | None = None,
+    pending_supplies: dict | None = None,
+) -> None:
+    if broker is None:
+        broker = InMemoryBroker()
+    if pending_supplies is None:
+        pending_supplies = {}
+
     if not replay_dir.exists():
-        print(f"[!] Папка не найдена: {replay_dir}")
+        print(f"[!] Replay dir not found: {replay_dir}")
         return
 
-    print(f"[*] Мониторинг: {replay_dir}")
-    print("[*] Нажмите Ctrl+C для остановки\n")
+    print(f"[*] Watching: {replay_dir}")
+    print("[*] Press Ctrl+C to stop\n")
 
-    # Обработать файл, если он уже есть в папке при старте
+    loop = asyncio.get_running_loop()
+
+    # Handle any files already present at startup
     for existing in replay_dir.glob("*.grbr"):
-        process_replay(existing)
+        asyncio.ensure_future(process_replay(existing, broker, pending_supplies))
 
+    handler = _ReplayHandler(loop, broker, pending_supplies)
     observer = Observer()
-    observer.schedule(_ReplayHandler(), str(replay_dir), recursive=False)
+    observer.schedule(handler, str(replay_dir), recursive=False)
     observer.start()
 
     try:
         while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
+            await asyncio.sleep(1)
+    except asyncio.CancelledError:
         pass
     finally:
         observer.stop()
         observer.join()
-        print("\n[*] Мониторинг остановлен")
+        print("\n[*] Watcher stopped")
