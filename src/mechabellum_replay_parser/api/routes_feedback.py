@@ -6,10 +6,17 @@ from pydantic import BaseModel
 _log = logging.getLogger(__name__)
 router = APIRouter(prefix="/feedback")
 
-_VALID_LABELS = frozenset({
-    "good", "bad_illegal", "bad_strategy", "bad_positioning",
-    "bad_counter", "too_expensive", "unclear",
-})
+_VALID_LABELS = frozenset(
+    {
+        "good",
+        "bad_illegal",
+        "bad_strategy",
+        "bad_positioning",
+        "bad_counter",
+        "too_expensive",
+        "unclear",
+    }
+)
 
 
 class FeedbackBody(BaseModel):
@@ -24,7 +31,9 @@ class FeedbackBody(BaseModel):
 async def submit_feedback(body: FeedbackBody, request: Request) -> None:
     _log.info(
         "stage=feedback_received rec_id=%s rating=%s label=%s",
-        body.recommendation_id, body.rating, body.label,
+        body.recommendation_id,
+        body.rating,
+        body.label,
     )
     if body.label is not None and body.label not in _VALID_LABELS:
         raise HTTPException(status_code=422, detail=f"Unknown label: {body.label!r}")

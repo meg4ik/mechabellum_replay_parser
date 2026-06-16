@@ -32,9 +32,18 @@ def test_round_shape(parsed_replay):
 def test_player_fields_present(parsed_replay):
     player = parsed_replay["rounds"][0]["players"]["Player1"]
     for field in (
-        "hp", "supply", "army_value", "fight_outcome", "officers",
-        "commander_skills", "units", "active_techs", "contraptions",
-        "constructions", "shop", "actions",
+        "hp",
+        "supply",
+        "army_value",
+        "fight_outcome",
+        "officers",
+        "commander_skills",
+        "units",
+        "active_techs",
+        "contraptions",
+        "constructions",
+        "shop",
+        "actions",
     ):
         assert field in player, f"missing player field: {field}"
 

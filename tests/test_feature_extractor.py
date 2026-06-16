@@ -1,13 +1,12 @@
 """Tests for FeatureExtractor."""
+
 import pytest
 
 from mechabellum_replay_parser.coach.feature_extractor import (
-    AIR_UNITS,
-    ANTI_AIR_UNITS,
-    CHAFF_UNITS,
     FeatureExtractor,
 )
 from mechabellum_replay_parser.coach.schemas import (
+    ConstructionType,
     ConstructionView,
     PlayerRoundView,
     Position,
@@ -63,6 +62,7 @@ def extractor():
 
 # ── No threats ────────────────────────────────────────────────────────────────
 
+
 def test_no_threats_empty_enemy(extractor):
     state = _make_state([], [])
     features = extractor.extract(state)
@@ -77,6 +77,7 @@ def test_no_air_threat_without_enemy_air(extractor):
 
 
 # ── Air pressure ──────────────────────────────────────────────────────────────
+
 
 def test_air_threat_detected(extractor):
     state = _make_state([], [_make_unit("phoenix")])
@@ -128,6 +129,7 @@ def test_no_aa_adds_to_weaknesses(extractor):
 
 # ── Chaff overload ────────────────────────────────────────────────────────────
 
+
 def test_chaff_threat_below_threshold(extractor):
     state = _make_state([], [_make_unit("crawler")] * 3)
     features = extractor.extract(state)
@@ -162,6 +164,7 @@ def test_chaff_threat_with_splash_my_answer_good(extractor):
 
 # ── Artillery pressure ────────────────────────────────────────────────────────
 
+
 def test_artillery_threat_detected(extractor):
     state = _make_state([], [_make_unit("stormcaller")])
     features = extractor.extract(state)
@@ -178,6 +181,7 @@ def test_no_artillery_threat_without_artillery(extractor):
 
 # ── Heavy frontline ───────────────────────────────────────────────────────────
 
+
 def test_no_heavy_threat_single_heavy(extractor):
     state = _make_state([], [_make_unit("fortress")])
     features = extractor.extract(state)
@@ -193,6 +197,7 @@ def test_heavy_threat_two_heavies(extractor):
 
 
 # ── Tempo state ───────────────────────────────────────────────────────────────
+
 
 def test_tempo_even(extractor):
     state = _make_state([], [], my_av=500, enemy_av=500)
@@ -220,6 +225,7 @@ def test_tempo_unknown_both_zero(extractor):
 
 # ── Board posture ─────────────────────────────────────────────────────────────
 
+
 def test_board_posture_unknown_no_units(extractor):
     state = _make_state([], [])
     features = extractor.extract(state)
@@ -246,6 +252,7 @@ def test_board_posture_defensive_back_line(extractor):
 
 # ── Tower notes ───────────────────────────────────────────────────────────────
 
+
 def test_tower_notes_no_constructions(extractor):
     state = _make_state([], [])
     features = extractor.extract(state)
@@ -257,14 +264,15 @@ def test_tower_notes_with_construction(extractor):
         [],
         [],
         my_constructions=[
-            ConstructionView(type="Supply Tower", position=Position(x=100, y=-270))
+            ConstructionView(type=ConstructionType.SUPPLY_TOWER, position=Position(x=100, y=-270))
         ],
     )
     features = extractor.extract(state)
-    assert any("Supply Tower" in n for n in features.tower_notes)
+    assert any("supply_tower" in n for n in features.tower_notes)
 
 
 # ── Priority questions ────────────────────────────────────────────────────────
+
 
 def test_priority_question_when_behind(extractor):
     state = _make_state([], [], my_av=200, enemy_av=500)
@@ -280,14 +288,21 @@ def test_priority_question_when_ahead(extractor):
 
 # ── Strategic memory flows through ────────────────────────────────────────────
 
+
 def test_do_not_forget_in_likely_continuation(extractor):
-    mem = StrategicMemory(do_not_forget=["Enemy has been investing in phoenix for 2 round(s)."])
+    mem = StrategicMemory(
+        do_not_forget=["Enemy has been investing in phoenix for 2 round(s)."]
+    )
     state = _make_state([], [], strategic_memory=mem)
     features = extractor.extract(state)
-    assert "Enemy has been investing in phoenix for 2 round(s)." in features.likely_enemy_continuation
+    assert (
+        "Enemy has been investing in phoenix for 2 round(s)."
+        in features.likely_enemy_continuation
+    )
 
 
 # ── Full pipeline with parsed_replay fixture ──────────────────────────────────
+
 
 def test_extract_from_parsed_replay(parsed_replay):
     from mechabellum_replay_parser.coach.state_view import StateViewBuilder

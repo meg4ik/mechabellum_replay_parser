@@ -47,13 +47,15 @@ class LegalActionGenerator:
         # ── Unlock unit ───────────────────────────────────────────────────────
         if unlocks_remaining > 0:
             for unit_name in sorted(locked):
-                actions.append(LegalAction(
-                    id=f"unlock_{unit_name}",
-                    type="unlock_unit",
-                    cost=0,
-                    unit=unit_name,
-                    reason_tags=["available_in_shop"],
-                ))
+                actions.append(
+                    LegalAction(
+                        id=f"unlock_{unit_name}",
+                        type="unlock_unit",
+                        cost=0,
+                        unit=unit_name,
+                        reason_tags=["available_in_shop"],
+                    )
+                )
 
         # ── Buy unit ──────────────────────────────────────────────────────────
         if buys_remaining > 0:
@@ -64,32 +66,38 @@ class LegalActionGenerator:
                     tags.append("cost_unknown")
                 elif cost > supply:
                     continue
-                actions.append(LegalAction(
-                    id=f"buy_{unit_name}",
-                    type="buy_unit",
-                    cost=cost,
-                    unit=unit_name,
-                    reason_tags=tags,
-                ))
+                actions.append(
+                    LegalAction(
+                        id=f"buy_{unit_name}",
+                        type="buy_unit",
+                        cost=cost,
+                        unit=unit_name,
+                        reason_tags=tags,
+                    )
+                )
 
         # ── Keep / Move existing units ────────────────────────────────────────
         for unit in state.my_state.units:
             idx = unit.index if unit.index is not None else 0
-            actions.append(LegalAction(
-                id=f"keep_{unit.name}_{idx}",
-                type="keep_unit",
-                cost=0,
-                unit=unit.name,
-                unit_index=unit.index,
-            ))
-            actions.append(LegalAction(
-                id=f"move_{unit.name}_{idx}",
-                type="move_unit",
-                cost=0,
-                unit=unit.name,
-                unit_index=unit.index,
-                allowed_positions=_STRATEGIC_POSITIONS,
-            ))
+            actions.append(
+                LegalAction(
+                    id=f"keep_{unit.name}_{idx}",
+                    type="keep_unit",
+                    cost=0,
+                    unit=unit.name,
+                    unit_index=unit.index,
+                )
+            )
+            actions.append(
+                LegalAction(
+                    id=f"move_{unit.name}_{idx}",
+                    type="move_unit",
+                    cost=0,
+                    unit=unit.name,
+                    unit_index=unit.index,
+                    allowed_positions=_STRATEGIC_POSITIONS,
+                )
+            )
 
         # ── Commander skills ──────────────────────────────────────────────────
         for skill in state.my_state.commander_skills:
@@ -98,13 +106,15 @@ class LegalActionGenerator:
             cooling = skill.get("cooling_round", 999)
             if not is_active and cooling <= state.round:
                 safe_id = name.replace(" ", "_").lower()
-                actions.append(LegalAction(
-                    id=f"skill_{safe_id}",
-                    type="use_skill",
-                    cost=0,
-                    reason_tags=["commander_skill"],
-                    constraints=[f"skill_name:{name}"],
-                ))
+                actions.append(
+                    LegalAction(
+                        id=f"skill_{safe_id}",
+                        type="use_skill",
+                        cost=0,
+                        reason_tags=["commander_skill"],
+                        constraints=[f"skill_name:{name}"],
+                    )
+                )
 
         # ── Skip ──────────────────────────────────────────────────────────────
         actions.append(LegalAction(id="skip", type="skip", cost=0))
@@ -131,53 +141,63 @@ class LegalActionGenerator:
             aa_unlock = [a for a in unlock_actions if a.unit in ANTI_AIR_UNITS]
             group_actions = aa_unlock + aa_buy
             if group_actions:
-                groups.append(ActionGroup(
-                    id="anti_air_stabilization",
-                    title="Anti-air stabilization",
-                    purpose="Counter enemy air units that bypass ground defenses",
-                    actions=group_actions,
-                    total_cost=min((a.cost for a in aa_buy), default=0),
-                    addresses_threats=["enemy_air_pressure"],
-                    risks=["may sacrifice frontline investment"],
-                ))
+                groups.append(
+                    ActionGroup(
+                        id="anti_air_stabilization",
+                        title="Anti-air stabilization",
+                        purpose="Counter enemy air units that bypass ground defenses",
+                        actions=group_actions,
+                        total_cost=min((a.cost for a in aa_buy), default=0),
+                        addresses_threats=["enemy_air_pressure"],
+                        risks=["may sacrifice frontline investment"],
+                    )
+                )
 
         # Anti-chaff clear
         if "enemy_chaff_overload" in threat_keys:
             ac_buy = [a for a in buy_actions if a.unit in ANTI_CHAFF_UNITS]
             if ac_buy:
-                groups.append(ActionGroup(
-                    id="anti_chaff_clear",
-                    title="Anti-chaff clear",
-                    purpose="Splash damage to neutralise enemy chaff overload",
-                    actions=ac_buy,
-                    total_cost=min(a.cost for a in ac_buy),
-                    addresses_threats=["enemy_chaff_overload"],
-                ))
+                groups.append(
+                    ActionGroup(
+                        id="anti_chaff_clear",
+                        title="Anti-chaff clear",
+                        purpose="Splash damage to neutralise enemy chaff overload",
+                        actions=ac_buy,
+                        total_cost=min(a.cost for a in ac_buy),
+                        addresses_threats=["enemy_chaff_overload"],
+                    )
+                )
 
         # Artillery / backline answer
         if "enemy_artillery_pressure" in threat_keys:
-            fast_buy = [a for a in buy_actions if a.unit in _FAST_FLANKER_UNITS | AIR_UNITS]
+            fast_buy = [
+                a for a in buy_actions if a.unit in _FAST_FLANKER_UNITS | AIR_UNITS
+            ]
             if fast_buy:
-                groups.append(ActionGroup(
-                    id="artillery_answer",
-                    title="Answer enemy artillery",
-                    purpose="Fast or flanking units to pressure the enemy backline",
-                    actions=fast_buy,
-                    total_cost=min(a.cost for a in fast_buy),
-                    addresses_threats=["enemy_artillery_pressure"],
-                    risks=["commits to aggro line; enemy may pivot"],
-                ))
+                groups.append(
+                    ActionGroup(
+                        id="artillery_answer",
+                        title="Answer enemy artillery",
+                        purpose="Fast or flanking units to pressure the enemy backline",
+                        actions=fast_buy,
+                        total_cost=min(a.cost for a in fast_buy),
+                        addresses_threats=["enemy_artillery_pressure"],
+                        risks=["commits to aggro line; enemy may pivot"],
+                    )
+                )
 
         # Scaling plan — when no high-severity threats
         high_sev = [t for t in features.threats if t.severity >= 0.7]
         if not high_sev and buy_actions:
-            groups.append(ActionGroup(
-                id="scaling_plan",
-                title="Scaling plan",
-                purpose="No immediate lethal threat — invest in long-term army strength",
-                actions=buy_actions[:6],
-                total_cost=0,
-                addresses_threats=[],
-            ))
+            groups.append(
+                ActionGroup(
+                    id="scaling_plan",
+                    title="Scaling plan",
+                    purpose="No immediate lethal threat — invest in long-term army strength",
+                    actions=buy_actions[:6],
+                    total_cost=0,
+                    addresses_threats=[],
+                )
+            )
 
         return groups

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from .constructions import normalize_construction
+from .coordinates import CoordinateFrame
 from .schemas import (
-    ConstructionView,
     PlayerRoundView,
     Position,
     RoundSummary,
@@ -87,14 +88,9 @@ class StateViewBuilder:
             for u in raw.get("units", [])
         ]
 
+        frame = CoordinateFrame.from_units_and_constructions(units, [])
         constructions = [
-            ConstructionView(
-                type=c.get("type", ""),
-                construction_id=c.get("construction_id"),
-                index=c.get("index"),
-                position=Position(**c["position"]) if c.get("position") else None,
-            )
-            for c in raw.get("constructions", [])
+            normalize_construction(c, frame) for c in raw.get("constructions", [])
         ]
 
         shop_raw = raw.get("shop") or {}
@@ -129,9 +125,7 @@ class StateViewBuilder:
         my_data = players.get(player_name, {})
         enemy_name = enemy_names[0] if enemy_names else ""
         enemy_data = players.get(enemy_name, {})
-        enemy_av = sum(
-            players.get(e, {}).get("army_value") or 0 for e in enemy_names
-        )
+        enemy_av = sum(players.get(e, {}).get("army_value") or 0 for e in enemy_names)
         return RoundSummary(
             round=rnd["round"],
             my_outcome=my_data.get("fight_outcome"),
@@ -185,8 +179,10 @@ class StateViewBuilder:
         # Construction disappearance
         for i, rnum in enumerate(round_nums[1:], start=1):
             prev_rnum = round_nums[i - 1]
-            disappeared = my_construction_history[prev_rnum] - my_construction_history[rnum]
-            for (ctype, cx, cy) in sorted(disappeared):
+            disappeared = (
+                my_construction_history[prev_rnum] - my_construction_history[rnum]
+            )
+            for ctype, cx, cy in sorted(disappeared):
                 critical_events.append(
                     f"{ctype} at ({cx}, {cy}) disappeared after round {prev_rnum}."
                 )
@@ -197,7 +193,9 @@ class StateViewBuilder:
             all_enemy_types |= types
 
         for utype in sorted(all_enemy_types):
-            rounds_present = sum(1 for types in enemy_unit_history.values() if utype in types)
+            rounds_present = sum(
+                1 for types in enemy_unit_history.values() if utype in types
+            )
             if rounds_present >= 2:
                 do_not_forget.append(
                     f"Enemy has been investing in {utype} for {rounds_present} round(s)."

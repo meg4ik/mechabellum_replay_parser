@@ -1,4 +1,5 @@
 """Tests for knowledge package: parser and retriever."""
+
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,10 @@ from mechabellum_replay_parser.coach.schemas import (
     ThreatSignal,
     UnitView,
 )
-from mechabellum_replay_parser.knowledge.parser import _parse_markdown, parse_knowledge_file
+from mechabellum_replay_parser.knowledge.parser import (
+    _parse_markdown,
+    parse_knowledge_file,
+)
 from mechabellum_replay_parser.knowledge.retriever import KnowledgeRetriever
 from mechabellum_replay_parser.knowledge.schemas import KnowledgeChunk
 
@@ -68,11 +72,14 @@ Check wiki.mbxmas.com for updates. This section is not useful for LLM reasoning.
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _parse(md: str = _MINIMAL_MD) -> list[KnowledgeChunk]:
     return _parse_markdown(md, source="test.md")
 
 
-def _make_state(my_units: list[str] | None = None, enemy_units: list[str] | None = None) -> StateView:
+def _make_state(
+    my_units: list[str] | None = None, enemy_units: list[str] | None = None
+) -> StateView:
     my = [UnitView(name=n, index=i) for i, n in enumerate(my_units or [])]
     enemy = [UnitView(name=n, index=i) for i, n in enumerate(enemy_units or [])]
     return StateView(
@@ -102,6 +109,7 @@ def _no_features(threats: list[ThreatSignal] | None = None) -> TacticalFeatures:
 
 
 # ── Parser: chunk creation ────────────────────────────────────────────────────
+
 
 def test_parse_returns_chunk_list():
     chunks = _parse()
@@ -150,7 +158,9 @@ def test_towers_chunk():
 
 def test_unit_counter_chunk_for_arclight():
     chunks = _parse()
-    arclight = next((c for c in chunks if "arclight" in c.title.lower() and "7.1" in c.title), None)
+    arclight = next(
+        (c for c in chunks if "arclight" in c.title.lower() and "7.1" in c.title), None
+    )
     assert arclight is not None
     assert arclight.topic == "unit_counter"
     assert "arclight" in arclight.unit_names
@@ -158,7 +168,9 @@ def test_unit_counter_chunk_for_arclight():
 
 def test_unit_counter_chunk_for_crawler():
     chunks = _parse()
-    crawler = next((c for c in chunks if "crawler" in c.title.lower() and "7.2" in c.title), None)
+    crawler = next(
+        (c for c in chunks if "crawler" in c.title.lower() and "7.2" in c.title), None
+    )
     assert crawler is not None
     assert "crawler" in crawler.unit_names
 
@@ -178,6 +190,7 @@ def test_composition_archetype_chunk():
 
 
 # ── Parser: priority and tags ─────────────────────────────────────────────────
+
 
 def test_what_mechabellum_high_priority():
     chunks = _parse()
@@ -214,6 +227,7 @@ def test_unit_name_in_tags_for_unit_chunk():
 
 
 # ── Parser: IDs and content ───────────────────────────────────────────────────
+
 
 def test_chunk_ids_are_slugs():
     for c in _parse():
@@ -255,6 +269,7 @@ def test_parse_custom_patch_version(tmp_path):
 
 
 # ── Retriever: basic behaviour ────────────────────────────────────────────────
+
 
 def test_retriever_returns_list_of_strings():
     r = KnowledgeRetriever(_parse())
@@ -304,6 +319,7 @@ def test_retriever_no_duplicate_chunks():
 
 # ── Retriever: scoring ────────────────────────────────────────────────────────
 
+
 def test_retriever_scores_enemy_unit_names():
     r = KnowledgeRetriever(_parse())
     state = _make_state(enemy_units=["arclight"])
@@ -322,13 +338,15 @@ def test_retriever_scores_my_unit_names():
 
 def test_retriever_scores_threat_tags_air():
     r = KnowledgeRetriever(_parse())
-    threats = [ThreatSignal(
-        key="enemy_air_pressure",
-        severity=0.9,
-        source_units=["phoenix"],
-        explanation="Enemy has air",
-        my_answer="none",
-    )]
+    threats = [
+        ThreatSignal(
+            key="enemy_air_pressure",
+            severity=0.9,
+            source_units=["phoenix"],
+            explanation="Enemy has air",
+            my_answer="none",
+        )
+    ]
     result = r.retrieve(_make_state(), _no_features(threats=threats), max_chunks=6)
     combined = "\n".join(result)
     assert "air" in combined.lower() or "phoenix" in combined.lower()
@@ -336,19 +354,22 @@ def test_retriever_scores_threat_tags_air():
 
 def test_retriever_scores_source_unit_in_threats():
     r = KnowledgeRetriever(_parse())
-    threats = [ThreatSignal(
-        key="enemy_air_pressure",
-        severity=0.8,
-        source_units=["arclight"],
-        explanation="Arclight threat",
-        my_answer="none",
-    )]
+    threats = [
+        ThreatSignal(
+            key="enemy_air_pressure",
+            severity=0.8,
+            source_units=["arclight"],
+            explanation="Arclight threat",
+            my_answer="none",
+        )
+    ]
     result = r.retrieve(_make_state(), _no_features(threats=threats), max_chunks=6)
     combined = "\n".join(result)
     assert "arclight" in combined.lower()
 
 
 # ── Integration with real game_knowledge.md ───────────────────────────────────
+
 
 def _find_real_knowledge() -> Path | None:
     candidate = Path(__file__).parent.parent / "game_knowledge.md"
@@ -378,7 +399,8 @@ def test_real_knowledge_always_include_chunk_count():
         pytest.skip("game_knowledge.md not found")
     chunks = parse_knowledge_file(kf)
     always = [
-        c for c in chunks
+        c
+        for c in chunks
         if c.topic in {"base_rules", "deployment_rules", "towers"} and c.priority >= 1
     ]
     assert len(always) >= 3
@@ -391,17 +413,23 @@ def test_real_knowledge_retriever_with_air_threat():
     chunks = parse_knowledge_file(kf)
     r = KnowledgeRetriever(chunks)
     state = _make_state(my_units=["marksman"], enemy_units=["wasp", "phoenix"])
-    threats = [ThreatSignal(
-        key="enemy_air_pressure",
-        severity=0.9,
-        source_units=["wasp", "phoenix"],
-        explanation="Enemy air",
-        my_answer="none",
-    )]
+    threats = [
+        ThreatSignal(
+            key="enemy_air_pressure",
+            severity=0.9,
+            source_units=["wasp", "phoenix"],
+            explanation="Enemy air",
+            my_answer="none",
+        )
+    ]
     result = r.retrieve(state, _no_features(threats=threats), max_chunks=8)
     assert len(result) > 0
     combined = "\n".join(result)
-    assert "air" in combined.lower() or "wasp" in combined.lower() or "phoenix" in combined.lower()
+    assert (
+        "air" in combined.lower()
+        or "wasp" in combined.lower()
+        or "phoenix" in combined.lower()
+    )
 
 
 def test_real_knowledge_retriever_returns_formatted_sections():

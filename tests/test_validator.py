@@ -1,4 +1,5 @@
 """Tests for PlanValidator."""
+
 import pytest
 
 from mechabellum_replay_parser.coach.schemas import (
@@ -52,6 +53,7 @@ def validator():
 
 # ── Happy path ────────────────────────────────────────────────────────────────
 
+
 def test_valid_empty_placement(validator):
     state = _make_state()
     result = validator.validate_placement([], state)
@@ -74,11 +76,14 @@ def test_valid_buy_unlocked_unit(validator):
 
 def test_valid_move_existing_unit(validator):
     state = _make_state(units=[UnitView(name="rhino")])
-    result = validator.validate_placement([_entry("rhino", "move", x=50, y=-100)], state)
+    result = validator.validate_placement(
+        [_entry("rhino", "move", x=50, y=-100)], state
+    )
     assert result.is_valid is True
 
 
 # ── Too many buys ─────────────────────────────────────────────────────────────
+
 
 def test_too_many_buys_error(validator):
     state = _make_state(unlocked=["crawler"], buys_remaining=1, supply=9999)
@@ -121,6 +126,7 @@ def test_buys_not_checked_when_buys_remaining_none(validator):
 
 # ── Unit not unlocked ─────────────────────────────────────────────────────────
 
+
 def test_buying_locked_unit_is_error(validator):
     state = _make_state(unlocked=[], locked=["phoenix"], buys_remaining=4, supply=9999)
     result = validator.validate_placement([_entry("phoenix", "new")], state)
@@ -137,6 +143,7 @@ def test_buying_unlocked_unit_no_error(validator):
 
 
 # ── Unit not found (keep/move non-existent) ───────────────────────────────────
+
 
 def test_keep_nonexistent_unit_is_warning(validator):
     state = _make_state(units=[])
@@ -172,9 +179,12 @@ def test_keep_same_unit_twice_when_only_one_in_army(validator):
 
 # ── Coordinate bounds ─────────────────────────────────────────────────────────
 
+
 def test_x_out_of_bounds_is_error(validator):
     state = _make_state(units=[UnitView(name="crawler")])
-    result = validator.validate_placement([_entry("crawler", "keep", x=999, y=-100)], state)
+    result = validator.validate_placement(
+        [_entry("crawler", "keep", x=999, y=-100)], state
+    )
     codes = [i.code for i in result.issues]
     assert "out_of_bounds_x" in codes
     assert result.is_valid is False
@@ -182,7 +192,9 @@ def test_x_out_of_bounds_is_error(validator):
 
 def test_y_out_of_bounds_is_error(validator):
     state = _make_state(units=[UnitView(name="crawler")])
-    result = validator.validate_placement([_entry("crawler", "keep", x=0, y=999)], state)
+    result = validator.validate_placement(
+        [_entry("crawler", "keep", x=0, y=999)], state
+    )
     codes = [i.code for i in result.issues]
     assert "out_of_bounds_y" in codes
     assert result.is_valid is False
@@ -190,19 +202,24 @@ def test_y_out_of_bounds_is_error(validator):
 
 def test_valid_corner_coordinates(validator):
     state = _make_state(units=[UnitView(name="crawler")])
-    result = validator.validate_placement([_entry("crawler", "keep", x=-285, y=-295)], state)
+    result = validator.validate_placement(
+        [_entry("crawler", "keep", x=-285, y=-295)], state
+    )
     bound_codes = [i.code for i in result.issues if "out_of_bounds" in i.code]
     assert bound_codes == []
 
 
 def test_valid_max_coordinates(validator):
     state = _make_state(units=[UnitView(name="crawler")])
-    result = validator.validate_placement([_entry("crawler", "keep", x=285, y=-45)], state)
+    result = validator.validate_placement(
+        [_entry("crawler", "keep", x=285, y=-45)], state
+    )
     bound_codes = [i.code for i in result.issues if "out_of_bounds" in i.code]
     assert bound_codes == []
 
 
 # ── Supply budget warning ─────────────────────────────────────────────────────
+
 
 def test_supply_overspend_is_warning(validator):
     # fortress costs 400; supply = 100
@@ -231,6 +248,7 @@ def test_unknown_action_is_warning(validator):
 
 
 # ── Integration with parsed_replay fixture ────────────────────────────────────
+
 
 def test_validate_valid_keep_from_parsed_replay(parsed_replay):
     from mechabellum_replay_parser.coach.state_view import StateViewBuilder

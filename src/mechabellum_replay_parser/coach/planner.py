@@ -26,8 +26,12 @@ def _compact_state(
         "round": state.round,
         "player": state.player_name,
         "supply": state.my_supply,
-        "buys_remaining": state.my_state.shop.buys_remaining if state.my_state.shop else None,
-        "unlocks_remaining": state.my_state.shop.unlocks_remaining if state.my_state.shop else None,
+        "buys_remaining": state.my_state.shop.buys_remaining
+        if state.my_state.shop
+        else None,
+        "unlocks_remaining": state.my_state.shop.unlocks_remaining
+        if state.my_state.shop
+        else None,
         "my_army_value": state.my_state.army_value,
         "enemy_army_value": sum(es.army_value or 0 for es in state.enemy_states),
         "tempo": features.tempo_state,
@@ -52,9 +56,7 @@ def _compact_state(
             for u in state.my_state.units
         ],
         "enemy_units": [
-            {"name": u.name}
-            for es in state.enemy_states
-            for u in es.units
+            {"name": u.name} for es in state.enemy_states for u in es.units
         ],
         "my_constructions": [
             {
@@ -146,7 +148,10 @@ class Planner:
 
         plans_raw = raw.get("plans", [])
         if not isinstance(plans_raw, list):
-            _log.warning("Planner returned non-list plans value (%s) — using fallback", type(plans_raw).__name__)
+            _log.warning(
+                "Planner returned non-list plans value (%s) — using fallback",
+                type(plans_raw).__name__,
+            )
             return [_make_fallback_plan(state)]
 
         plans: list[CandidatePlan] = []
@@ -154,7 +159,9 @@ class Planner:
             try:
                 plans.append(CandidatePlan.model_validate(raw_plan))
             except Exception as exc:  # noqa: BLE001
-                plan_id = raw_plan.get("id") if isinstance(raw_plan, dict) else repr(raw_plan)
+                plan_id = (
+                    raw_plan.get("id") if isinstance(raw_plan, dict) else repr(raw_plan)
+                )
                 _log.debug("Skipping invalid plan from LLM: %s — %s", plan_id, exc)
 
         if not plans:

@@ -1,4 +1,5 @@
 """Tests for Judge using LocalProvider (no real LLM)."""
+
 import pytest
 
 from mechabellum_replay_parser.coach.feature_extractor import FeatureExtractor
@@ -70,12 +71,16 @@ def _invalid_result(plan_id: str = "plan_1") -> PlanValidationResult:
     return PlanValidationResult(
         plan_id=plan_id,
         is_valid=False,
-        issues=[ValidationIssue(severity="error", code="too_many_buys", message="too many")],
+        issues=[
+            ValidationIssue(severity="error", code="too_many_buys", message="too many")
+        ],
     )
 
 
 def _make_judge(json_response: dict) -> Judge:
-    return Judge(LocalProvider(json_response=json_response), system_prompt="test system")
+    return Judge(
+        LocalProvider(json_response=json_response), system_prompt="test system"
+    )
 
 
 _VALID_JUDGE_RESPONSE = {
@@ -92,6 +97,7 @@ _VALID_JUDGE_RESPONSE = {
 
 # ── Happy path ────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.anyio
 async def test_returns_judge_output():
     judge = _make_judge(_VALID_JUDGE_RESPONSE)
@@ -104,14 +110,18 @@ async def test_returns_judge_output():
 @pytest.mark.anyio
 async def test_confidence_propagated():
     judge = _make_judge(_VALID_JUDGE_RESPONSE)
-    result = await judge.select_plan(_make_state(), _no_features(), [(_make_plan(), _valid_result())])
+    result = await judge.select_plan(
+        _make_state(), _no_features(), [(_make_plan(), _valid_result())]
+    )
     assert result.confidence == pytest.approx(0.8)
 
 
 @pytest.mark.anyio
 async def test_placement_in_output():
     judge = _make_judge(_VALID_JUDGE_RESPONSE)
-    result = await judge.select_plan(_make_state(), _no_features(), [(_make_plan(), _valid_result())])
+    result = await judge.select_plan(
+        _make_state(), _no_features(), [(_make_plan(), _valid_result())]
+    )
     assert len(result.placement) == 1
     assert result.placement[0]["unit"] == "arclight"
 
@@ -119,18 +129,23 @@ async def test_placement_in_output():
 @pytest.mark.anyio
 async def test_watch_next_round_populated():
     judge = _make_judge(_VALID_JUDGE_RESPONSE)
-    result = await judge.select_plan(_make_state(), _no_features(), [(_make_plan(), _valid_result())])
+    result = await judge.select_plan(
+        _make_state(), _no_features(), [(_make_plan(), _valid_result())]
+    )
     assert "Monitor if enemy adds more air." in result.watch_next_round
 
 
 @pytest.mark.anyio
 async def test_mistake_to_avoid_populated():
     judge = _make_judge(_VALID_JUDGE_RESPONSE)
-    result = await judge.select_plan(_make_state(), _no_features(), [(_make_plan(), _valid_result())])
+    result = await judge.select_plan(
+        _make_state(), _no_features(), [(_make_plan(), _valid_result())]
+    )
     assert result.mistake_to_avoid == "Don't skip anti-air."
 
 
 # ── Fallback behaviour ────────────────────────────────────────────────────────
+
 
 @pytest.mark.anyio
 async def test_fallback_on_provider_exception():
@@ -141,6 +156,7 @@ async def test_fallback_on_provider_exception():
         def stream_text(self, _system, _user, temperature=0.2):
             async def _gen():
                 yield ""
+
             return _gen()
 
     judge = Judge(FailingProvider(), system_prompt="test")
@@ -180,18 +196,22 @@ def test_fallback_returns_judge_output_instance():
 
 # ── why_not_others handling ───────────────────────────────────────────────────
 
+
 @pytest.mark.anyio
 async def test_why_not_others_parsed():
     response = dict(_VALID_JUDGE_RESPONSE)
     response["why_not_others"] = [{"plan_id": "plan_2", "reason": "Too greedy."}]
     judge = _make_judge(response)
-    result = await judge.select_plan(_make_state(), _no_features(), [(_make_plan(), _valid_result())])
+    result = await judge.select_plan(
+        _make_state(), _no_features(), [(_make_plan(), _valid_result())]
+    )
     assert len(result.why_not_others) == 1
     assert result.why_not_others[0].plan_id == "plan_2"
     assert result.why_not_others[0].reason == "Too greedy."
 
 
 # ── Integration with parsed_replay fixture ────────────────────────────────────
+
 
 @pytest.mark.anyio
 async def test_judge_from_parsed_replay(parsed_replay):

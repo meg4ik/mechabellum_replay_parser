@@ -1,12 +1,11 @@
 """Tests for StateViewBuilder."""
+
 import pytest
 
 from mechabellum_replay_parser.coach.schemas import (
     ConstructionView,
-    PlayerRoundView,
     StateView,
     StrategicMemory,
-    UnitView,
 )
 from mechabellum_replay_parser.coach.state_view import StateViewBuilder
 
@@ -17,6 +16,7 @@ def builder():
 
 
 # ── Basic build ───────────────────────────────────────────────────────────────
+
 
 def test_build_returns_state_view(builder, parsed_replay):
     state = builder.build(parsed_replay, supply=100, player_name="Player1")
@@ -48,6 +48,7 @@ def test_supply_none(builder, parsed_replay):
 
 # ── Teams / enemies ───────────────────────────────────────────────────────────
 
+
 def test_enemy_names_detected(builder, parsed_replay):
     state = builder.build(parsed_replay, supply=0, player_name="Player1")
     assert state.enemy_names == ["Player2"]
@@ -67,6 +68,7 @@ def test_enemy_perspective(builder, parsed_replay):
 
 
 # ── Units ─────────────────────────────────────────────────────────────────────
+
 
 def test_my_units_parsed(builder, parsed_replay):
     state = builder.build(parsed_replay, supply=0, player_name="Player1")
@@ -89,6 +91,7 @@ def test_enemy_has_no_units(builder, parsed_replay):
 
 # ── Constructions ─────────────────────────────────────────────────────────────
 
+
 def test_my_constructions_parsed(builder, parsed_replay):
     state = builder.build(parsed_replay, supply=0, player_name="Player1")
     assert len(state.my_state.constructions) == 1
@@ -106,6 +109,7 @@ def test_enemy_has_no_constructions(builder, parsed_replay):
 
 # ── Shop ──────────────────────────────────────────────────────────────────────
 
+
 def test_shop_buys_remaining(builder, parsed_replay):
     state = builder.build(parsed_replay, supply=0, player_name="Player1")
     assert state.my_state.shop is not None
@@ -118,6 +122,7 @@ def test_shop_unlocks_remaining(builder, parsed_replay):
 
 
 # ── Round summaries ───────────────────────────────────────────────────────────
+
 
 def test_recent_rounds_count(builder, parsed_replay):
     state = builder.build(parsed_replay, supply=0, player_name="Player1")
@@ -133,6 +138,7 @@ def test_recent_round_outcome(builder, parsed_replay):
 
 
 # ── Strategic memory ──────────────────────────────────────────────────────────
+
 
 def test_strategic_memory_type(builder, parsed_replay):
     state = builder.build(parsed_replay, supply=0, player_name="Player1")
@@ -163,36 +169,90 @@ def test_strategic_memory_multi_round():
                 "round": 1,
                 "fight_result": None,
                 "players": {
-                    "Me": {"units": [], "constructions": [], "fight_outcome": "loss",
-                            "active_techs": [], "shop": {}, "army_value": 100,
-                            "hp": 3, "supply": 0, "officers": [], "commander_skills": [],
-                            "contraptions": []},
-                    "Enemy": {"units": [{"name": "crawler", "unit_id": 10, "index": 0,
-                                          "level": 1, "exp": 0, "rounds_survived": 0,
-                                          "position": {"x": 0, "y": 80}, "equipment": None,
-                                          "sell_supply": 60, "rotate": False}],
-                               "constructions": [], "fight_outcome": "win",
-                               "active_techs": [], "shop": {}, "army_value": 100,
-                               "hp": 3, "supply": 0, "officers": [], "commander_skills": [],
-                               "contraptions": []},
+                    "Me": {
+                        "units": [],
+                        "constructions": [],
+                        "fight_outcome": "loss",
+                        "active_techs": [],
+                        "shop": {},
+                        "army_value": 100,
+                        "hp": 3,
+                        "supply": 0,
+                        "officers": [],
+                        "commander_skills": [],
+                        "contraptions": [],
+                    },
+                    "Enemy": {
+                        "units": [
+                            {
+                                "name": "crawler",
+                                "unit_id": 10,
+                                "index": 0,
+                                "level": 1,
+                                "exp": 0,
+                                "rounds_survived": 0,
+                                "position": {"x": 0, "y": 80},
+                                "equipment": None,
+                                "sell_supply": 60,
+                                "rotate": False,
+                            }
+                        ],
+                        "constructions": [],
+                        "fight_outcome": "win",
+                        "active_techs": [],
+                        "shop": {},
+                        "army_value": 100,
+                        "hp": 3,
+                        "supply": 0,
+                        "officers": [],
+                        "commander_skills": [],
+                        "contraptions": [],
+                    },
                 },
             },
             {
                 "round": 2,
                 "fight_result": None,
                 "players": {
-                    "Me": {"units": [], "constructions": [], "fight_outcome": None,
-                            "active_techs": [], "shop": {}, "army_value": 100,
-                            "hp": 3, "supply": 0, "officers": [], "commander_skills": [],
-                            "contraptions": []},
-                    "Enemy": {"units": [{"name": "crawler", "unit_id": 10, "index": 0,
-                                          "level": 1, "exp": 0, "rounds_survived": 1,
-                                          "position": {"x": 0, "y": 80}, "equipment": None,
-                                          "sell_supply": 60, "rotate": False}],
-                               "constructions": [], "fight_outcome": None,
-                               "active_techs": [], "shop": {}, "army_value": 100,
-                               "hp": 3, "supply": 0, "officers": [], "commander_skills": [],
-                               "contraptions": []},
+                    "Me": {
+                        "units": [],
+                        "constructions": [],
+                        "fight_outcome": None,
+                        "active_techs": [],
+                        "shop": {},
+                        "army_value": 100,
+                        "hp": 3,
+                        "supply": 0,
+                        "officers": [],
+                        "commander_skills": [],
+                        "contraptions": [],
+                    },
+                    "Enemy": {
+                        "units": [
+                            {
+                                "name": "crawler",
+                                "unit_id": 10,
+                                "index": 0,
+                                "level": 1,
+                                "exp": 0,
+                                "rounds_survived": 1,
+                                "position": {"x": 0, "y": 80},
+                                "equipment": None,
+                                "sell_supply": 60,
+                                "rotate": False,
+                            }
+                        ],
+                        "constructions": [],
+                        "fight_outcome": None,
+                        "active_techs": [],
+                        "shop": {},
+                        "army_value": 100,
+                        "hp": 3,
+                        "supply": 0,
+                        "officers": [],
+                        "commander_skills": [],
+                        "contraptions": [],
+                    },
                 },
             },
         ],
@@ -213,36 +273,83 @@ def test_strategic_memory_new_enemy_unit_event():
                 "round": 1,
                 "fight_result": None,
                 "players": {
-                    "Me": {"units": [], "constructions": [], "fight_outcome": "loss",
-                            "active_techs": [], "shop": {}, "army_value": 0,
-                            "hp": 3, "supply": 0, "officers": [], "commander_skills": [],
-                            "contraptions": []},
-                    "Enemy": {"units": [],
-                               "constructions": [], "fight_outcome": "win",
-                               "active_techs": [], "shop": {}, "army_value": 0,
-                               "hp": 3, "supply": 0, "officers": [], "commander_skills": [],
-                               "contraptions": []},
+                    "Me": {
+                        "units": [],
+                        "constructions": [],
+                        "fight_outcome": "loss",
+                        "active_techs": [],
+                        "shop": {},
+                        "army_value": 0,
+                        "hp": 3,
+                        "supply": 0,
+                        "officers": [],
+                        "commander_skills": [],
+                        "contraptions": [],
+                    },
+                    "Enemy": {
+                        "units": [],
+                        "constructions": [],
+                        "fight_outcome": "win",
+                        "active_techs": [],
+                        "shop": {},
+                        "army_value": 0,
+                        "hp": 3,
+                        "supply": 0,
+                        "officers": [],
+                        "commander_skills": [],
+                        "contraptions": [],
+                    },
                 },
             },
             {
                 "round": 2,
                 "fight_result": None,
                 "players": {
-                    "Me": {"units": [], "constructions": [], "fight_outcome": None,
-                            "active_techs": [], "shop": {}, "army_value": 0,
-                            "hp": 3, "supply": 0, "officers": [], "commander_skills": [],
-                            "contraptions": []},
-                    "Enemy": {"units": [{"name": "phoenix", "unit_id": 16, "index": 0,
-                                          "level": 1, "exp": 0, "rounds_survived": 0,
-                                          "position": {"x": 0, "y": 80}, "equipment": None,
-                                          "sell_supply": 120, "rotate": False}],
-                               "constructions": [], "fight_outcome": None,
-                               "active_techs": [], "shop": {}, "army_value": 200,
-                               "hp": 3, "supply": 0, "officers": [], "commander_skills": [],
-                               "contraptions": []},
+                    "Me": {
+                        "units": [],
+                        "constructions": [],
+                        "fight_outcome": None,
+                        "active_techs": [],
+                        "shop": {},
+                        "army_value": 0,
+                        "hp": 3,
+                        "supply": 0,
+                        "officers": [],
+                        "commander_skills": [],
+                        "contraptions": [],
+                    },
+                    "Enemy": {
+                        "units": [
+                            {
+                                "name": "phoenix",
+                                "unit_id": 16,
+                                "index": 0,
+                                "level": 1,
+                                "exp": 0,
+                                "rounds_survived": 0,
+                                "position": {"x": 0, "y": 80},
+                                "equipment": None,
+                                "sell_supply": 120,
+                                "rotate": False,
+                            }
+                        ],
+                        "constructions": [],
+                        "fight_outcome": None,
+                        "active_techs": [],
+                        "shop": {},
+                        "army_value": 200,
+                        "hp": 3,
+                        "supply": 0,
+                        "officers": [],
+                        "commander_skills": [],
+                        "contraptions": [],
+                    },
                 },
             },
         ],
     }
     state = builder.build(parsed, supply=None, player_name="Me")
-    assert any("phoenix" in e and "round 2" in e for e in state.strategic_memory.critical_events)
+    assert any(
+        "phoenix" in e and "round 2" in e
+        for e in state.strategic_memory.critical_events
+    )

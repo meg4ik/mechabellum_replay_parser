@@ -1,4 +1,5 @@
 """Deterministic stub provider — no network, for unit tests."""
+
 from __future__ import annotations
 
 from collections.abc import AsyncIterator

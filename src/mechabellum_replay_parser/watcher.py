@@ -6,6 +6,7 @@ In CLI mode: launched via asyncio.run(watch(...)) from cli.py.
 No Tkinter imports — supply and board visualization are delegated to native_ui
 via WebSocket events (supply_request / recommendation_ready).
 """
+
 import asyncio
 import json
 import logging
@@ -15,7 +16,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from watchdog.events import FileCreatedEvent, FileSystemEventHandler
-from watchdog.observers import Observer
 from watchdog.observers.polling import PollingObserver
 
 from .coach.engine import CoachEngine
@@ -53,12 +53,16 @@ def _write_debug(name: str, data) -> None:
         if isinstance(data, str):
             path.write_text(data, encoding="utf-8")
         else:
-            path.write_text(json.dumps(data, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+            path.write_text(
+                json.dumps(data, ensure_ascii=False, indent=2, default=str),
+                encoding="utf-8",
+            )
     except Exception as exc:
         _log.debug("Debug artifact write failed for %s: %s", name, exc)
 
 
 # ── Debug helpers ─────────────────────────────────────────────────────────────
+
 
 def _collect_unknowns(obj, path: str = "") -> list[str]:
     results = []
@@ -96,22 +100,41 @@ def _debug_report(parsed: dict) -> None:
         rnum = rnd["round"]
         fight = rnd.get("fight_result") or {}
         print(f"\n{'─' * 70}")
-        print(f"ROUND {rnum}" + (f"  fight_result={json.dumps(fight)}" if fight else "  (no fight result)"))
+        print(
+            f"ROUND {rnum}"
+            + (
+                f"  fight_result={json.dumps(fight)}"
+                if fight
+                else "  (no fight result)"
+            )
+        )
         for name, pdata in rnd.get("players", {}).items():
-            print(f"\n  ┌─ {name}  HP={pdata.get('hp')}  outcome={pdata.get('fight_outcome')}")
+            print(
+                f"\n  ┌─ {name}  HP={pdata.get('hp')}  outcome={pdata.get('fight_outcome')}"
+            )
             print(f"  │  Officers   : {pdata.get('officers')}")
-            print(f"  │  Cmd skills : {[s['name'] for s in pdata.get('commander_skills', [])]}")
-            print(f"  │  Contraption: {[c['name'] for c in pdata.get('contraptions', [])]}")
-            print(f"  │  Constructs : {[c['type'] for c in pdata.get('constructions', [])]}")
+            print(
+                f"  │  Cmd skills : {[s['name'] for s in pdata.get('commander_skills', [])]}"
+            )
+            print(
+                f"  │  Contraption: {[c['name'] for c in pdata.get('contraptions', [])]}"
+            )
+            print(
+                f"  │  Constructs : {[c['type'] for c in pdata.get('constructions', [])]}"
+            )
             shop = pdata.get("shop", {})
-            print(f"  │  Shop unlocked: {shop.get('unlocked')}  locked: {shop.get('locked')}")
+            print(
+                f"  │  Shop unlocked: {shop.get('unlocked')}  locked: {shop.get('locked')}"
+            )
             for t in pdata.get("active_techs", []):
                 print(f"  │  Tech  : {t['unit']} → {t['tech']}")
             units = pdata.get("units", [])
             print(f"  │  Units ({len(units)}):")
             for u in units:
                 eq = f"  equip={u['equipment']}" if u.get("equipment") else ""
-                print(f"  │    [{u['index']}] {u['name']}  lvl={u['level']}  pos={u['position']}{eq}")
+                print(
+                    f"  │    [{u['index']}] {u['name']}  lvl={u['level']}  pos={u['position']}{eq}"
+                )
             actions = pdata.get("actions", [])
             print(f"  │  Actions ({len(actions)}):")
             for a in actions:
@@ -121,6 +144,7 @@ def _debug_report(parsed: dict) -> None:
 
 
 # ── File handling ─────────────────────────────────────────────────────────────
+
 
 async def _wait_for_file_stable(path: Path) -> bool:
     """Wait until the file size stops changing (Steam may still be writing)."""
@@ -163,6 +187,7 @@ def _handle_after_process(path: Path) -> None:
 
 # ── Core pipeline ─────────────────────────────────────────────────────────────
 
+
 async def process_replay(
     path: Path,
     broker: InMemoryBroker,
@@ -184,7 +209,12 @@ async def process_replay(
     try:
         parsed = replay_to_dict(path)
         players = [p for team in parsed["teams"] for p in team]
-        _log.info("stage=replay_parsed file=%s players=%s rounds=%d", path.name, players, parsed["last_round"])
+        _log.info(
+            "stage=replay_parsed file=%s players=%s rounds=%d",
+            path.name,
+            players,
+            parsed["last_round"],
+        )
         _write_debug("latest_parsed.json", parsed)
         print(f"[✓] Parsed. Players: {players}, rounds: {parsed['last_round']}")
 
@@ -202,27 +232,38 @@ async def process_replay(
         supply_future: asyncio.Future = loop.create_future()
         pending_supplies[rec_id] = supply_future
 
-        await broker.publish(UIEvent(
-            type="supply_request",
-            payload=SupplyRequestPayload(
-                recommendation_id=rec_id,
-                round=last_round,
-                player_name=player_name,
-            ).model_dump(),
-        ))
-        _log.info("stage=supply_requested rec_id=%s round=%d player=%s", rec_id, last_round, player_name)
+        await broker.publish(
+            UIEvent(
+                type="supply_request",
+                payload=SupplyRequestPayload(
+                    recommendation_id=rec_id,
+                    round=last_round,
+                    player_name=player_name,
+                ).model_dump(),
+            )
+        )
+        _log.info(
+            "stage=supply_requested rec_id=%s round=%d player=%s",
+            rec_id,
+            last_round,
+            player_name,
+        )
 
         supply: int | None = None
         try:
             supply = await asyncio.wait_for(supply_future, timeout=_supply_timeout())
             _log.info("stage=supply_received rec_id=%s supply=%s", rec_id, supply)
         except asyncio.TimeoutError:
-            _log.warning("stage=supply_timeout rec_id=%s — proceeding without supply", rec_id)
+            _log.warning(
+                "stage=supply_timeout rec_id=%s — proceeding without supply", rec_id
+            )
             print("[!] Supply timeout — proceeding without supply")
         finally:
             pending_supplies.pop(rec_id, None)
 
-        analysis = await _coach_engine.analyze_replay_detailed(parsed, supply, player_name)
+        analysis = await _coach_engine.analyze_replay_detailed(
+            parsed, supply, player_name
+        )
         recommendation = analysis.recommendation
 
         if persistence is not None:
@@ -246,34 +287,44 @@ async def process_replay(
             )
             player_data = last["players"].get(player_name, {})
             current_units = player_data.get("units", [])
-            constructions = player_data.get("constructions", [])
+            if analysis.state_view is not None:
+                constructions = [
+                    c.model_dump() for c in analysis.state_view.my_state.constructions
+                ]
+            else:
+                constructions = player_data.get("constructions", [])
 
-            await broker.publish(UIEvent(
-                type="recommendation_ready",
-                payload=RecommendationReadyPayload(
-                    recommendation_id=rec_id,
-                    round=last_round,
-                    player_name=player_name,
-                    summary=recommendation.summary,
-                    current_units=current_units,
-                    constructions=constructions,
-                    placement=recommendation.placement,
-                    coach_text=recommendation.coach_text,
-                ).model_dump(),
-            ))
+            await broker.publish(
+                UIEvent(
+                    type="recommendation_ready",
+                    payload=RecommendationReadyPayload(
+                        recommendation_id=rec_id,
+                        round=last_round,
+                        player_name=player_name,
+                        summary=recommendation.summary,
+                        current_units=current_units,
+                        constructions=constructions,
+                        placement=recommendation.placement,
+                        coach_text=recommendation.coach_text,
+                    ).model_dump(),
+                )
+            )
             _log.info("stage=ui_event_sent type=recommendation_ready rec_id=%s", rec_id)
 
     except (ValueError, KeyError, AttributeError) as e:
         print(f"[!] Pipeline error: {e}")
-        await broker.publish(UIEvent(
-            type="error",
-            payload={"message": str(e), "details": ""},
-        ))
+        await broker.publish(
+            UIEvent(
+                type="error",
+                payload={"message": str(e), "details": ""},
+            )
+        )
     finally:
         _handle_after_process(path)
 
 
 # ── Watchdog integration ──────────────────────────────────────────────────────
+
 
 class _ReplayHandler(FileSystemEventHandler):
     def __init__(
@@ -313,7 +364,9 @@ async def watch(
         pending_supplies = {}
 
     if not replay_dir.exists():
-        _log.warning("stage=watcher_start_failed replay_dir=%s — directory not found", replay_dir)
+        _log.warning(
+            "stage=watcher_start_failed replay_dir=%s — directory not found", replay_dir
+        )
         return
 
     _log.info("stage=watcher_started replay_dir=%s", replay_dir)
@@ -323,7 +376,9 @@ async def watch(
 
     # Handle any files already present at startup
     for existing in replay_dir.glob("*.grbr"):
-        asyncio.ensure_future(process_replay(existing, broker, pending_supplies, persistence))
+        asyncio.ensure_future(
+            process_replay(existing, broker, pending_supplies, persistence)
+        )
 
     handler = _ReplayHandler(loop, broker, pending_supplies, persistence)
     # PollingObserver works across Docker bind-mounts (inotify events don't fire on Windows-mounted dirs)

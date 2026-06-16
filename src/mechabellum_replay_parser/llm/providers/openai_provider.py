@@ -1,4 +1,5 @@
 """Async OpenAI backend."""
+
 from __future__ import annotations
 
 import json
@@ -60,7 +61,9 @@ class OpenAIProvider:
         content = response.choices[0].message.content or "{}"
         return json.loads(content)
 
-    async def _stream_gen(self, system: str, user: str, temperature: float) -> AsyncIterator[str]:
+    async def _stream_gen(
+        self, system: str, user: str, temperature: float
+    ) -> AsyncIterator[str]:
         kwargs: dict = {
             "model": self._model,
             "messages": [

@@ -37,18 +37,20 @@ def _parse_units(player_data_el) -> list[dict]:
     for u in player_data_el.findall("units/NewUnitData"):
         uid = int(u.find("id").text)
         equip_id = int(u.find("EquipmentID").text)
-        units.append({
-            "name": _unit_name(uid),
-            "unit_id": uid,
-            "index": int(u.find("Index").text),
-            "level": int(u.find("Level").text),
-            "exp": int(u.find("Exp").text),
-            "rounds_survived": int(u.find("RoundCount").text),
-            "position": _xy(u.find("Position")),
-            "equipment": ITEM_LOOKUP.get(equip_id) if equip_id != 0 else None,
-            "sell_supply": int(u.find("SellSupply").text),
-            "rotate": u.find("IsRotate").text == "true",
-        })
+        units.append(
+            {
+                "name": _unit_name(uid),
+                "unit_id": uid,
+                "index": int(u.find("Index").text),
+                "level": int(u.find("Level").text),
+                "exp": int(u.find("Exp").text),
+                "rounds_survived": int(u.find("RoundCount").text),
+                "position": _xy(u.find("Position")),
+                "equipment": ITEM_LOOKUP.get(equip_id) if equip_id != 0 else None,
+                "sell_supply": int(u.find("SellSupply").text),
+                "rotate": u.find("IsRotate").text == "true",
+            }
+        )
     return units
 
 
@@ -83,11 +85,13 @@ def _parse_active_techs(player_data_el) -> list[dict]:
         uid = int(uid_el.text)
         for tech_el in unit_tech.findall("techs/tech"):
             tid = int(tech_el.get("data"))
-            techs.append({
-                "unit": _unit_name(uid),
-                "tech": TECH_LOOKUP.get(tid, f"unknown_tech({tid})"),
-                "tech_id": tid,
-            })
+            techs.append(
+                {
+                    "unit": _unit_name(uid),
+                    "tech": TECH_LOOKUP.get(tid, f"unknown_tech({tid})"),
+                    "tech_id": tid,
+                }
+            )
     return techs
 
 
@@ -95,25 +99,31 @@ def _parse_contraptions(player_data_el) -> list[dict]:
     items = []
     for c in player_data_el.findall("contraptions/ContraptionData"):
         cid = int(c.find("id").text)
-        items.append({
-            "name": CONTRAPTION_LOOKUP.get(cid, f"unknown({cid})"),
-            "contraption_id": cid,
-            "index": int(c.find("index").text),
-            "position": _xy(c.find("position")),
-        })
+        items.append(
+            {
+                "name": CONTRAPTION_LOOKUP.get(cid, f"unknown({cid})"),
+                "contraption_id": cid,
+                "index": int(c.find("index").text),
+                "position": _xy(c.find("position")),
+            }
+        )
     return items
 
 
 def _parse_constructions(player_data_el) -> list[dict]:
     items = []
-    for c in player_data_el.findall("constructionSnapshotDatas/ConstructionSnapshotData"):
+    for c in player_data_el.findall(
+        "constructionSnapshotDatas/ConstructionSnapshotData"
+    ):
         cid = int(c.find("ID").text)
-        items.append({
-            "type": CONSTRUCTION_LOOKUP.get(cid, f"unknown({cid})"),
-            "construction_id": cid,
-            "index": int(c.find("Index").text),
-            "position": _xy(c.find("Position")),
-        })
+        items.append(
+            {
+                "type": CONSTRUCTION_LOOKUP.get(cid, f"unknown({cid})"),
+                "construction_id": cid,
+                "index": int(c.find("Index").text),
+                "position": _xy(c.find("Position")),
+            }
+        )
     return items
 
 
@@ -122,14 +132,22 @@ def _parse_shop(player_data_el) -> dict:
     if shop is None:
         return {}
     return {
-        "unlocked": [_unit_name(int(u.text)) for u in shop.findall("unlockedUnits/int")],
+        "unlocked": [
+            _unit_name(int(u.text)) for u in shop.findall("unlockedUnits/int")
+        ],
         "locked": [_unit_name(int(u.text)) for u in shop.findall("lockedUnits/int")],
-        "buys_remaining": int(shop.find("BuyCount").text) if shop.find("BuyCount") is not None else None,
-        "unlocks_remaining": int(shop.find("UnlockCount").text) if shop.find("UnlockCount") is not None else None,
+        "buys_remaining": int(shop.find("BuyCount").text)
+        if shop.find("BuyCount") is not None
+        else None,
+        "unlocks_remaining": int(shop.find("UnlockCount").text)
+        if shop.find("UnlockCount") is not None
+        else None,
     }
 
 
-def _parse_actions(round_el, round_number: int, reinforce_rounds: list[int], skills: dict[int, dict]) -> list[dict]:
+def _parse_actions(
+    round_el, round_number: int, reinforce_rounds: list[int], skills: dict[int, dict]
+) -> list[dict]:
     # Work on a copy so acquired skills accumulate within this round
     skills = dict(skills)
     next_skill_index = max(skills.keys()) + 1 if skills else 0
@@ -140,7 +158,9 @@ def _parse_actions(round_el, round_number: int, reinforce_rounds: list[int], ski
         time_el = action_el.find("Time")
         timestamp = int(time_el.text) if time_el is not None else None
 
-        parsed = _parse_single_action(action_el, xsi_type, round_number, reinforce_rounds, skills)
+        parsed = _parse_single_action(
+            action_el, xsi_type, round_number, reinforce_rounds, skills
+        )
         if parsed is None:
             continue
 
@@ -168,21 +188,27 @@ def _parse_actions(round_el, round_number: int, reinforce_rounds: list[int], ski
 
 
 def _parse_single_action(
-    el, xsi_type: str, round_number: int, reinforce_rounds: list[int], skills: dict[int, dict]
+    el,
+    xsi_type: str,
+    round_number: int,
+    reinforce_rounds: list[int],
+    skills: dict[int, dict],
 ) -> dict | None:
     if xsi_type == "PAD_MoveUnit":
         moves = []
         for move in el.findall("moveUnitDatas/MoveUnitData"):
             uid = int(move.find("unitID").text)
-            moves.append({
-                "type": "move",
-                "unit": _unit_name(uid),
-                "unit_id": uid,
-                "unit_index": int(move.find("unitIndex").text),
-                "from": _xy(move.find("positionRecord")),
-                "to": _xy(move.find("position")),
-                "rotate": move.find("isRotate").text == "true",
-            })
+            moves.append(
+                {
+                    "type": "move",
+                    "unit": _unit_name(uid),
+                    "unit_id": uid,
+                    "unit_index": int(move.find("unitIndex").text),
+                    "from": _xy(move.find("positionRecord")),
+                    "to": _xy(move.find("position")),
+                    "rotate": move.find("isRotate").text == "true",
+                }
+            )
         return {"type": "_move_batch", "moves": moves} if moves else None
 
     if xsi_type == "PAD_BuyUnit":
@@ -233,7 +259,9 @@ def _parse_single_action(
         sid = int(sid_el.text) if sid_el is not None else None
         return {
             "type": "command_tower",
-            "skill": COMMAND_TOWER_SKILLS.get(sid, f"unknown({sid})") if sid is not None else None,
+            "skill": COMMAND_TOWER_SKILLS.get(sid, f"unknown({sid})")
+            if sid is not None
+            else None,
         }
 
     if xsi_type == "PAD_ActiveBlueprint":
@@ -253,7 +281,9 @@ def _parse_single_action(
             "skill": skill_info.get("name", f"unknown_skill(index={skill_idx})"),
             "skill_index": skill_idx,
             "positions": [_xy(p) for p in positions_el],
-            "unit_index": int(unit_index_el.text) if unit_index_el is not None else None,
+            "unit_index": int(unit_index_el.text)
+            if unit_index_el is not None
+            else None,
         }
 
     if xsi_type == "PAD_ChooseReinforceItem":
@@ -313,23 +343,30 @@ def replay_to_dict(path: Path) -> dict:
         for s in root.findall("matchDatas/MatchSnapshotData")
     }
 
-    all_rounds = sorted({
-        int(rr.find("round").text)
-        for pr in player_elements
-        for rr in pr.findall("playerRoundRecords/PlayerRoundRecord")
-    })
+    all_rounds = sorted(
+        {
+            int(rr.find("round").text)
+            for pr in player_elements
+            for rr in pr.findall("playerRoundRecords/PlayerRoundRecord")
+        }
+    )
 
     rounds = []
     for rnd in all_rounds:
         snap = snapshots.get(rnd)
-        fight_result = _parse_fight_result(snap, player_names) if snap is not None else None
+        fight_result = (
+            _parse_fight_result(snap, player_names) if snap is not None else None
+        )
 
         players_data = {}
         for pr in player_elements:
             name = pr.find("name").text
             rr_el = next(
-                (r for r in pr.findall("playerRoundRecords/PlayerRoundRecord")
-                 if int(r.find("round").text) == rnd),
+                (
+                    r
+                    for r in pr.findall("playerRoundRecords/PlayerRoundRecord")
+                    if int(r.find("round").text) == rnd
+                ),
                 None,
             )
             if rr_el is None:
@@ -339,7 +376,11 @@ def replay_to_dict(path: Path) -> dict:
             skills = _parse_commander_skills(pd)
             pre_result_el = pd.find("preRoundFightResult")
             supply_el = next(
-                (pd.find(tag) for tag in ("supply", "Supply", "energy", "Energy") if pd.find(tag) is not None),
+                (
+                    pd.find(tag)
+                    for tag in ("supply", "Supply", "energy", "Energy")
+                    if pd.find(tag) is not None
+                ),
                 None,
             )
             units = _parse_units(pd)
@@ -348,7 +389,9 @@ def replay_to_dict(path: Path) -> dict:
                 "hp": int(pd.find("reactorCore").text),
                 "supply": int(supply_el.text) if supply_el is not None else None,
                 "army_value": sum(u["sell_supply"] for u in units),
-                "fight_outcome": pre_result_el.text if pre_result_el is not None else None,
+                "fight_outcome": pre_result_el.text
+                if pre_result_el is not None
+                else None,
                 "officers": _parse_officers(pd),
                 "commander_skills": list(skills.values()),
                 "units": units,
@@ -359,11 +402,13 @@ def replay_to_dict(path: Path) -> dict:
                 "actions": _parse_actions(rr_el, rnd, reinforce_rounds, skills),
             }
 
-        rounds.append({
-            "round": rnd,
-            "fight_result": fight_result,
-            "players": players_data,
-        })
+        rounds.append(
+            {
+                "round": rnd,
+                "fight_result": fight_result,
+                "players": players_data,
+            }
+        )
 
     return {
         "metadata": {
@@ -392,5 +437,9 @@ def dump_player_data_xml_fields(path: Path) -> None:
         pd = rr[0].find("playerData")
         print(f"\n=== playerData XML fields for '{name}' ===")
         for child in pd:
-            val = child.text.strip() if child.text and child.text.strip() else f"[{len(list(child))} children]"
+            val = (
+                child.text.strip()
+                if child.text and child.text.strip()
+                else f"[{len(list(child))} children]"
+            )
             print(f"  <{child.tag}> = {val[:80]}")

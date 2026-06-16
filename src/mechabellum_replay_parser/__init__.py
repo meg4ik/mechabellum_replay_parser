@@ -1187,7 +1187,10 @@ def _setup_pretty_table_with_players(players: List[PlayerRecord]):
 def _player_start_to_string(player: PlayerRecord) -> str:
     return "\n".join(
         [player.starting_officer]
-        + [unit.unit_name or f"unknown({unit.ident})" for unit in player.starting_units.units.values()]
+        + [
+            unit.unit_name or f"unknown({unit.ident})"
+            for unit in player.starting_units.units.values()
+        ]
     )
 
 

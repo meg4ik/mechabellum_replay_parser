@@ -31,8 +31,14 @@ def _detect_zone(units: list[dict]) -> tuple[int, int]:
         return -45, -295  # default: negative zone
     avg_y = sum(ys) / len(ys)
     if avg_y >= 0:
-        return 45, 295   # positive zone (back = large positive y, front = small positive y)
-    return -45, -295     # negative zone (back = large negative y, front = small negative y)
+        return (
+            45,
+            295,
+        )  # positive zone (back = large positive y, front = small positive y)
+    return (
+        -45,
+        -295,
+    )  # negative zone (back = large negative y, front = small negative y)
 
 
 def _to_canvas(x: int, y: int, y_front: int, y_back: int) -> tuple[int, int]:
@@ -51,31 +57,54 @@ _BSIZE = 12  # half-side of building square
 
 
 def _draw_unit(
-    canvas: tk.Canvas, x: int, y: int, y_front: int, y_back: int,
-    label: str, color: str, outline: str,
+    canvas: tk.Canvas,
+    x: int,
+    y: int,
+    y_front: int,
+    y_back: int,
+    label: str,
+    color: str,
+    outline: str,
 ) -> None:
     cx, cy = _to_canvas(x, y, y_front, y_back)
     canvas.create_oval(
-        cx - _RADIUS, cy - _RADIUS,
-        cx + _RADIUS, cy + _RADIUS,
-        fill=color, outline=outline, width=2,
+        cx - _RADIUS,
+        cy - _RADIUS,
+        cx + _RADIUS,
+        cy + _RADIUS,
+        fill=color,
+        outline=outline,
+        width=2,
     )
     canvas.create_text(cx, cy, text=label[:4], fill="white", font=("Arial", 7, "bold"))
-    canvas.create_text(cx, cy + _RADIUS + 7, text=label[:10], fill=outline, font=("Arial", 7))
+    canvas.create_text(
+        cx, cy + _RADIUS + 7, text=label[:10], fill=outline, font=("Arial", 7)
+    )
 
 
 def _draw_building(
-    canvas: tk.Canvas, x: int, y: int, y_front: int, y_back: int, btype: str,
+    canvas: tk.Canvas,
+    x: int,
+    y: int,
+    y_front: int,
+    y_back: int,
+    btype: str,
 ) -> None:
     cx, cy = _to_canvas(x, y, y_front, y_back)
     abbr = _BUILDING_ABBR.get(btype, btype[:2].upper())
     canvas.create_rectangle(
-        cx - _BSIZE, cy - _BSIZE,
-        cx + _BSIZE, cy + _BSIZE,
-        fill="#d4a017", outline="#8b6914", width=2,
+        cx - _BSIZE,
+        cy - _BSIZE,
+        cx + _BSIZE,
+        cy + _BSIZE,
+        fill="#d4a017",
+        outline="#8b6914",
+        width=2,
     )
     canvas.create_text(cx, cy, text=abbr, fill="white", font=("Arial", 7, "bold"))
-    canvas.create_text(cx, cy + _BSIZE + 7, text=btype[:12], fill="#8b6914", font=("Arial", 7))
+    canvas.create_text(
+        cx, cy + _BSIZE + 7, text=btype[:12], fill="#8b6914", font=("Arial", 7)
+    )
 
 
 def show_board(
@@ -98,7 +127,8 @@ def show_board(
     canvas.pack()
 
     canvas.create_text(
-        total_w // 2, 18,
+        total_w // 2,
+        18,
         text=f"Round {round_num}  —  {player_name}  |  ● current   ● new / move",
         font=("Arial", 10),
     )
@@ -106,7 +136,9 @@ def show_board(
     zx0, zy0 = _MARGIN, _MARGIN + 30
     zx1 = _MARGIN + _CANVAS_W
     zy1 = _MARGIN + _CANVAS_H + 30
-    canvas.create_rectangle(zx0, zy0, zx1, zy1, fill="white", outline="#aaaaaa", width=2)
+    canvas.create_rectangle(
+        zx0, zy0, zx1, zy1, fill="white", outline="#aaaaaa", width=2
+    )
 
     # Vertical grid lines
     for gx in range(-200, 201, 100):
@@ -119,17 +151,27 @@ def show_board(
     y_lo, y_hi = min(y_front, y_back), max(y_front, y_back)
     for gy in range(y_lo, y_hi + 1, step):
         _, py = _to_canvas(0, gy, y_front, y_back)
-        canvas.create_line(zx0, zy0 + py - _MARGIN, zx1, zy0 + py - _MARGIN, fill="#dddddd")
-        canvas.create_text(zx0 - 14, zy0 + py - _MARGIN, text=str(gy), fill="#999", font=("Arial", 7))
+        canvas.create_line(
+            zx0, zy0 + py - _MARGIN, zx1, zy0 + py - _MARGIN, fill="#dddddd"
+        )
+        canvas.create_text(
+            zx0 - 14, zy0 + py - _MARGIN, text=str(gy), fill="#999", font=("Arial", 7)
+        )
 
-    canvas.create_text(zx0 - 8, zy0, text="▲ front", fill="#999", font=("Arial", 7), anchor="e")
-    canvas.create_text(zx0 - 8, zy1, text="▼ back", fill="#999", font=("Arial", 7), anchor="e")
+    canvas.create_text(
+        zx0 - 8, zy0, text="▲ front", fill="#999", font=("Arial", 7), anchor="e"
+    )
+    canvas.create_text(
+        zx0 - 8, zy1, text="▼ back", fill="#999", font=("Arial", 7), anchor="e"
+    )
 
     # LLM recommendations: on round 1 draw everything (all units are freely repositionable),
     # on other rounds draw only new/move entries.
     for u in placement:
         if round_num == 1 or u["action"] in ("new", "move"):
-            _draw_unit(canvas, u["x"], u["y"], y_front, y_back, u["unit"], "#22aa55", "#116633")
+            _draw_unit(
+                canvas, u["x"], u["y"], y_front, y_back, u["unit"], "#22aa55", "#116633"
+            )
 
     # Current units from replay (dark gray) — skipped on round 1 since all are freely repositioned
     if round_num != 1:
@@ -138,10 +180,12 @@ def show_board(
             x, y = pos.get("x"), pos.get("y")
             if x is None or y is None:
                 continue
-            _draw_unit(canvas, x, y, y_front, y_back, u.get("name", "?"), "#555555", "#333333")
+            _draw_unit(
+                canvas, x, y, y_front, y_back, u.get("name", "?"), "#555555", "#333333"
+            )
 
     # Buildings (gold squares)
-    for b in (constructions or []):
+    for b in constructions or []:
         pos = b.get("position") or {}
         bx, by = pos.get("x"), pos.get("y")
         if bx is None or by is None:
@@ -151,9 +195,13 @@ def show_board(
     lx, ly = total_w - 180, 18
     canvas.create_oval(lx, ly - 6, lx + 12, ly + 6, fill="#555555", outline="#333333")
     canvas.create_text(lx + 16, ly, text="current", anchor="w", font=("Arial", 8))
-    canvas.create_oval(lx + 60, ly - 6, lx + 72, ly + 6, fill="#22aa55", outline="#116633")
+    canvas.create_oval(
+        lx + 60, ly - 6, lx + 72, ly + 6, fill="#22aa55", outline="#116633"
+    )
     canvas.create_text(lx + 76, ly, text="new/move", anchor="w", font=("Arial", 8))
-    canvas.create_rectangle(lx + 124, ly - 6, lx + 136, ly + 6, fill="#d4a017", outline="#8b6914")
+    canvas.create_rectangle(
+        lx + 124, ly - 6, lx + 136, ly + 6, fill="#d4a017", outline="#8b6914"
+    )
     canvas.create_text(lx + 140, ly, text="building", anchor="w", font=("Arial", 8))
 
     root.mainloop()

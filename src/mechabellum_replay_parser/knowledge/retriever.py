@@ -1,4 +1,5 @@
 """Tag-based knowledge retriever (v1 — no embeddings)."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -9,7 +10,9 @@ if TYPE_CHECKING:
     from ..coach.schemas import StateView, TacticalFeatures
 
 # These topics always contribute their high-priority chunks to every query.
-_ALWAYS_INCLUDE_TOPICS: frozenset[str] = frozenset({"base_rules", "deployment_rules", "towers"})
+_ALWAYS_INCLUDE_TOPICS: frozenset[str] = frozenset(
+    {"base_rules", "deployment_rules", "towers"}
+)
 
 # Map known threat keys to additional scoring tags.
 _THREAT_KEY_TAGS: dict[str, list[str]] = {
@@ -41,7 +44,8 @@ class KnowledgeRetriever:
             return []
 
         always = [
-            c for c in self._chunks
+            c
+            for c in self._chunks
             if c.topic in _ALWAYS_INCLUDE_TOPICS and c.priority >= 2
         ]
         always_ids = {c.id for c in always}

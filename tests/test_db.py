@@ -2,6 +2,7 @@
 
 Uses SQLite in-memory (aiosqlite) so no Postgres required.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -22,7 +23,10 @@ from mechabellum_replay_parser.db.models import (
     Recommendation,
     Round,
 )
-from mechabellum_replay_parser.db.repositories import FeedbackRepository, RecommendationRepository
+from mechabellum_replay_parser.db.repositories import (
+    FeedbackRepository,
+    RecommendationRepository,
+)
 from mechabellum_replay_parser.db.service import PersistenceService
 from mechabellum_replay_parser.coach.engine import CoachAnalysis
 
@@ -30,6 +34,7 @@ _SQLITE_URL = "sqlite+aiosqlite:///:memory:"
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 async def db_factory():
@@ -49,9 +54,15 @@ async def session(db_factory):
 
 # ── Models: basic instantiation ───────────────────────────────────────────────
 
+
 @pytest.mark.anyio
 async def test_create_match(session: AsyncSession):
-    row = Match(source_file="replay.grbr", match_mode="VS_1_1", player_name="Alice", teams=[["Alice"], ["Bob"]])
+    row = Match(
+        source_file="replay.grbr",
+        match_mode="VS_1_1",
+        player_name="Alice",
+        teams=[["Alice"], ["Bob"]],
+    )
     session.add(row)
     await session.commit()
     assert row.id is not None
@@ -93,7 +104,13 @@ async def test_candidate_plan_row(session: AsyncSession):
     match = Match(source_file="x.grbr", match_mode="VS_1_1", player_name="P1", teams=[])
     session.add(match)
     await session.flush()
-    rec = Recommendation(id="rec_1", match_id=match.id, round_number=1, player_name="P1", status="created")
+    rec = Recommendation(
+        id="rec_1",
+        match_id=match.id,
+        round_number=1,
+        player_name="P1",
+        status="created",
+    )
     session.add(rec)
     await session.flush()
     cp = CandidatePlanRow(
@@ -112,7 +129,13 @@ async def test_llm_call_row(session: AsyncSession):
     match = Match(source_file="x.grbr", match_mode="VS_1_1", player_name="P1", teams=[])
     session.add(match)
     await session.flush()
-    rec = Recommendation(id="rec_2", match_id=match.id, round_number=2, player_name="P1", status="created")
+    rec = Recommendation(
+        id="rec_2",
+        match_id=match.id,
+        round_number=2,
+        player_name="P1",
+        status="created",
+    )
     session.add(rec)
     await session.flush()
     lc = LLMCall(recommendation_id="rec_2", stage="planner", model="gpt-4o")
@@ -127,7 +150,13 @@ async def test_feedback_row(session: AsyncSession):
     match = Match(source_file="x.grbr", match_mode="VS_1_1", player_name="P1", teams=[])
     session.add(match)
     await session.flush()
-    rec = Recommendation(id="rec_3", match_id=match.id, round_number=3, player_name="P1", status="completed")
+    rec = Recommendation(
+        id="rec_3",
+        match_id=match.id,
+        round_number=3,
+        player_name="P1",
+        status="completed",
+    )
     session.add(rec)
     await session.flush()
     fb = Feedback(recommendation_id="rec_3", rating=4, label="good", followed_plan=True)
@@ -138,6 +167,7 @@ async def test_feedback_row(session: AsyncSession):
 
 
 # ── Repositories ──────────────────────────────────────────────────────────────
+
 
 def _make_recommendation() -> CoachRecommendation:
     return CoachRecommendation(
@@ -167,7 +197,9 @@ def _make_validated_plans() -> list[tuple[CandidatePlan, PlanValidationResult]]:
 @pytest.mark.anyio
 async def test_repo_create_match(session: AsyncSession):
     repo = RecommendationRepository(session)
-    row = await repo.create_match("replay.grbr", "VS_1_1", "Alice", [["Alice"], ["Bob"]])
+    row = await repo.create_match(
+        "replay.grbr", "VS_1_1", "Alice", [["Alice"], ["Bob"]]
+    )
     await session.commit()
     assert row.id is not None
     assert row.match_mode == "VS_1_1"
@@ -229,6 +261,7 @@ async def test_repo_save_candidate_plans(session: AsyncSession):
     assert fetched is not None
     # Can't easily lazy-load in async; just verify no error occurred
     from sqlalchemy import select
+
     result = await session.execute(
         select(CandidatePlanRow).where(CandidatePlanRow.recommendation_id == "rec_cp")
     )
@@ -244,13 +277,17 @@ async def test_repo_save_llm_calls(session: AsyncSession):
     match = await repo.create_match("f.grbr", "VS_1_1", "P", [])
     round_ = await repo.create_round(match.id, 1)
     await repo.create_recommendation("rec_llm", match.id, round_.id, 1, "P")
-    await repo.save_llm_calls("rec_llm", [
-        {"stage": "planner", "model": "gpt-4o"},
-        {"stage": "judge", "model": "gpt-4o"},
-    ])
+    await repo.save_llm_calls(
+        "rec_llm",
+        [
+            {"stage": "planner", "model": "gpt-4o"},
+            {"stage": "judge", "model": "gpt-4o"},
+        ],
+    )
     await session.commit()
 
     from sqlalchemy import select
+
     result = await session.execute(
         select(LLMCall).where(LLMCall.recommendation_id == "rec_llm")
     )
@@ -263,17 +300,22 @@ async def test_repo_save_llm_calls(session: AsyncSession):
 @pytest.mark.anyio
 async def test_feedback_repo_save(session: AsyncSession):
     # Pre-create recommendation (no match needed for FK in SQLite without enforcement)
-    rec = Recommendation(id="rec_fb", round_number=1, player_name="P", status="completed")
+    rec = Recommendation(
+        id="rec_fb", round_number=1, player_name="P", status="completed"
+    )
     session.add(rec)
     await session.flush()
 
     repo = FeedbackRepository(session)
-    fb = await repo.save_feedback("rec_fb", rating=5, label="good", comment="Nice", followed_plan=True)
+    fb = await repo.save_feedback(
+        "rec_fb", rating=5, label="good", comment="Nice", followed_plan=True
+    )
     assert fb.id is not None
     assert fb.rating == 5
 
 
 # ── PersistenceService ────────────────────────────────────────────────────────
+
 
 @pytest.mark.anyio
 async def test_persistence_service_disabled():
@@ -334,15 +376,30 @@ async def test_persistence_service_enabled(db_factory):
         assert fetched.model_name == "gpt-4o"
 
         from sqlalchemy import select
-        cp_rows = (await session.execute(
-            select(CandidatePlanRow).where(CandidatePlanRow.recommendation_id == "rec_svc_1")
-        )).scalars().all()
+
+        cp_rows = (
+            (
+                await session.execute(
+                    select(CandidatePlanRow).where(
+                        CandidatePlanRow.recommendation_id == "rec_svc_1"
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
         assert len(cp_rows) == 1
         assert cp_rows[0].is_selected is True
 
-        llm_rows = (await session.execute(
-            select(LLMCall).where(LLMCall.recommendation_id == "rec_svc_1")
-        )).scalars().all()
+        llm_rows = (
+            (
+                await session.execute(
+                    select(LLMCall).where(LLMCall.recommendation_id == "rec_svc_1")
+                )
+            )
+            .scalars()
+            .all()
+        )
         assert len(llm_rows) == 2
 
 
@@ -351,7 +408,9 @@ async def test_persistence_service_save_feedback(db_factory):
     svc = PersistenceService(db_factory)
 
     async with db_factory() as session:
-        rec = Recommendation(id="rec_fbsvc", round_number=1, player_name="P", status="completed")
+        rec = Recommendation(
+            id="rec_fbsvc", round_number=1, player_name="P", status="completed"
+        )
         session.add(rec)
         await session.commit()
 
@@ -359,9 +418,16 @@ async def test_persistence_service_save_feedback(db_factory):
 
     async with db_factory() as session:
         from sqlalchemy import select
-        rows = (await session.execute(
-            select(Feedback).where(Feedback.recommendation_id == "rec_fbsvc")
-        )).scalars().all()
+
+        rows = (
+            (
+                await session.execute(
+                    select(Feedback).where(Feedback.recommendation_id == "rec_fbsvc")
+                )
+            )
+            .scalars()
+            .all()
+        )
         assert len(rows) == 1
         assert rows[0].rating == 4
         assert rows[0].label == "good"

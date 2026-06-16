@@ -1,4 +1,5 @@
 """Tests for RecommendationBuilder."""
+
 import pytest
 
 from mechabellum_replay_parser.coach.recommendation_builder import RecommendationBuilder
@@ -32,13 +33,15 @@ def _make_state(round_: int = 3, player: str = "Me") -> StateView:
 
 def _features_with_threat() -> TacticalFeatures:
     return TacticalFeatures(
-        threats=[ThreatSignal(
-            key="enemy_air_pressure",
-            severity=0.8,
-            source_units=["phoenix"],
-            explanation="Enemy has phoenix.",
-            my_answer="none",
-        )],
+        threats=[
+            ThreatSignal(
+                key="enemy_air_pressure",
+                severity=0.8,
+                source_units=["phoenix"],
+                explanation="Enemy has phoenix.",
+                my_answer="none",
+            )
+        ],
         my_weaknesses=["no anti-air"],
         enemy_weaknesses=[],
         tempo_state="behind",
@@ -88,6 +91,7 @@ def builder() -> RecommendationBuilder:
 
 # ── Return type ───────────────────────────────────────────────────────────────
 
+
 def test_returns_coach_recommendation(builder):
     state = _make_state()
     features = _features_with_threat()
@@ -99,6 +103,7 @@ def test_returns_coach_recommendation(builder):
 
 # ── Summary / confidence ──────────────────────────────────────────────────────
 
+
 def test_summary_from_judge_reason(builder):
     state = _make_state()
     features = _features_with_threat()
@@ -109,16 +114,23 @@ def test_summary_from_judge_reason(builder):
 
 def test_confidence_from_judge(builder):
     result = builder.build(
-        _make_judge(), [(_make_plan(), _valid_result())], _features_with_threat(), _make_state()
+        _make_judge(),
+        [(_make_plan(), _valid_result())],
+        _features_with_threat(),
+        _make_state(),
     )
     assert result.confidence == pytest.approx(0.78)
 
 
 # ── Placement ─────────────────────────────────────────────────────────────────
 
+
 def test_placement_from_judge_output(builder):
     result = builder.build(
-        _make_judge(), [(_make_plan(), _valid_result())], _features_with_threat(), _make_state()
+        _make_judge(),
+        [(_make_plan(), _valid_result())],
+        _features_with_threat(),
+        _make_state(),
     )
     assert len(result.placement) == 1
     assert result.placement[0]["unit"] == "arclight"
@@ -133,29 +145,37 @@ def test_placement_falls_back_to_plan_when_judge_empty(builder):
         watch_next_round=[],
         mistake_to_avoid="",
     )
-    result = builder.build(judge, [(_make_plan(), _valid_result())], _features_with_threat(), _make_state())
+    result = builder.build(
+        judge, [(_make_plan(), _valid_result())], _features_with_threat(), _make_state()
+    )
     # Falls back to plan.placement
     assert len(result.placement) >= 1
 
 
 # ── Threats / risks / watch ───────────────────────────────────────────────────
 
+
 def test_main_threats_from_features(builder):
     result = builder.build(
-        _make_judge(), [(_make_plan(), _valid_result())], _features_with_threat(), _make_state()
+        _make_judge(),
+        [(_make_plan(), _valid_result())],
+        _features_with_threat(),
+        _make_state(),
     )
     assert "enemy_air_pressure" in result.main_threats
 
 
 def test_no_low_severity_threat_in_main_threats(builder):
     features = TacticalFeatures(
-        threats=[ThreatSignal(
-            key="minor_issue",
-            severity=0.3,  # below 0.5 threshold
-            source_units=[],
-            explanation="minor",
-            my_answer="good",
-        )],
+        threats=[
+            ThreatSignal(
+                key="minor_issue",
+                severity=0.3,  # below 0.5 threshold
+                source_units=[],
+                explanation="minor",
+                my_answer="good",
+            )
+        ],
         my_weaknesses=[],
         enemy_weaknesses=[],
         tempo_state="even",
@@ -164,29 +184,41 @@ def test_no_low_severity_threat_in_main_threats(builder):
         likely_enemy_continuation=[],
         priority_questions=[],
     )
-    result = builder.build(_make_judge(), [(_make_plan(), _valid_result())], features, _make_state())
+    result = builder.build(
+        _make_judge(), [(_make_plan(), _valid_result())], features, _make_state()
+    )
     assert "minor_issue" not in result.main_threats
 
 
 def test_risks_from_selected_plan(builder):
     result = builder.build(
-        _make_judge(), [(_make_plan(), _valid_result())], _features_with_threat(), _make_state()
+        _make_judge(),
+        [(_make_plan(), _valid_result())],
+        _features_with_threat(),
+        _make_state(),
     )
     assert "Leaves less supply for army value." in result.risks
 
 
 def test_watch_next_round_from_judge(builder):
     result = builder.build(
-        _make_judge(), [(_make_plan(), _valid_result())], _features_with_threat(), _make_state()
+        _make_judge(),
+        [(_make_plan(), _valid_result())],
+        _features_with_threat(),
+        _make_state(),
     )
     assert "Watch for more air units from enemy." in result.watch_next_round
 
 
 # ── Coach text ────────────────────────────────────────────────────────────────
 
+
 def test_coach_text_contains_round_and_player(builder):
     result = builder.build(
-        _make_judge(), [(_make_plan(), _valid_result())], _features_with_threat(), _make_state(round_=5, player="Alice")
+        _make_judge(),
+        [(_make_plan(), _valid_result())],
+        _features_with_threat(),
+        _make_state(round_=5, player="Alice"),
     )
     assert "Round 5" in result.coach_text
     assert "Alice" in result.coach_text
@@ -194,26 +226,36 @@ def test_coach_text_contains_round_and_player(builder):
 
 def test_coach_text_contains_decision(builder):
     result = builder.build(
-        _make_judge(), [(_make_plan(), _valid_result())], _features_with_threat(), _make_state()
+        _make_judge(),
+        [(_make_plan(), _valid_result())],
+        _features_with_threat(),
+        _make_state(),
     )
     assert "Arclight directly counters the Phoenix threat." in result.coach_text
 
 
 def test_coach_text_contains_mistake(builder):
     result = builder.build(
-        _make_judge(), [(_make_plan(), _valid_result())], _features_with_threat(), _make_state()
+        _make_judge(),
+        [(_make_plan(), _valid_result())],
+        _features_with_threat(),
+        _make_state(),
     )
     assert "Do not skip anti-air this round." in result.coach_text
 
 
 def test_coach_text_nonempty(builder):
     result = builder.build(
-        _make_judge(), [(_make_plan(), _valid_result())], _features_with_threat(), _make_state()
+        _make_judge(),
+        [(_make_plan(), _valid_result())],
+        _features_with_threat(),
+        _make_state(),
     )
     assert len(result.coach_text) > 50
 
 
 # ── Validation field ──────────────────────────────────────────────────────────
+
 
 def test_validation_attached(builder):
     val = _valid_result()
@@ -226,6 +268,7 @@ def test_validation_attached(builder):
 
 # ── Fallback when plan not found ──────────────────────────────────────────────
 
+
 def test_fallback_to_first_plan_when_id_not_found(builder):
     judge = JudgeOutput(
         best_plan_id="plan_nonexistent",
@@ -236,6 +279,8 @@ def test_fallback_to_first_plan_when_id_not_found(builder):
         mistake_to_avoid="",
     )
     plan = _make_plan("plan_real")
-    result = builder.build(judge, [(plan, _valid_result())], _features_with_threat(), _make_state())
+    result = builder.build(
+        judge, [(plan, _valid_result())], _features_with_threat(), _make_state()
+    )
     # Should not crash; falls back to first plan for risks
     assert isinstance(result, CoachRecommendation)

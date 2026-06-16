@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import os
 
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    AsyncEngine,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 _DEFAULT_URL = "postgresql+asyncpg://mechabellum:mechabellum@localhost:5432/mechabellum"
 
@@ -14,7 +19,7 @@ def _ensure_asyncpg(url: str) -> str:
     """Coerce bare postgresql:// URLs to use asyncpg driver explicitly."""
     for prefix in ("postgresql://", "postgres://"):
         if url.startswith(prefix):
-            return "postgresql+asyncpg://" + url[len(prefix):]
+            return "postgresql+asyncpg://" + url[len(prefix) :]
     return url
 
 
@@ -22,7 +27,9 @@ def create_db_engine(url: str | None = None) -> AsyncEngine:
     global _engine, _session_factory
     db_url = _ensure_asyncpg(url or os.getenv("DATABASE_URL", _DEFAULT_URL))
     _engine = create_async_engine(db_url, echo=False, pool_pre_ping=True)
-    _session_factory = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
+    _session_factory = async_sessionmaker(
+        _engine, class_=AsyncSession, expire_on_commit=False
+    )
     return _engine
 
 

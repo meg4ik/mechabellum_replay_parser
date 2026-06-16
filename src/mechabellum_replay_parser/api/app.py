@@ -27,17 +27,22 @@ async def lifespan(application: FastAPI):
     if persistence.enabled:
         from mechabellum_replay_parser.db.session import _ensure_asyncpg
         from sqlalchemy.ext.asyncio import create_async_engine as _create_engine
-        _db_url = _ensure_asyncpg(os.getenv(
-            "DATABASE_URL",
-            "postgresql+asyncpg://mechabellum:mechabellum@localhost:5432/mechabellum",
-        ))
+
+        _db_url = _ensure_asyncpg(
+            os.getenv(
+                "DATABASE_URL",
+                "postgresql+asyncpg://mechabellum:mechabellum@localhost:5432/mechabellum",
+            )
+        )
         try:
             _engine = _create_engine(_db_url)
             async with _engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
             print("[db] Tables ensured")
         except Exception as e:
-            print(f"[db] Could not create tables (non-fatal — run alembic upgrade): {e}")
+            print(
+                f"[db] Could not create tables (non-fatal — run alembic upgrade): {e}"
+            )
         else:
             await _engine.dispose()
 

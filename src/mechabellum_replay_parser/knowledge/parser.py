@@ -1,4 +1,5 @@
 """Parse game_knowledge.md into KnowledgeChunk records."""
+
 from __future__ import annotations
 
 import re
@@ -7,21 +8,50 @@ from pathlib import Path
 from .schemas import KnowledgeChunk
 
 # Matches H2 (##) and H3 (###) headings only — H4 (####) stay inside parent chunks.
-_HEADING_RE = re.compile(r'^(#{2,3})\s+(.+)$', re.MULTILINE)
+_HEADING_RE = re.compile(r"^(#{2,3})\s+(.+)$", re.MULTILINE)
 
 # Strips leading section numbers: "7.1 Arclight" → "Arclight"
-_NUMBER_PREFIX_RE = re.compile(r'^\d+\.?\d*\.?\d*\s+')
+_NUMBER_PREFIX_RE = re.compile(r"^\d+\.?\d*\.?\d*\s+")
 
 _MIN_CONTENT_LENGTH = 20
 
-_ALL_UNITS: frozenset[str] = frozenset({
-    "arclight", "crawler", "fang", "hound", "marksman", "void eye", "vortex",
-    "fire badger", "hacker", "mustang", "phantom ray", "phoenix", "rhino",
-    "sabertooth", "sledgehammer", "steel ball", "stormcaller", "tarantula", "wasp",
-    "farseer", "scorpion", "typhoon", "wraith",
-    "fortress", "melting point", "raiden", "sandworm", "vulcan", "overlord",
-    "abyss", "death knell", "mountain", "war factory",
-})
+_ALL_UNITS: frozenset[str] = frozenset(
+    {
+        "arclight",
+        "crawler",
+        "fang",
+        "hound",
+        "marksman",
+        "void eye",
+        "vortex",
+        "fire badger",
+        "hacker",
+        "mustang",
+        "phantom ray",
+        "phoenix",
+        "rhino",
+        "sabertooth",
+        "sledgehammer",
+        "steel ball",
+        "stormcaller",
+        "tarantula",
+        "wasp",
+        "farseer",
+        "scorpion",
+        "typhoon",
+        "wraith",
+        "fortress",
+        "melting point",
+        "raiden",
+        "sandworm",
+        "vulcan",
+        "overlord",
+        "abyss",
+        "death knell",
+        "mountain",
+        "war factory",
+    }
+)
 
 # (substring of lowercased title, topic) — first match wins; None = skip chunk
 _TOPIC_RULES: list[tuple[str, str | None]] = [
@@ -70,7 +100,7 @@ _TOPIC_RULES: list[tuple[str, str | None]] = [
     ("unit purchase cost", "economy"),
     ("unlock cost", "economy"),
     ("economy", "economy"),
-    (" + ", "unit_counter"),       # composition names: "Arclight + Marksman + ..."
+    (" + ", "unit_counter"),  # composition names: "Arclight + Marksman + ..."
     ("composition", "unit_counter"),
     ("anti-giant", "unit_counter"),
     ("air punish", "unit_counter"),
@@ -140,7 +170,9 @@ def parse_knowledge_file(
     patch_version: str | None = None,
 ) -> list[KnowledgeChunk]:
     text = path.read_text(encoding="utf-8")
-    return _parse_markdown(text, source=source or path.name, patch_version=patch_version)
+    return _parse_markdown(
+        text, source=source or path.name, patch_version=patch_version
+    )
 
 
 def _parse_markdown(
@@ -166,9 +198,9 @@ def _parse_markdown(
 
 def _slugify(text: str) -> str:
     slug = text.lower()
-    slug = re.sub(r'[^\w\s-]', '', slug)
-    slug = re.sub(r'[\s-]+', '_', slug)
-    return slug.strip('_')[:64]
+    slug = re.sub(r"[^\w\s-]", "", slug)
+    slug = re.sub(r"[\s-]+", "_", slug)
+    return slug.strip("_")[:64]
 
 
 _SKIP = "__skip__"  # sentinel returned when a chunk should be omitted
@@ -190,7 +222,7 @@ def _determine_priority(title_lower: str) -> int:
 
 
 def _extract_unit_names(title: str) -> list[str]:
-    bare = _NUMBER_PREFIX_RE.sub('', title).strip().lower()
+    bare = _NUMBER_PREFIX_RE.sub("", title).strip().lower()
     if bare in _ALL_UNITS:
         return [bare]
     # Broader check: any known unit names appearing as substrings in the title

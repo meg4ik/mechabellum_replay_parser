@@ -3,6 +3,7 @@
 Set DEBUG_NO_DB=true (or pass session_factory=None) for a no-op mode that
 lets the app run without a database connection.
 """
+
 from __future__ import annotations
 
 import os
@@ -17,7 +18,9 @@ if TYPE_CHECKING:
 
 
 class PersistenceService:
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession] | None) -> None:
+    def __init__(
+        self, session_factory: async_sessionmaker[AsyncSession] | None
+    ) -> None:
         self._factory = session_factory
 
     @property
@@ -82,7 +85,9 @@ class PersistenceService:
                 )
 
                 selected_id = (
-                    analysis.judge_output.best_plan_id if analysis.judge_output else None
+                    analysis.judge_output.best_plan_id
+                    if analysis.judge_output
+                    else None
                 )
                 await repo.save_candidate_plans(
                     rec_id=rec_id,
@@ -132,6 +137,7 @@ def create_persistence_service() -> PersistenceService:
 
     try:
         from .session import get_session_factory
+
         factory = get_session_factory()
         return PersistenceService(factory)
     except Exception as exc:

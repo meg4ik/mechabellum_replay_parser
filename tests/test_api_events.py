@@ -1,4 +1,5 @@
 """Tests for event schemas and the /feedback API endpoint."""
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -17,6 +18,7 @@ def client():
 
 
 # ── Event schema: supply_request ──────────────────────────────────────────────
+
 
 def test_supply_request_payload_round_trip():
     payload = SupplyRequestPayload(
@@ -40,6 +42,7 @@ def test_supply_request_serializes_to_dict():
 
 
 # ── Event schema: recommendation_ready ───────────────────────────────────────
+
 
 def test_recommendation_ready_payload_round_trip():
     payload = RecommendationReadyPayload(
@@ -79,6 +82,7 @@ def test_recommendation_ready_placement_structure():
 
 # ── Event schema: UIEvent type field ─────────────────────────────────────────
 
+
 def test_ui_event_type_preserved():
     for event_type in ("supply_request", "recommendation_ready", "error"):
         e = UIEvent(type=event_type, payload={})
@@ -91,6 +95,7 @@ def test_ui_event_unknown_type_allowed():
 
 
 # ── /feedback endpoint ────────────────────────────────────────────────────────
+
 
 def test_feedback_thumbs_up(client):
     resp = client.post(
@@ -152,8 +157,15 @@ def test_feedback_missing_recommendation_id(client):
 
 
 def test_feedback_all_valid_labels(client):
-    valid_labels = ["good", "bad_illegal", "bad_strategy", "bad_positioning",
-                    "bad_counter", "too_expensive", "unclear"]
+    valid_labels = [
+        "good",
+        "bad_illegal",
+        "bad_strategy",
+        "bad_positioning",
+        "bad_counter",
+        "too_expensive",
+        "unclear",
+    ]
     for label in valid_labels:
         resp = client.post(
             "/feedback",

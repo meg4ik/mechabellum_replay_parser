@@ -4,11 +4,11 @@ CoachWindow cannot be tested headlessly (it creates a real Tk root).
 These tests cover the _handle_event logic with a mock window so no
 display server or Tkinter import is needed.
 """
+
 from __future__ import annotations
 
 import asyncio
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -16,6 +16,7 @@ from mechabellum_replay_parser.events.schemas import UIEvent
 
 
 # ── Mock window ────────────────────────────────────────────────────────────────
+
 
 class _MockWindow:
     def __init__(self) -> None:
@@ -33,9 +34,19 @@ class _MockWindow:
     def show_loading(self, round_num, player_name) -> None:
         self.calls.append(("loading", round_num, player_name))
 
-    def show_result(self, *, round_num, player_name, summary,
-                    coach_text, current_units, placement, constructions,
-                    recommendation_id="", on_feedback=None) -> None:
+    def show_result(
+        self,
+        *,
+        round_num,
+        player_name,
+        summary,
+        coach_text,
+        current_units,
+        placement,
+        constructions,
+        recommendation_id="",
+        on_feedback=None,
+    ) -> None:
         self.calls.append(("result", round_num, player_name, summary))
         self._last_on_feedback = on_feedback
         self._last_rec_id = recommendation_id
@@ -46,10 +57,17 @@ class _MockWindow:
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def _supply_event(rec_id: str = "rec_1", round_num: int = 5, player: str = "P") -> UIEvent:
+
+def _supply_event(
+    rec_id: str = "rec_1", round_num: int = 5, player: str = "P"
+) -> UIEvent:
     return UIEvent(
         type="supply_request",
-        payload={"recommendation_id": rec_id, "round": round_num, "player_name": player},
+        payload={
+            "recommendation_id": rec_id,
+            "round": round_num,
+            "player_name": player,
+        },
     )
 
 
@@ -79,13 +97,16 @@ def _unknown_event() -> UIEvent:
 
 # ── Import _handle_event without triggering Tkinter ───────────────────────────
 
+
 def _import_handle_event():
     # Import lazily to avoid importing CoachWindow (which creates tk.Tk) at module load
     from mechabellum_replay_parser.native_ui.main import _handle_event
+
     return _handle_event
 
 
 # ── Tests: supply_request ─────────────────────────────────────────────────────
+
 
 @pytest.mark.anyio
 async def test_supply_request_calls_show_supply_prompt():
@@ -108,7 +129,9 @@ async def test_supply_on_submit_shows_loading_then_posts():
     client.post_supply_response = AsyncMock()
     loop = asyncio.get_running_loop()
 
-    await handle(_supply_event(rec_id="rec_x", round_num=3, player="Bob"), client, window, loop)
+    await handle(
+        _supply_event(rec_id="rec_x", round_num=3, player="Bob"), client, window, loop
+    )
 
     # Simulate user clicking submit with supply=250
     window._last_on_submit(250, False)
@@ -142,6 +165,7 @@ async def test_supply_cancel_sends_cancelled_true():
 
 # ── Tests: recommendation_ready ───────────────────────────────────────────────
 
+
 @pytest.mark.anyio
 async def test_recommendation_ready_calls_show_result():
     handle = _import_handle_event()
@@ -153,12 +177,13 @@ async def test_recommendation_ready_calls_show_result():
 
     assert any(c[0] == "result" for c in window.calls)
     result_call = next(c for c in window.calls if c[0] == "result")
-    assert result_call[1] == 5          # round_num
-    assert result_call[2] == "P"        # player_name
+    assert result_call[1] == 5  # round_num
+    assert result_call[2] == "P"  # player_name
     assert result_call[3] == "Buy Arclight"  # summary
 
 
 # ── Tests: error ──────────────────────────────────────────────────────────────
+
 
 @pytest.mark.anyio
 async def test_error_event_calls_show_error():
@@ -185,6 +210,7 @@ async def test_unknown_event_does_not_crash():
 
 
 # ── Tests: feedback ──────────────────────────────────────────────────────────
+
 
 @pytest.mark.anyio
 async def test_recommendation_ready_provides_on_feedback():
@@ -215,9 +241,7 @@ async def test_feedback_on_submit_calls_post_feedback():
     window._last_on_feedback("rec_fb2", 5, "good", None, None)
 
     await asyncio.sleep(0)
-    client.post_feedback.assert_called_once_with(
-        "rec_fb2", 5, "good", None, None
-    )
+    client.post_feedback.assert_called_once_with("rec_fb2", 5, "good", None, None)
 
 
 @pytest.mark.anyio
@@ -237,6 +261,7 @@ async def test_feedback_thumbs_down_sends_rating_1():
 
 
 # ── Tests: UIEvent schema ─────────────────────────────────────────────────────
+
 
 def test_supply_event_schema():
     event = _supply_event(rec_id="rec_99", round_num=10, player="Test")

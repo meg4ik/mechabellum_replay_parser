@@ -30,12 +30,14 @@ def show_tech(args):
 
 def start_watch(args):
     import asyncio
+
     replay_dir = Path(args.dir) if args.dir else REPLAY_DIR
     asyncio.run(watch(replay_dir))
 
 
 def ingest_knowledge(args):
     from .knowledge.parser import parse_knowledge_file
+
     path = Path(args.file).absolute()
     if not path.exists():
         print(f"File not found: {path}")
@@ -48,10 +50,13 @@ def ingest_knowledge(args):
     for topic, count in sorted(by_topic.items()):
         print(f"  {topic}: {count} chunks")
     always = [
-        c for c in chunks
+        c
+        for c in chunks
         if c.topic in {"base_rules", "deployment_rules", "towers"} and c.priority >= 2
     ]
-    print(f"Always-include chunks (base_rules/deployment_rules/towers, priority>=2): {len(always)}")
+    print(
+        f"Always-include chunks (base_rules/deployment_rules/towers, priority>=2): {len(always)}"
+    )
 
 
 def main():

@@ -1,11 +1,10 @@
 """Tests for LegalActionGenerator."""
+
 import pytest
 
 from mechabellum_replay_parser.coach.feature_extractor import FeatureExtractor
 from mechabellum_replay_parser.coach.legal_actions import LegalActionGenerator
 from mechabellum_replay_parser.coach.schemas import (
-    ActionGroup,
-    LegalAction,
     PlayerRoundView,
     ShopView,
     StateView,
@@ -63,9 +62,7 @@ def _no_threats() -> TacticalFeatures:
 
 
 def _threat(key: str, severity: float = 0.8) -> ThreatSignal:
-    return ThreatSignal(
-        key=key, severity=severity, explanation="test", source_units=[]
-    )
+    return ThreatSignal(key=key, severity=severity, explanation="test", source_units=[])
 
 
 @pytest.fixture
@@ -74,6 +71,7 @@ def gen():
 
 
 # ── Unlock actions ────────────────────────────────────────────────────────────
+
 
 def test_unlock_generated_when_locked_and_slots(gen):
     state = _make_state(locked=["phoenix"], unlocks_remaining=1)
@@ -98,6 +96,7 @@ def test_unlock_action_type(gen):
 
 
 # ── Buy actions ───────────────────────────────────────────────────────────────
+
 
 def test_buy_generated_for_affordable_unit(gen):
     state = _make_state(unlocked=["crawler"], supply=200, buys_remaining=4)
@@ -138,6 +137,7 @@ def test_buy_with_unknown_cost_gets_tag(gen):
 
 # ── Keep / Move actions ───────────────────────────────────────────────────────
 
+
 def test_keep_and_move_generated_for_existing_unit(gen):
     state = _make_state(units=[UnitView(name="crawler", index=0)])
     actions, _ = gen.generate(state, _no_threats())
@@ -163,6 +163,7 @@ def test_no_keep_move_without_units(gen):
 
 # ── Skip ──────────────────────────────────────────────────────────────────────
 
+
 def test_skip_always_present(gen):
     state = _make_state()
     actions, _ = gen.generate(state, _no_threats())
@@ -172,34 +173,42 @@ def test_skip_always_present(gen):
 
 # ── Commander skill actions ───────────────────────────────────────────────────
 
+
 def test_skill_generated_when_ready(gen):
-    state = _make_state(commander_skills=[
-        {"name": "Airdrop", "is_active": False, "cooling_round": 1},
-    ])
+    state = _make_state(
+        commander_skills=[
+            {"name": "Airdrop", "is_active": False, "cooling_round": 1},
+        ]
+    )
     actions, _ = gen.generate(state, _no_threats())
     ids = [a.id for a in actions]
     assert "skill_airdrop" in ids
 
 
 def test_skill_not_generated_when_cooling(gen):
-    state = _make_state(commander_skills=[
-        {"name": "Airdrop", "is_active": False, "cooling_round": 10},
-    ])
+    state = _make_state(
+        commander_skills=[
+            {"name": "Airdrop", "is_active": False, "cooling_round": 10},
+        ]
+    )
     actions, _ = gen.generate(state, _no_threats())
     ids = [a.id for a in actions]
     assert "skill_airdrop" not in ids
 
 
 def test_skill_not_generated_when_active(gen):
-    state = _make_state(commander_skills=[
-        {"name": "Airdrop", "is_active": True, "cooling_round": 1},
-    ])
+    state = _make_state(
+        commander_skills=[
+            {"name": "Airdrop", "is_active": True, "cooling_round": 1},
+        ]
+    )
     actions, _ = gen.generate(state, _no_threats())
     ids = [a.id for a in actions]
     assert "skill_airdrop" not in ids
 
 
 # ── Action groups ─────────────────────────────────────────────────────────────
+
 
 def test_anti_air_group_when_air_threat(gen):
     state = _make_state(unlocked=["arclight"], supply=500, buys_remaining=4)
@@ -312,6 +321,7 @@ def test_group_addresses_threats_field(gen):
 
 
 # ── Integration with parsed_replay fixture ────────────────────────────────────
+
 
 def test_generate_from_parsed_replay(parsed_replay):
     from mechabellum_replay_parser.coach.state_view import StateViewBuilder

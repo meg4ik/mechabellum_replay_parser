@@ -29,7 +29,9 @@ class Match(Base):
     teams: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
 
-    rounds: Mapped[list[Round]] = relationship(back_populates="match", cascade="all, delete-orphan")
+    rounds: Mapped[list[Round]] = relationship(
+        back_populates="match", cascade="all, delete-orphan"
+    )
     recommendations: Mapped[list[Recommendation]] = relationship(
         back_populates="match", cascade="all, delete-orphan"
     )
@@ -53,8 +55,12 @@ class Recommendation(Base):
     __tablename__ = "recommendations"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    match_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("matches.id"), nullable=True)
-    round_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("rounds.id"), nullable=True)
+    match_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("matches.id"), nullable=True
+    )
+    round_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("rounds.id"), nullable=True
+    )
     round_number: Mapped[int] = mapped_column(Integer)
     player_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     supply: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -87,7 +93,9 @@ class CandidatePlanRow(Base):
     __tablename__ = "candidate_plans"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
-    recommendation_id: Mapped[str] = mapped_column(String(36), ForeignKey("recommendations.id"))
+    recommendation_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("recommendations.id")
+    )
     plan_key: Mapped[str] = mapped_column(Text)
     planner_output: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     validation_result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
@@ -95,7 +103,9 @@ class CandidatePlanRow(Base):
     is_selected: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(default=_now)
 
-    recommendation: Mapped[Recommendation] = relationship(back_populates="candidate_plans")
+    recommendation: Mapped[Recommendation] = relationship(
+        back_populates="candidate_plans"
+    )
 
 
 class LLMCall(Base):
@@ -117,14 +127,18 @@ class LLMCall(Base):
     created_at: Mapped[datetime] = mapped_column(default=_now)
     completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
-    recommendation: Mapped[Recommendation | None] = relationship(back_populates="llm_calls")
+    recommendation: Mapped[Recommendation | None] = relationship(
+        back_populates="llm_calls"
+    )
 
 
 class Feedback(Base):
     __tablename__ = "feedback"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
-    recommendation_id: Mapped[str] = mapped_column(String(36), ForeignKey("recommendations.id"))
+    recommendation_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("recommendations.id")
+    )
     rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
     label: Mapped[str | None] = mapped_column(Text, nullable=True)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -138,10 +152,14 @@ class OutcomeSnapshot(Base):
     __tablename__ = "outcome_snapshots"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
-    recommendation_id: Mapped[str] = mapped_column(String(36), ForeignKey("recommendations.id"))
+    recommendation_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("recommendations.id")
+    )
     next_round_number: Mapped[int] = mapped_column(Integer)
     next_round_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     result_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
 
-    recommendation: Mapped[Recommendation] = relationship(back_populates="outcome_snapshots")
+    recommendation: Mapped[Recommendation] = relationship(
+        back_populates="outcome_snapshots"
+    )

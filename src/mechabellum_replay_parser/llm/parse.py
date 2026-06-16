@@ -1,4 +1,5 @@
 """Placement block parser — extracted from the legacy llm.py."""
+
 from __future__ import annotations
 
 import json

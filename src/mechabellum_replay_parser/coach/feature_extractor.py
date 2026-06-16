@@ -1,16 +1,22 @@
 from __future__ import annotations
 
-from .schemas import StateView, TacticalFeatures, ThreatSignal
+from .schemas import ConstructionStatus, StateView, TacticalFeatures, ThreatSignal
 
 # ── Unit taxonomy ─────────────────────────────────────────────────────────────
 
-AIR_UNITS = frozenset({"phoenix", "wasp", "overlord", "wraith", "phantom ray", "typhoon"})
+AIR_UNITS = frozenset(
+    {"phoenix", "wasp", "overlord", "wraith", "phantom ray", "typhoon"}
+)
 ANTI_AIR_UNITS = frozenset({"arclight", "mustang", "marksmen", "stormcaller"})
 CHAFF_UNITS = frozenset({"crawler", "fang", "hound"})
 ANTI_CHAFF_UNITS = frozenset({"arclight", "vulcan", "fire badger", "stormcaller"})
-ARTILLERY_UNITS = frozenset({"stormcaller", "marksmen", "melting point", "sledgehammer"})
+ARTILLERY_UNITS = frozenset(
+    {"stormcaller", "marksmen", "melting point", "sledgehammer"}
+)
 HEAVY_FRONTLINE_UNITS = frozenset({"fortress", "rhino", "steel ball", "sabertooth"})
-ANTI_HEAVY_UNITS = frozenset({"marksmen", "melting point", "phoenix", "scorpion", "raiden"})
+ANTI_HEAVY_UNITS = frozenset(
+    {"marksmen", "melting point", "phoenix", "scorpion", "raiden"}
+)
 
 _CHAFF_THRESHOLD = 4  # enemy total chaff units to trigger the threat signal
 
@@ -40,16 +46,18 @@ class FeatureExtractor:
                 my_weaknesses.append("thin anti-air coverage")
             else:
                 answer, severity = "good", 0.2
-            threats.append(ThreatSignal(
-                key="enemy_air_pressure",
-                severity=severity,
-                source_units=sorted(enemy_air),
-                explanation=(
-                    f"Enemy has {', '.join(sorted(enemy_air))} — "
-                    "air units that bypass ground defenses."
-                ),
-                my_answer=answer,
-            ))
+            threats.append(
+                ThreatSignal(
+                    key="enemy_air_pressure",
+                    severity=severity,
+                    source_units=sorted(enemy_air),
+                    explanation=(
+                        f"Enemy has {', '.join(sorted(enemy_air))} — "
+                        "air units that bypass ground defenses."
+                    ),
+                    my_answer=answer,
+                )
+            )
 
         # ── Chaff overload ────────────────────────────────────────────────────
         enemy_chaff_count = sum(1 for u in enemy_units if u.name in CHAFF_UNITS)
@@ -58,69 +66,115 @@ class FeatureExtractor:
             answer = "good" if my_ac else "none"
             if not my_ac:
                 my_weaknesses.append("no splash damage vs chaff")
-            threats.append(ThreatSignal(
-                key="enemy_chaff_overload",
-                severity=0.7 if not my_ac else 0.3,
-                source_units=sorted(enemy_unit_names & CHAFF_UNITS),
-                explanation=(
-                    f"Enemy has {enemy_chaff_count} chaff units — splash damage needed."
-                ),
-                my_answer=answer,
-            ))
+            threats.append(
+                ThreatSignal(
+                    key="enemy_chaff_overload",
+                    severity=0.7 if not my_ac else 0.3,
+                    source_units=sorted(enemy_unit_names & CHAFF_UNITS),
+                    explanation=(
+                        f"Enemy has {enemy_chaff_count} chaff units — splash damage needed."
+                    ),
+                    my_answer=answer,
+                )
+            )
 
         # ── Artillery pressure ────────────────────────────────────────────────
         enemy_art = enemy_unit_names & ARTILLERY_UNITS
         if enemy_art:
-            threats.append(ThreatSignal(
-                key="enemy_artillery_pressure",
-                severity=0.5,
-                source_units=sorted(enemy_art),
-                explanation=(
-                    f"Enemy has {', '.join(sorted(enemy_art))} — long-range backline threat."
-                ),
-                my_answer="unknown",
-            ))
+            threats.append(
+                ThreatSignal(
+                    key="enemy_artillery_pressure",
+                    severity=0.5,
+                    source_units=sorted(enemy_art),
+                    explanation=(
+                        f"Enemy has {', '.join(sorted(enemy_art))} — long-range backline threat."
+                    ),
+                    my_answer="unknown",
+                )
+            )
 
         # ── Heavy frontline wall ──────────────────────────────────────────────
         enemy_heavy = enemy_unit_names & HEAVY_FRONTLINE_UNITS
-        enemy_heavy_count = sum(1 for u in enemy_units if u.name in HEAVY_FRONTLINE_UNITS)
+        enemy_heavy_count = sum(
+            1 for u in enemy_units if u.name in HEAVY_FRONTLINE_UNITS
+        )
         if enemy_heavy_count >= 2:
             my_ah = my_unit_names & ANTI_HEAVY_UNITS
             answer = "good" if my_ah else "none"
             if not my_ah:
                 my_weaknesses.append("no anti-heavy single-target damage")
-            threats.append(ThreatSignal(
-                key="enemy_frontline_wall",
-                severity=0.5 if not my_ah else 0.25,
-                source_units=sorted(enemy_heavy),
-                explanation=(
-                    "Enemy has a heavy frontline — sustained single-target damage needed."
-                ),
-                my_answer=answer,
-            ))
+            threats.append(
+                ThreatSignal(
+                    key="enemy_frontline_wall",
+                    severity=0.5 if not my_ah else 0.25,
+                    source_units=sorted(enemy_heavy),
+                    explanation=(
+                        "Enemy has a heavy frontline — sustained single-target damage needed."
+                    ),
+                    my_answer=answer,
+                )
+            )
 
         # ── Enemy weaknesses ──────────────────────────────────────────────────
         if not (enemy_unit_names & ANTI_AIR_UNITS) and (my_unit_names & AIR_UNITS):
             enemy_weaknesses.append("no anti-air — our air units should dominate")
         if not (enemy_unit_names & ANTI_CHAFF_UNITS):
-            my_chaff_count = sum(1 for u in state.my_state.units if u.name in CHAFF_UNITS)
+            my_chaff_count = sum(
+                1 for u in state.my_state.units if u.name in CHAFF_UNITS
+            )
             if my_chaff_count >= 3:
-                enemy_weaknesses.append("no splash vs our chaff — chaff flood is strong")
+                enemy_weaknesses.append(
+                    "no splash vs our chaff — chaff flood is strong"
+                )
 
-        # ── Tower notes ───────────────────────────────────────────────────────
+        # ── Construction signals ──────────────────────────────────────────────
         if not state.my_state.constructions:
             tower_notes.append("No constructions visible for this player.")
         else:
             for c in state.my_state.constructions:
-                pos_str = (
+                pos_str = c.position_label or (
                     f"({c.position.x}, {c.position.y})" if c.position else "unknown pos"
                 )
-                tower_notes.append(f"{c.type} at {pos_str} — {c.status}.")
+                tower_notes.append(
+                    f"{c.type.value} ({c.role.value}) at {pos_str} — {c.status.value}."
+                )
 
-        # Also note disappeared towers from strategic memory
-        for event in state.strategic_memory.critical_events:
-            if "disappeared" in event:
-                tower_notes.append(f"[history] {event}")
+        # Lost constructions from strategic memory
+        lost_events = [
+            e for e in state.strategic_memory.critical_events if "disappeared" in e
+        ]
+        if lost_events:
+            threats.append(
+                ThreatSignal(
+                    key="construction_lost",
+                    severity=0.6,
+                    source_units=[],
+                    explanation=(
+                        f"{len(lost_events)} construction(s) lost: "
+                        + "; ".join(lost_events[:2])
+                    ),
+                    my_answer="none",
+                )
+            )
+            for e in lost_events:
+                tower_notes.append(f"[LOST] {e}")
+
+        # Construction advantage / disadvantage
+        my_live = sum(
+            1
+            for c in state.my_state.constructions
+            if c.status == ConstructionStatus.ALIVE
+        )
+        enemy_live = sum(
+            1
+            for es in state.enemy_states
+            for c in es.constructions
+            if c.status == ConstructionStatus.ALIVE
+        )
+        if enemy_live > my_live:
+            tower_notes.append(
+                f"Construction disadvantage: enemy has {enemy_live}, we have {my_live}."
+            )
 
         # ── Tempo ─────────────────────────────────────────────────────────────
         my_av = state.my_state.army_value or 0
@@ -157,12 +211,12 @@ class FeatureExtractor:
         if tempo_state == "behind":
             priority_questions.append("How to recover army value this round?")
         if tempo_state == "ahead":
-            priority_questions.append("How to press the advantage without overextending?")
+            priority_questions.append(
+                "How to press the advantage without overextending?"
+            )
         high_sev = [t for t in threats if t.severity >= 0.7]
         if high_sev:
-            priority_questions.append(
-                f"Urgent: address {high_sev[0].key} first."
-            )
+            priority_questions.append(f"Urgent: address {high_sev[0].key} first.")
 
         return TacticalFeatures(
             threats=threats,

@@ -1,6 +1,3 @@
-import pytest
-from pydantic import ValidationError
-
 from mechabellum_replay_parser.schemas import (
     Construction,
     ParsedReplay,
@@ -19,9 +16,16 @@ def test_position_model():
 
 def test_unit_model():
     u = Unit(
-        name="crawler", unit_id=10, index=0, level=1, exp=0,
-        rounds_survived=0, position={"x": -40, "y": -80},
-        equipment=None, sell_supply=60, rotate=False,
+        name="crawler",
+        unit_id=10,
+        index=0,
+        level=1,
+        exp=0,
+        rounds_survived=0,
+        position={"x": -40, "y": -80},
+        equipment=None,
+        sell_supply=60,
+        rotate=False,
     )
     assert u.name == "crawler"
     assert u.position.x == -40
@@ -30,16 +34,25 @@ def test_unit_model():
 
 def test_unit_null_position():
     u = Unit(
-        name="crawler", unit_id=10, index=0, level=1, exp=0,
-        rounds_survived=0, position=None,
-        equipment=None, sell_supply=60, rotate=False,
+        name="crawler",
+        unit_id=10,
+        index=0,
+        level=1,
+        exp=0,
+        rounds_survived=0,
+        position=None,
+        equipment=None,
+        sell_supply=60,
+        rotate=False,
     )
     assert u.position is None
 
 
 def test_construction_model():
     c = Construction(
-        type="Supply Tower", construction_id=1, index=0,
+        type="Supply Tower",
+        construction_id=1,
+        index=0,
         position={"x": 100, "y": -270},
     )
     assert c.type == "Supply Tower"
@@ -47,7 +60,9 @@ def test_construction_model():
 
 
 def test_shop_model_full():
-    s = Shop(unlocked=["crawler"], locked=["arclight"], buys_remaining=4, unlocks_remaining=1)
+    s = Shop(
+        unlocked=["crawler"], locked=["arclight"], buys_remaining=4, unlocks_remaining=1
+    )
     assert s.buys_remaining == 4
     assert "crawler" in s.unlocked
 

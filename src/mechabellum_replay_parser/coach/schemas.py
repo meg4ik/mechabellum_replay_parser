@@ -1,8 +1,70 @@
 from __future__ import annotations
 
+from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel
+
+
+# ── Coordinate enums ──────────────────────────────────────────────────────────
+
+
+class PlayerSide(str, Enum):
+    NEGATIVE_Y = "negative_y"
+    POSITIVE_Y = "positive_y"
+
+
+class Lane(str, Enum):
+    LEFT = "left"
+    LEFT_CENTER = "left_center"
+    CENTER = "center"
+    RIGHT_CENTER = "right_center"
+    RIGHT = "right"
+
+
+class Depth(str, Enum):
+    FRONT = "front"
+    MID_FRONT = "mid_front"
+    MID = "mid"
+    MID_BACK = "mid_back"
+    BACK = "back"
+
+
+# ── Placement models ──────────────────────────────────────────────────────────
+
+
+class PlacementAction(str, Enum):
+    KEEP = "keep"
+    MOVE = "move"
+    NEW = "new"
+
+
+class PlacementAnchor(str, Enum):
+    NONE = "none"
+    BEHIND_CHAFF = "behind_chaff"
+    PROTECT_TOWER = "protect_tower"
+    PROTECT_BACKLINE = "protect_backline"
+    FLANK_PRESSURE = "flank_pressure"
+    CENTER_COVERAGE = "center_coverage"
+
+
+class PlacementIntent(BaseModel):
+    unit: str
+    action: PlacementAction
+    lane: Lane
+    depth: Depth
+    anchor: PlacementAnchor = PlacementAnchor.NONE
+    purpose: str | None = None
+
+
+class ResolvedPlacement(BaseModel):
+    unit: str
+    action: PlacementAction
+    x: int
+    y: int
+    lane: Lane
+    depth: Depth
+    purpose: str | None = None
 
 
 class Position(BaseModel):
@@ -24,12 +86,35 @@ class UnitView(BaseModel):
     active_techs: list[str] = []
 
 
+class ConstructionType(str, Enum):
+    SUPPLY_TOWER = "supply_tower"
+    COMMAND_TOWER = "command_tower"
+    RESEARCH_TOWER = "research_tower"
+    UNKNOWN = "unknown"
+
+
+class ConstructionRole(str, Enum):
+    ECONOMY = "economy"
+    COMMAND = "command"
+    RESEARCH = "research"
+    UNKNOWN = "unknown"
+
+
+class ConstructionStatus(str, Enum):
+    ALIVE = "alive"
+    DESTROYED = "destroyed"
+    UNKNOWN = "unknown"
+
+
 class ConstructionView(BaseModel):
-    type: str
+    type: ConstructionType = ConstructionType.UNKNOWN
+    role: ConstructionRole = ConstructionRole.UNKNOWN
+    status: ConstructionStatus = ConstructionStatus.ALIVE
+    raw_type: str | None = None
     construction_id: int | None = None
     index: int | None = None
     position: Position | None = None
-    status: Literal["alive", "destroyed", "unknown"] = "unknown"
+    position_label: str | None = None
 
 
 class ShopView(BaseModel):
@@ -83,6 +168,7 @@ class StateView(BaseModel):
 
 
 # ── TacticalFeatures ──────────────────────────────────────────────────────────
+
 
 class ThreatSignal(BaseModel):
     key: str
@@ -142,6 +228,7 @@ class ActionGroup(BaseModel):
 
 # ── Candidate plan ────────────────────────────────────────────────────────────
 
+
 class CandidatePlan(BaseModel):
     id: str
     title: str
@@ -151,11 +238,13 @@ class CandidatePlan(BaseModel):
     why_it_works: str
     risks: list[str]
     expected_enemy_response: list[str]
-    placement: list[dict]
+    placement: list[dict] = []
+    placement_intents: list[PlacementIntent] = []
     confidence: float
 
 
 # ── Validation ────────────────────────────────────────────────────────────────
+
 
 class ValidationIssue(BaseModel):
     severity: Literal["error", "warning"]
@@ -171,6 +260,7 @@ class PlanValidationResult(BaseModel):
 
 
 # ── Judge output ─────────────────────────────────────────────────────────────
+
 
 class RejectedPlan(BaseModel):
     plan_id: str
@@ -190,6 +280,7 @@ class JudgeOutput(BaseModel):
 
 # ── CoachRecommendation ───────────────────────────────────────────────────────
 
+
 class PlannedAction(BaseModel):
     type: str
     unit: str | None = None
@@ -205,6 +296,7 @@ class CoachRecommendation(BaseModel):
     main_threats: list[str] = []
     actions: list[PlannedAction] = []
     placement: list[dict] = []
+    resolved_placements: list[ResolvedPlacement] = []
     risks: list[str] = []
     watch_next_round: list[str] = []
     coach_text: str = ""

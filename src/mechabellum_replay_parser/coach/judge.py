@@ -25,24 +25,26 @@ def _build_user(
 ) -> str:
     plans_data = []
     for plan, result in validated_plans:
-        plans_data.append({
-            "id": plan.id,
-            "title": plan.title,
-            "total_cost": plan.total_cost,
-            "main_goal": plan.main_goal,
-            "why_it_works": plan.why_it_works,
-            "risks": plan.risks,
-            "expected_enemy_response": plan.expected_enemy_response,
-            "confidence": plan.confidence,
-            "placement": plan.placement,
-            "validation": {
-                "is_valid": result.is_valid,
-                "issues": [
-                    {"severity": i.severity, "code": i.code, "message": i.message}
-                    for i in result.issues
-                ],
-            },
-        })
+        plans_data.append(
+            {
+                "id": plan.id,
+                "title": plan.title,
+                "total_cost": plan.total_cost,
+                "main_goal": plan.main_goal,
+                "why_it_works": plan.why_it_works,
+                "risks": plan.risks,
+                "expected_enemy_response": plan.expected_enemy_response,
+                "confidence": plan.confidence,
+                "placement": plan.placement,
+                "validation": {
+                    "is_valid": result.is_valid,
+                    "issues": [
+                        {"severity": i.severity, "code": i.code, "message": i.message}
+                        for i in result.issues
+                    ],
+                },
+            }
+        )
 
     data: dict = {
         "round": state.round,

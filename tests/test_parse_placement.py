@@ -78,8 +78,7 @@ def test_missing_unit_field_skips_entry():
 
 def test_mixed_valid_and_invalid_entries():
     text = _wrap(
-        '[{"x": 0, "y": -80},'
-        ' {"unit": "crawler", "x": 0, "y": -80, "action": "keep"}]'
+        '[{"x": 0, "y": -80}, {"unit": "crawler", "x": 0, "y": -80, "action": "keep"}]'
     )
     result = parse_placement(text)
     assert result is not None
