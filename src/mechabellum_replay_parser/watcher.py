@@ -35,6 +35,7 @@ REPLAY_DIR = Path(
 
 _STABLE_INTERVAL = 0.5
 _STABLE_COUNT = 3
+_STABLE_TIMEOUT = 15.0  # give up waiting and try to parse anyway after this many seconds
 
 
 _DEBUG_DIR = Path(".debug")
@@ -147,20 +148,29 @@ def _debug_report(parsed: dict) -> None:
 
 
 async def _wait_for_file_stable(path: Path) -> bool:
-    """Wait until the file size stops changing (Steam may still be writing)."""
+    """Wait until the file size stops changing (Steam may still be writing).
+
+    Returns True when stable or after timeout; False only if the file disappears.
+    The size>0 guard is intentionally removed: Docker bind-mounts on Windows can
+    report st_size=0 even for non-empty files, causing an infinite loop.
+    """
     prev_size = -1
     stable = 0
-    while stable < _STABLE_COUNT:
+    elapsed = 0.0
+    while stable < _STABLE_COUNT and elapsed < _STABLE_TIMEOUT:
         try:
             size = path.stat().st_size
         except OSError:
             return False
-        if size > 0 and size == prev_size:
+        if size == prev_size:
             stable += 1
         else:
             stable = 0
             prev_size = size
         await asyncio.sleep(_STABLE_INTERVAL)
+        elapsed += _STABLE_INTERVAL
+    if elapsed >= _STABLE_TIMEOUT:
+        print(f"[!] Stability timeout for {path.name} — proceeding anyway (size={prev_size})")
     return True
 
 
@@ -261,9 +271,11 @@ async def process_replay(
         finally:
             pending_supplies.pop(rec_id, None)
 
+        print(f"[~] Analysing round {last_round} for {player_name} (supply={supply})...")
         analysis = await _coach_engine.analyze_replay_detailed(
             parsed, supply, player_name, rec_id=rec_id
         )
+        print(f"[✓] Analysis done. Placement items: {len(analysis.recommendation.placement or [])}")
         recommendation = analysis.recommendation
 
         if persistence is not None:
@@ -280,43 +292,47 @@ async def process_replay(
             except Exception as pe:
                 print(f"[!] Persistence error (non-fatal): {pe}")
 
-        if recommendation.placement:
-            last = next(
-                (r for r in parsed["rounds"] if r["round"] == last_round),
-                parsed["rounds"][-1],
-            )
-            player_data = last["players"].get(player_name, {})
-            current_units = player_data.get("units", [])
-            if analysis.state_view is not None:
-                constructions = [
-                    c.model_dump() for c in analysis.state_view.my_state.constructions
-                ]
-            else:
-                constructions = player_data.get("constructions", [])
+        last = next(
+            (r for r in parsed["rounds"] if r["round"] == last_round),
+            parsed["rounds"][-1],
+        )
+        player_data = last["players"].get(player_name, {})
+        current_units = player_data.get("units", [])
+        if analysis.state_view is not None:
+            constructions = [
+                c.model_dump() for c in analysis.state_view.my_state.constructions
+            ]
+        else:
+            constructions = player_data.get("constructions", [])
 
-            await broker.publish(
-                UIEvent(
-                    type="recommendation_ready",
-                    payload=RecommendationReadyPayload(
-                        recommendation_id=rec_id,
-                        round=last_round,
-                        player_name=player_name,
-                        summary=recommendation.summary,
-                        current_units=current_units,
-                        constructions=constructions,
-                        placement=recommendation.placement,
-                        coach_text=recommendation.coach_text,
-                    ).model_dump(),
-                )
+        await broker.publish(
+            UIEvent(
+                type="recommendation_ready",
+                payload=RecommendationReadyPayload(
+                    recommendation_id=rec_id,
+                    round=last_round,
+                    player_name=player_name,
+                    summary=recommendation.summary,
+                    current_units=current_units,
+                    constructions=constructions,
+                    placement=recommendation.placement or [],
+                    coach_text=recommendation.coach_text,
+                ).model_dump(),
             )
-            _log.info("stage=ui_event_sent type=recommendation_ready rec_id=%s", rec_id)
+        )
+        _log.info(
+            "stage=ui_event_sent type=recommendation_ready rec_id=%s placement_items=%d",
+            rec_id, len(recommendation.placement or []),
+        )
 
-    except (ValueError, KeyError, AttributeError) as e:
-        print(f"[!] Pipeline error: {e}")
+    except Exception as e:
+        import traceback
+        print(f"[!] Pipeline error ({type(e).__name__}): {e}")
+        traceback.print_exc()
         await broker.publish(
             UIEvent(
                 type="error",
-                payload={"message": str(e), "details": ""},
+                payload={"message": f"{type(e).__name__}: {e}", "details": ""},
             )
         )
     finally:

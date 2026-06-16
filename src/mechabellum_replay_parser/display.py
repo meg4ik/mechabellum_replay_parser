@@ -5,9 +5,9 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import simpledialog
 
-_X_MIN, _X_MAX = -294, 294          # derived: arclight center ±290, size_x=4
-_Y_FRONT = -16                      # derived: arclight center -20, size_y=4
-_Y_BACK = -304                      # derived: arclight center -300, size_y=4
+_X_MIN, _X_MAX = -300, 300          # derived: arclight center ±290, size_x=10
+_Y_FRONT = -10                      # derived: arclight center -20, size_y=10
+_Y_BACK = -310                      # derived: arclight center -300, size_y=10
 _CANVAS_W = 600
 _CANVAS_H = 520
 _MARGIN = 50

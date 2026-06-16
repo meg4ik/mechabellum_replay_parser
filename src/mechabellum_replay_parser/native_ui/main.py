@@ -97,7 +97,10 @@ async def _run_async(window: CoachWindow, loop: asyncio.AbstractEventLoop) -> No
     client = CoreAPIClient(base_url=base_url, ws_url=ws_url)
     print(f"[native_ui] Connecting to {ws_url} …")
 
-    async for event in client.events(on_disconnect=window.show_backend_unavailable):
+    async for event in client.events(
+        on_connect=window.show_connected,
+        on_disconnect=window.show_backend_unavailable,
+    ):
         await _handle_event(event, client, window, loop)
 
 

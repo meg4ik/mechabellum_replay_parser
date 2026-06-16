@@ -13,3 +13,4 @@ async def supply_response(body: SupplyResponseBody, request: Request) -> None:
         return
     supply_value = None if body.cancelled else body.supply
     future.set_result(supply_value)
+    request.app.state.broker.clear_pending_supply()

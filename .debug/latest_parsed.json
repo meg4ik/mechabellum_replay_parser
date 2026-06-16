@@ -1,0 +1,962 @@
+{
+  "metadata": {
+    "version": "2087",
+    "match_mode": "VS_1_1"
+  },
+  "teams": [
+    [
+      "D`amuzio"
+    ],
+    [
+      "Bot"
+    ]
+  ],
+  "rounds": [
+    {
+      "round": 0,
+      "fight_result": null,
+      "players": {
+        "D`amuzio": {
+          "hp": 4500,
+          "supply": 0,
+          "army_value": 0,
+          "fight_outcome": "Win",
+          "officers": [],
+          "commander_skills": [],
+          "units": [],
+          "active_techs": [],
+          "contraptions": [],
+          "constructions": [],
+          "shop": {
+            "unlocked": [],
+            "locked": [
+              "crawler",
+              "fang",
+              "hound",
+              "void eye",
+              "arclight",
+              "marksmen",
+              "vortex",
+              "mustang",
+              "sledgehammer",
+              "stormcaller",
+              "steel ball",
+              "fire badger",
+              "sabertooth",
+              "tarantula",
+              "rhino",
+              "hacker",
+              "wasp",
+              "phoenix",
+              "phantom ray",
+              "wraith",
+              "scorpion",
+              "farseer",
+              "typhoon",
+              "vulcan",
+              "melting point",
+              "fortress",
+              "sandworm",
+              "raiden",
+              "overlord",
+              "warfactory",
+              "abyss",
+              "mountain"
+            ],
+            "buys_remaining": 2,
+            "unlocks_remaining": 1
+          },
+          "actions": []
+        },
+        "Bot": {
+          "hp": 4500,
+          "supply": 0,
+          "army_value": 0,
+          "fight_outcome": "Win",
+          "officers": [],
+          "commander_skills": [],
+          "units": [],
+          "active_techs": [],
+          "contraptions": [],
+          "constructions": [],
+          "shop": {
+            "unlocked": [],
+            "locked": [
+              "crawler",
+              "fang",
+              "hound",
+              "void eye",
+              "arclight",
+              "marksmen",
+              "vortex",
+              "mustang",
+              "sledgehammer",
+              "stormcaller",
+              "steel ball",
+              "fire badger",
+              "sabertooth",
+              "tarantula",
+              "rhino",
+              "hacker",
+              "wasp",
+              "phoenix",
+              "phantom ray",
+              "wraith",
+              "scorpion",
+              "farseer",
+              "typhoon",
+              "vulcan",
+              "melting point",
+              "fortress",
+              "sandworm",
+              "raiden",
+              "overlord",
+              "warfactory",
+              "abyss",
+              "mountain"
+            ],
+            "buys_remaining": 2,
+            "unlocks_remaining": 1
+          },
+          "actions": []
+        }
+      }
+    },
+    {
+      "round": 1,
+      "fight_result": null,
+      "players": {
+        "D`amuzio": {
+          "hp": 5000,
+          "supply": 0,
+          "army_value": 700,
+          "fight_outcome": "Win",
+          "officers": [
+            "Amplify Specialist"
+          ],
+          "commander_skills": [],
+          "units": [
+            {
+              "name": "vortex",
+              "unit_id": 31,
+              "index": 0,
+              "level": 0,
+              "exp": 0,
+              "rounds_survived": 0,
+              "position": {
+                "x": 0,
+                "y": -160
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "vortex",
+              "unit_id": 31,
+              "index": 1,
+              "level": 0,
+              "exp": 0,
+              "rounds_survived": 0,
+              "position": {
+                "x": -20,
+                "y": -160
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "vortex",
+              "unit_id": 31,
+              "index": 2,
+              "level": 0,
+              "exp": 0,
+              "rounds_survived": 0,
+              "position": {
+                "x": 0,
+                "y": -180
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "mustang",
+              "unit_id": 7,
+              "index": 3,
+              "level": 0,
+              "exp": 0,
+              "rounds_survived": 0,
+              "position": {
+                "x": 5,
+                "y": -140
+              },
+              "equipment": null,
+              "sell_supply": 200,
+              "rotate": false
+            },
+            {
+              "name": "mustang",
+              "unit_id": 7,
+              "index": 4,
+              "level": 0,
+              "exp": 0,
+              "rounds_survived": 0,
+              "position": {
+                "x": 35,
+                "y": -160
+              },
+              "equipment": null,
+              "sell_supply": 200,
+              "rotate": false
+            }
+          ],
+          "active_techs": [],
+          "contraptions": [],
+          "constructions": [
+            {
+              "type": "Anti-Armor Cannon",
+              "construction_id": 2,
+              "index": 0,
+              "position": {
+                "x": 0,
+                "y": -110
+              }
+            },
+            {
+              "type": "Rapid-Fire Cannon",
+              "construction_id": 3,
+              "index": 1,
+              "position": {
+                "x": -160,
+                "y": -100
+              }
+            },
+            {
+              "type": "Magnetic Barricade",
+              "construction_id": 4,
+              "index": 2,
+              "position": {
+                "x": 155,
+                "y": -35
+              }
+            }
+          ],
+          "shop": {
+            "unlocked": [
+              "vortex",
+              "mustang"
+            ],
+            "locked": [
+              "crawler",
+              "fang",
+              "hound",
+              "void eye",
+              "arclight",
+              "marksmen",
+              "sledgehammer",
+              "stormcaller",
+              "steel ball",
+              "fire badger",
+              "sabertooth",
+              "tarantula",
+              "rhino",
+              "hacker",
+              "wasp",
+              "phoenix",
+              "phantom ray",
+              "wraith",
+              "scorpion",
+              "farseer",
+              "typhoon",
+              "vulcan",
+              "melting point",
+              "fortress",
+              "sandworm",
+              "raiden",
+              "overlord",
+              "warfactory",
+              "abyss",
+              "mountain"
+            ],
+            "buys_remaining": 2,
+            "unlocks_remaining": -1
+          },
+          "actions": []
+        },
+        "Bot": {
+          "hp": 5500,
+          "supply": 0,
+          "army_value": 700,
+          "fight_outcome": "Win",
+          "officers": [
+            "Aerial Specialist"
+          ],
+          "commander_skills": [],
+          "units": [
+            {
+              "name": "hound",
+              "unit_id": 28,
+              "index": 0,
+              "level": 0,
+              "exp": 0,
+              "rounds_survived": 0,
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "hound",
+              "unit_id": 28,
+              "index": 1,
+              "level": 0,
+              "exp": 0,
+              "rounds_survived": 0,
+              "position": {
+                "x": 0,
+                "y": 140
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "hound",
+              "unit_id": 28,
+              "index": 2,
+              "level": 0,
+              "exp": 0,
+              "rounds_survived": 0,
+              "position": {
+                "x": 0,
+                "y": 180
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "mustang",
+              "unit_id": 7,
+              "index": 3,
+              "level": 0,
+              "exp": 0,
+              "rounds_survived": 0,
+              "position": {
+                "x": 5,
+                "y": 200
+              },
+              "equipment": null,
+              "sell_supply": 200,
+              "rotate": false
+            },
+            {
+              "name": "mustang",
+              "unit_id": 7,
+              "index": 4,
+              "level": 0,
+              "exp": 0,
+              "rounds_survived": 0,
+              "position": {
+                "x": 45,
+                "y": 160
+              },
+              "equipment": null,
+              "sell_supply": 200,
+              "rotate": false
+            }
+          ],
+          "active_techs": [],
+          "contraptions": [],
+          "constructions": [
+            {
+              "type": "Anti-Armor Cannon",
+              "construction_id": 2,
+              "index": 0,
+              "position": {
+                "x": 0,
+                "y": 110
+              }
+            },
+            {
+              "type": "Rapid-Fire Cannon",
+              "construction_id": 3,
+              "index": 1,
+              "position": {
+                "x": 160,
+                "y": 100
+              }
+            },
+            {
+              "type": "Magnetic Barricade",
+              "construction_id": 4,
+              "index": 2,
+              "position": {
+                "x": -155,
+                "y": 35
+              }
+            }
+          ],
+          "shop": {
+            "unlocked": [
+              "hound",
+              "mustang"
+            ],
+            "locked": [
+              "crawler",
+              "fang",
+              "void eye",
+              "arclight",
+              "marksmen",
+              "vortex",
+              "sledgehammer",
+              "stormcaller",
+              "steel ball",
+              "fire badger",
+              "sabertooth",
+              "tarantula",
+              "rhino",
+              "hacker",
+              "wasp",
+              "phoenix",
+              "phantom ray",
+              "wraith",
+              "scorpion",
+              "farseer",
+              "typhoon",
+              "vulcan",
+              "melting point",
+              "fortress",
+              "sandworm",
+              "raiden",
+              "overlord",
+              "warfactory",
+              "abyss",
+              "mountain"
+            ],
+            "buys_remaining": 2,
+            "unlocks_remaining": -1
+          },
+          "actions": [
+            {
+              "type": "move",
+              "unit": "hound",
+              "unit_id": 28,
+              "unit_index": 0,
+              "from": {
+                "x": 0,
+                "y": 160
+              },
+              "to": {
+                "x": 210,
+                "y": 130
+              },
+              "rotate": false,
+              "time": 0
+            },
+            {
+              "type": "move",
+              "unit": "hound",
+              "unit_id": 28,
+              "unit_index": 1,
+              "from": {
+                "x": 0,
+                "y": 140
+              },
+              "to": {
+                "x": -200,
+                "y": 140
+              },
+              "rotate": false,
+              "time": 0
+            },
+            {
+              "type": "move",
+              "unit": "hound",
+              "unit_id": 28,
+              "unit_index": 2,
+              "from": {
+                "x": 0,
+                "y": 180
+              },
+              "to": {
+                "x": 0,
+                "y": 140
+              },
+              "rotate": false,
+              "time": 0
+            },
+            {
+              "type": "move",
+              "unit": "mustang",
+              "unit_id": 7,
+              "unit_index": 3,
+              "from": {
+                "x": 5,
+                "y": 200
+              },
+              "to": {
+                "x": 215,
+                "y": 240
+              },
+              "rotate": false,
+              "time": 0
+            },
+            {
+              "type": "move",
+              "unit": "mustang",
+              "unit_id": 7,
+              "unit_index": 4,
+              "from": {
+                "x": 45,
+                "y": 160
+              },
+              "to": {
+                "x": -215,
+                "y": 240
+              },
+              "rotate": false,
+              "time": 0
+            },
+            {
+              "type": "unlock",
+              "unit": "crawler",
+              "unit_id": 10,
+              "time": 0
+            },
+            {
+              "type": "buy",
+              "unit": "crawler",
+              "unit_id": 10,
+              "position": {
+                "x": 5,
+                "y": 160
+              },
+              "time": 0
+            },
+            {
+              "type": "move",
+              "unit": "crawler",
+              "unit_id": 10,
+              "unit_index": 5,
+              "from": {
+                "x": 5,
+                "y": 160
+              },
+              "to": {
+                "x": 135,
+                "y": 190
+              },
+              "rotate": false,
+              "time": 0
+            },
+            {
+              "type": "buy",
+              "unit": "crawler",
+              "unit_id": 10,
+              "position": {
+                "x": 5,
+                "y": 160
+              },
+              "time": 0
+            },
+            {
+              "type": "move",
+              "unit": "crawler",
+              "unit_id": 10,
+              "unit_index": 6,
+              "from": {
+                "x": 5,
+                "y": 160
+              },
+              "to": {
+                "x": -135,
+                "y": 190
+              },
+              "rotate": false,
+              "time": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "round": 2,
+      "fight_result": {
+        "D`amuzio": {
+          "crystals_destroyed": 1,
+          "units_survived": 1,
+          "score": 100
+        },
+        "Bot": {
+          "crystals_destroyed": 2,
+          "units_survived": 0,
+          "score": 0
+        }
+      },
+      "players": {
+        "D`amuzio": {
+          "hp": 5000,
+          "supply": 200,
+          "army_value": 700,
+          "fight_outcome": "Win",
+          "officers": [
+            "Amplify Specialist"
+          ],
+          "commander_skills": [],
+          "units": [
+            {
+              "name": "vortex",
+              "unit_id": 31,
+              "index": 0,
+              "level": 0,
+              "exp": 311,
+              "rounds_survived": 0,
+              "position": {
+                "x": 0,
+                "y": -160
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "vortex",
+              "unit_id": 31,
+              "index": 1,
+              "level": 0,
+              "exp": 141,
+              "rounds_survived": 0,
+              "position": {
+                "x": -20,
+                "y": -160
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "vortex",
+              "unit_id": 31,
+              "index": 2,
+              "level": 0,
+              "exp": 679,
+              "rounds_survived": 0,
+              "position": {
+                "x": 0,
+                "y": -180
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "mustang",
+              "unit_id": 7,
+              "index": 3,
+              "level": 0,
+              "exp": 279,
+              "rounds_survived": 0,
+              "position": {
+                "x": 5,
+                "y": -140
+              },
+              "equipment": null,
+              "sell_supply": 200,
+              "rotate": false
+            },
+            {
+              "name": "mustang",
+              "unit_id": 7,
+              "index": 4,
+              "level": 0,
+              "exp": 387,
+              "rounds_survived": 0,
+              "position": {
+                "x": 35,
+                "y": -160
+              },
+              "equipment": null,
+              "sell_supply": 200,
+              "rotate": false
+            }
+          ],
+          "active_techs": [],
+          "contraptions": [],
+          "constructions": [
+            {
+              "type": "Anti-Armor Cannon",
+              "construction_id": 2,
+              "index": 0,
+              "position": {
+                "x": 0,
+                "y": -110
+              }
+            },
+            {
+              "type": "Rapid-Fire Cannon",
+              "construction_id": 3,
+              "index": 1,
+              "position": {
+                "x": -160,
+                "y": -100
+              }
+            },
+            {
+              "type": "Magnetic Barricade",
+              "construction_id": 4,
+              "index": 2,
+              "position": {
+                "x": 155,
+                "y": -35
+              }
+            }
+          ],
+          "shop": {
+            "unlocked": [
+              "vortex",
+              "mustang"
+            ],
+            "locked": [
+              "crawler",
+              "fang",
+              "hound",
+              "void eye",
+              "arclight",
+              "marksmen",
+              "sledgehammer",
+              "stormcaller",
+              "steel ball",
+              "fire badger",
+              "sabertooth",
+              "tarantula",
+              "rhino",
+              "hacker",
+              "wasp",
+              "phoenix",
+              "phantom ray",
+              "wraith",
+              "scorpion",
+              "farseer",
+              "typhoon",
+              "vulcan",
+              "melting point",
+              "fortress",
+              "sandworm",
+              "raiden",
+              "overlord",
+              "warfactory",
+              "abyss",
+              "mountain"
+            ],
+            "buys_remaining": 2,
+            "unlocks_remaining": 1
+          },
+          "actions": [
+            {
+              "type": "card_select",
+              "card": "Skip",
+              "card_id": 0,
+              "time": 0
+            }
+          ]
+        },
+        "Bot": {
+          "hp": 5400,
+          "supply": 0,
+          "army_value": 900,
+          "fight_outcome": "Lose",
+          "officers": [
+            "Aerial Specialist"
+          ],
+          "commander_skills": [],
+          "units": [
+            {
+              "name": "hound",
+              "unit_id": 28,
+              "index": 0,
+              "level": 0,
+              "exp": 138,
+              "rounds_survived": 0,
+              "position": {
+                "x": 210,
+                "y": 130
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "hound",
+              "unit_id": 28,
+              "index": 1,
+              "level": 0,
+              "exp": 255,
+              "rounds_survived": 0,
+              "position": {
+                "x": -200,
+                "y": 140
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "hound",
+              "unit_id": 28,
+              "index": 2,
+              "level": 0,
+              "exp": 128,
+              "rounds_survived": 0,
+              "position": {
+                "x": 0,
+                "y": 140
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "mustang",
+              "unit_id": 7,
+              "index": 3,
+              "level": 0,
+              "exp": 327,
+              "rounds_survived": 0,
+              "position": {
+                "x": 215,
+                "y": 240
+              },
+              "equipment": null,
+              "sell_supply": 200,
+              "rotate": false
+            },
+            {
+              "name": "mustang",
+              "unit_id": 7,
+              "index": 4,
+              "level": 0,
+              "exp": 555,
+              "rounds_survived": 0,
+              "position": {
+                "x": -215,
+                "y": 240
+              },
+              "equipment": null,
+              "sell_supply": 200,
+              "rotate": false
+            },
+            {
+              "name": "crawler",
+              "unit_id": 10,
+              "index": 5,
+              "level": 0,
+              "exp": 111,
+              "rounds_survived": 0,
+              "position": {
+                "x": 135,
+                "y": 190
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            },
+            {
+              "name": "crawler",
+              "unit_id": 10,
+              "index": 6,
+              "level": 0,
+              "exp": 161,
+              "rounds_survived": 0,
+              "position": {
+                "x": -135,
+                "y": 190
+              },
+              "equipment": null,
+              "sell_supply": 100,
+              "rotate": false
+            }
+          ],
+          "active_techs": [],
+          "contraptions": [],
+          "constructions": [
+            {
+              "type": "Anti-Armor Cannon",
+              "construction_id": 2,
+              "index": 0,
+              "position": {
+                "x": 0,
+                "y": 110
+              }
+            },
+            {
+              "type": "Rapid-Fire Cannon",
+              "construction_id": 3,
+              "index": 1,
+              "position": {
+                "x": 160,
+                "y": 100
+              }
+            },
+            {
+              "type": "Magnetic Barricade",
+              "construction_id": 4,
+              "index": 2,
+              "position": {
+                "x": -155,
+                "y": 35
+              }
+            }
+          ],
+          "shop": {
+            "unlocked": [
+              "hound",
+              "mustang",
+              "crawler"
+            ],
+            "locked": [
+              "fang",
+              "void eye",
+              "arclight",
+              "marksmen",
+              "vortex",
+              "sledgehammer",
+              "stormcaller",
+              "steel ball",
+              "fire badger",
+              "sabertooth",
+              "tarantula",
+              "rhino",
+              "hacker",
+              "wasp",
+              "phoenix",
+              "phantom ray",
+              "wraith",
+              "scorpion",
+              "farseer",
+              "typhoon",
+              "vulcan",
+              "melting point",
+              "fortress",
+              "sandworm",
+              "raiden",
+              "overlord",
+              "warfactory",
+              "abyss",
+              "mountain"
+            ],
+            "buys_remaining": 0,
+            "unlocks_remaining": 0
+          },
+          "actions": []
+        }
+      }
+    }
+  ],
+  "last_round": 2
+}

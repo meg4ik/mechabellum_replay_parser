@@ -58,16 +58,20 @@ class CoreAPIClient:
 
     async def events(
         self,
+        on_connect: Callable[[], None] | None = None,
         on_disconnect: Callable[[], None] | None = None,
     ) -> AsyncGenerator[UIEvent, None]:
         """Yields UIEvents from the WebSocket; reconnects automatically on failure.
 
+        on_connect is called each time a connection is established.
         on_disconnect is called each time the connection drops before retrying.
         """
         while True:
             try:
                 async with websockets.connect(self.ws_url) as ws:
                     print(f"[native_ui] Connected to {self.ws_url}")
+                    if on_connect is not None:
+                        on_connect()
                     async for message in ws:
                         data = json.loads(message)
                         yield UIEvent.model_validate(data)

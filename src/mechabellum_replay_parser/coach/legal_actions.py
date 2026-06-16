@@ -11,8 +11,8 @@ from .feature_extractor import (
 from .schemas import ActionGroup, LegalAction, StateView, TacticalFeatures
 
 _DATA_FILE = Path(__file__).parent.parent / "data" / "unit_data.json"
-_UNIT_COSTS: dict[str, int] = {
-    name: data["value"]
+_UNIT_COSTS: dict[str, int | None] = {
+    name: data.get("value")
     for name, data in json.loads(_DATA_FILE.read_text(encoding="utf-8")).items()
 }
 
@@ -60,9 +60,10 @@ class LegalActionGenerator:
         # ── Buy unit ──────────────────────────────────────────────────────────
         if buys_remaining > 0:
             for unit_name in sorted(unlocked):
-                cost = _UNIT_COSTS.get(unit_name, 0)
+                raw_cost = _UNIT_COSTS.get(unit_name)
+                cost: int = raw_cost if raw_cost is not None else 0
                 tags: list[str] = []
-                if cost == 0:
+                if raw_cost is None or cost == 0:
                     tags.append("cost_unknown")
                 elif cost > supply:
                     continue

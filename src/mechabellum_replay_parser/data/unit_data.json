@@ -146,8 +146,8 @@
         "tags": ["anti_air", "anti_chaff", "ground"],
         "answers": ["air", "light_chaff"],
         "weak_against": ["heavy_armor", "artillery"],
-        "size_x": 4,
-        "size_y": 4
+        "size_x": 10,
+        "size_y": 10
     },
     "phoenix": {
         "ident": 16,

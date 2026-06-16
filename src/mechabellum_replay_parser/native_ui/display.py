@@ -20,9 +20,9 @@ from pathlib import Path
 from tkinter import scrolledtext
 
 # ── Board geometry ─────────────────────────────────────────────────────────────
-_X_MIN, _X_MAX = -294, 294          # derived: arclight center ±290, size_x=4
-_Y_FRONT = -16                      # derived: arclight center -20, size_y=4
-_Y_BACK = -304                      # derived: arclight center -300, size_y=4
+_X_MIN, _X_MAX = -300, 300          # derived: arclight center ±290, size_x=10
+_Y_FRONT = -10                      # derived: arclight center -20, size_y=10
+_Y_BACK = -310                      # derived: arclight center -300, size_y=10
 _BOARD_W = 840
 _BOARD_H = 460
 _MARGIN = 50
@@ -105,6 +105,8 @@ class CoachWindow:
         self._root.minsize(900, 700)
         self._root.resizable(True, True)
 
+        self._is_connected: bool = False
+        self._state: str = "idle"
         self._show_idle_impl()
 
     # ── Public API (thread-safe — can be called from any thread) ──────────────
@@ -114,6 +116,11 @@ class CoachWindow:
 
     def show_idle(self) -> None:
         self._schedule(self._show_idle_impl)
+
+    def show_connected(self) -> None:
+        self._is_connected = True
+        if self._state == "idle":
+            self._schedule(self._show_idle_impl)
 
     def show_supply_prompt(
         self,
@@ -194,6 +201,7 @@ class CoachWindow:
     # ── State: idle ───────────────────────────────────────────────────────────
 
     def _show_idle_impl(self) -> None:
+        self._state = "idle"
         self._clear()
         frame = tk.Frame(self._root, bg=_BG)
         frame.place(relx=0.5, rely=0.5, anchor="center")
@@ -202,6 +210,12 @@ class CoachWindow:
             pady=(0, 14)
         )
         self._lbl(frame, "Ожидаю новую партию…", size=16, color=_FG2).pack()
+
+        if self._is_connected:
+            dot, msg, color = "●", "Подключено к серверу", _GREEN
+        else:
+            dot, msg, color = "○", "Нет соединения с сервером", _FG2
+        self._lbl(frame, f"{dot}  {msg}", size=11, color=color).pack(pady=(20, 0))
 
     # ── State: supply prompt ──────────────────────────────────────────────────
 
@@ -507,6 +521,8 @@ class CoachWindow:
     # ── State: backend unavailable ───────────────────────────────────────────
 
     def _show_backend_unavailable_impl(self) -> None:
+        self._is_connected = False
+        self._state = "unavailable"
         self._clear()
 
         outer = tk.Frame(self._root, bg=_BG)

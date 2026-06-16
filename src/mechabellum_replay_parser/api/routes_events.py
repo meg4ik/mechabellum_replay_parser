@@ -20,11 +20,19 @@ async def events_ws(websocket: WebSocket) -> None:
     broker = _broker(websocket)
     queue: asyncio.Queue[UIEvent] = asyncio.Queue()
     broker.subscribe(queue)
+    print(f"[ws] Client connected. Subscribers now: {broker.subscriber_count()}")
     try:
+        # Replay pending supply_request for clients that connected after it was published
+        pending = broker.pending_supply()
+        if pending is not None:
+            print(f"[ws] Replaying pending supply_request to new client: {pending.event_id}")
+            await websocket.send_text(pending.model_dump_json())
         while True:
             event = await queue.get()
+            print(f"[ws] Sending event to client: type={event.type} id={event.event_id}")
             await websocket.send_text(event.model_dump_json())
     except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
         broker.unsubscribe(queue)
+        print(f"[ws] Client disconnected. Subscribers now: {broker.subscriber_count()}")
