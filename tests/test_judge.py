@@ -117,13 +117,13 @@ async def test_confidence_propagated():
 
 
 @pytest.mark.anyio
-async def test_placement_in_output():
+async def test_placement_stripped_from_judge_output():
+    """Judge must not own placement — LLM placement is always stripped."""
     judge = _make_judge(_VALID_JUDGE_RESPONSE)
     result = await judge.select_plan(
         _make_state(), _no_features(), [(_make_plan(), _valid_result())]
     )
-    assert len(result.placement) == 1
-    assert result.placement[0]["unit"] == "arclight"
+    assert result.placement == []
 
 
 @pytest.mark.anyio
@@ -192,6 +192,25 @@ def test_fallback_with_no_plans():
 def test_fallback_returns_judge_output_instance():
     result = _make_fallback_judge_output([(_make_plan(), _valid_result())])
     assert isinstance(result, JudgeOutput)
+
+
+# ── LLM contract enforcement ─────────────────────────────────────────────────
+
+
+@pytest.mark.anyio
+async def test_judge_cannot_select_invalid_plan():
+    """If LLM selects a plan with validation errors, fall back to a valid one."""
+    response = dict(_VALID_JUDGE_RESPONSE)
+    response["best_plan_id"] = "plan_invalid"
+
+    judge = _make_judge(response)
+    plans = [
+        (_make_plan("plan_invalid"), _invalid_result("plan_invalid")),
+        (_make_plan("plan_valid"), _valid_result("plan_valid")),
+    ]
+    result = await judge.select_plan(_make_state(), _no_features(), plans)
+    assert result.best_plan_id == "plan_valid"
+    assert result.best_plan_id != "plan_invalid"
 
 
 # ── why_not_others handling ───────────────────────────────────────────────────

@@ -54,6 +54,9 @@ class _MockWindow:
     def show_error(self, message) -> None:
         self.calls.append(("error", message))
 
+    def show_backend_unavailable(self) -> None:
+        self.calls.append(("unavailable",))
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -281,3 +284,57 @@ def test_error_event_schema():
     event = _error_event("Something went wrong")
     assert event.type == "error"
     assert event.payload["message"] == "Something went wrong"
+
+
+# ── Tests: Phase 10 — backend unavailable / reconnect ─────────────────────────
+
+
+def test_backend_unavailable_in_mock_window():
+    window = _MockWindow()
+    window.show_backend_unavailable()
+    assert ("unavailable",) in window.calls
+
+
+@pytest.mark.anyio
+async def test_client_events_calls_on_disconnect_on_error():
+    from unittest.mock import patch
+
+    from mechabellum_replay_parser.native_ui.client import CoreAPIClient
+
+    disconnected: list[bool] = []
+
+    async def fake_sleep(_n: float) -> None:
+        raise asyncio.CancelledError()
+
+    client = CoreAPIClient(base_url="http://x", ws_url="ws://x")
+    with patch("websockets.connect", side_effect=OSError("refused")):
+        with patch("asyncio.sleep", new=fake_sleep):
+            try:
+                async for _ in client.events(
+                    on_disconnect=lambda: disconnected.append(True)
+                ):
+                    pass
+            except (asyncio.CancelledError, StopAsyncIteration):
+                pass
+
+    assert disconnected == [True]
+
+
+@pytest.mark.anyio
+async def test_client_events_no_on_disconnect_does_not_crash():
+    from unittest.mock import patch
+
+    from mechabellum_replay_parser.native_ui.client import CoreAPIClient
+
+    async def fake_sleep(_n: float) -> None:
+        raise asyncio.CancelledError()
+
+    client = CoreAPIClient(base_url="http://x", ws_url="ws://x")
+    with patch("websockets.connect", side_effect=OSError("refused")):
+        with patch("asyncio.sleep", new=fake_sleep):
+            try:
+                async for _ in client.events(on_disconnect=None):
+                    pass
+            except (asyncio.CancelledError, StopAsyncIteration):
+                pass
+    # Reaching here without AttributeError means the None guard works correctly

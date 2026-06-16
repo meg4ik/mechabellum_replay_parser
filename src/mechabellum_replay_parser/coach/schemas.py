@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # ── Coordinate enums ──────────────────────────────────────────────────────────
@@ -170,12 +170,44 @@ class StateView(BaseModel):
 # ── TacticalFeatures ──────────────────────────────────────────────────────────
 
 
+class AnswerStrength(str, Enum):
+    NONE = "none"
+    WEAK = "weak"
+    MEDIUM = "medium"
+    STRONG = "strong"
+    UNKNOWN = "unknown"
+
+
+class ThreatUrgency(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
 class ThreatSignal(BaseModel):
     key: str
     severity: float
+    urgency: ThreatUrgency = ThreatUrgency.MEDIUM
     source_units: list[str] = []
-    explanation: str
-    my_answer: Literal["none", "weak", "medium", "good", "unknown"] = "unknown"
+    explanation: str = ""
+    my_answer: AnswerStrength = AnswerStrength.UNKNOWN
+    recommended_response_types: list[str] = []
+    bad_response_types: list[str] = []
+
+
+class ArmyProfile(BaseModel):
+    chaff: float = 0.0
+    anti_chaff: float = 0.0
+    anti_air: float = 0.0
+    air_pressure: float = 0.0
+    single_target: float = 0.0
+    heavy_frontline: float = 0.0
+    artillery: float = 0.0
+    backline_carry: float = 0.0
+    flank_pressure: float = 0.0
+    tankiness: float = 0.0
+    scaling: float = 0.0
 
 
 class TacticalFeatures(BaseModel):
@@ -187,6 +219,8 @@ class TacticalFeatures(BaseModel):
     tower_notes: list[str]
     likely_enemy_continuation: list[str]
     priority_questions: list[str]
+    my_army_profile: ArmyProfile = Field(default_factory=ArmyProfile)
+    enemy_army_profile: ArmyProfile = Field(default_factory=ArmyProfile)
 
 
 # ── Legal actions ─────────────────────────────────────────────────────────────
@@ -226,6 +260,35 @@ class ActionGroup(BaseModel):
     risks: list[str] = []
 
 
+# ── Tactical bundles ──────────────────────────────────────────────────────────
+
+
+class TacticalTheme(str, Enum):
+    ANTI_AIR_RESPONSE = "anti_air_response"
+    ANTI_CHAFF_CLEAR = "anti_chaff_clear"
+    ANTI_ARTILLERY_PRESSURE = "anti_artillery_pressure"
+    HEAVY_FRONTLINE_COUNTER = "heavy_frontline_counter"
+    TOWER_DEFENSE = "tower_defense"
+    FLANK_PRESSURE = "flank_pressure"
+    ECONOMY_SCALING = "economy_scaling"
+    TEMPO_RECOVERY = "tempo_recovery"
+    POSITIONING_FIX = "positioning_fix"
+    SAFE_DEFAULT = "safe_default"
+
+
+class TacticalBundle(BaseModel):
+    id: str
+    theme: TacticalTheme
+    title: str
+    target_threats: list[str]
+    required_action_ids: list[str]
+    optional_action_ids: list[str] = []
+    estimated_cost: int
+    placement_intents: list[PlacementIntent] = []
+    why_considered: str
+    risks: list[str] = []
+
+
 # ── Candidate plan ────────────────────────────────────────────────────────────
 
 
@@ -257,6 +320,25 @@ class PlanValidationResult(BaseModel):
     is_valid: bool
     issues: list[ValidationIssue]
     normalized_plan: CandidatePlan | None = None
+
+
+# ── Plan scoring ─────────────────────────────────────────────────────────────
+
+
+class PlanScoreBreakdown(BaseModel):
+    plan_id: str
+    total_score: float
+    threat_coverage: float
+    supply_efficiency: float
+    tempo: float
+    scaling: float
+    positioning_safety: float
+    tower_protection: float
+    flexibility_next_round: float
+    overreaction_risk: float
+    legality_penalty: float
+    reasons: list[str] = []
+    warnings: list[str] = []
 
 
 # ── Judge output ─────────────────────────────────────────────────────────────

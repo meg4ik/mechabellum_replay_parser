@@ -258,8 +258,25 @@ async def test_pipeline_emits_placement(parsed_early, planner_valid, judge_valid
     analysis = await engine.analyze_replay_detailed(
         parsed_early, supply=200, player_name="Player1"
     )
+    # Placement is resolved from placement_intents by code, not from LLM raw coords
     assert analysis.recommendation.placement is not None
     assert len(analysis.recommendation.placement) > 0
+
+
+@pytest.mark.anyio
+async def test_final_recommendation_contains_resolved_placement(
+    parsed_early, planner_valid, judge_valid
+):
+    """Placement in final recommendation comes from PlacementResolver, not LLM."""
+    engine = CoachEngine(provider=_SequentialProvider([planner_valid, judge_valid]))
+    analysis = await engine.analyze_replay_detailed(
+        parsed_early, supply=200, player_name="Player1"
+    )
+    assert analysis.judge_output is not None
+    # Judge output must never contain placement — it only chooses the plan ID
+    assert analysis.judge_output.placement == []
+    # Resolved placements are the source of truth for coordinates
+    assert analysis.recommendation.resolved_placements is not None
 
 
 @pytest.mark.anyio

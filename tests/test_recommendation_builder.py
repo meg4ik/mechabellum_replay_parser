@@ -173,7 +173,7 @@ def test_no_low_severity_threat_in_main_threats(builder):
                 severity=0.3,  # below 0.5 threshold
                 source_units=[],
                 explanation="minor",
-                my_answer="good",
+                my_answer="strong",
             )
         ],
         my_weaknesses=[],

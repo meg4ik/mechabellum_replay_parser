@@ -9,6 +9,9 @@ services:
       DATABASE_URL: "postgresql+asyncpg://mechabellum:mechabellum@postgres:5432/mechabellum"
       # Tell the watcher where replays are mounted inside the container.
       REPLAY_DIR: /data/replays
+      # Set to the Steam username so the engine picks the right player.
+      # Overridden at runtime by PLAYER_NAME in .env if set there.
+      PLAYER_NAME: "${PLAYER_NAME:-}"
     ports:
       - "8000:8000"
     volumes:
@@ -19,11 +22,18 @@ services:
         source: ./game_knowledge.md
         target: /app/game_knowledge.md
         read_only: true
+      - type: bind
+        source: ./.debug
+        target: /app/.debug
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     restart: unless-stopped
 
   postgres:
@@ -41,11 +51,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
 
 volumes:
   postgres_data:

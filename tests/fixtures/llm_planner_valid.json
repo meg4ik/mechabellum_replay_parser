@@ -9,9 +9,8 @@
       "why_it_works": "Arclight has strong anti-air capabilities.",
       "risks": ["Arclight is expensive"],
       "expected_enemy_response": ["Enemy may switch to ground"],
-      "placement": [
-        {"unit": "arclight", "x": 0, "y": -90, "action": "new"},
-        {"unit": "crawler", "x": -40, "y": -80, "action": "keep"}
+      "placement_intents": [
+        {"unit": "arclight", "action": "new", "lane": "center", "depth": "back", "anchor": "none", "purpose": "anti-air coverage"}
       ],
       "confidence": 0.8
     },
@@ -24,9 +23,8 @@
       "why_it_works": "Mustang is a versatile anti-air option.",
       "risks": ["Weaker against heavy air stacks"],
       "expected_enemy_response": ["Enemy continues air push"],
-      "placement": [
-        {"unit": "mustang", "x": 40, "y": -80, "action": "new"},
-        {"unit": "crawler", "x": -40, "y": -80, "action": "keep"}
+      "placement_intents": [
+        {"unit": "mustang", "action": "new", "lane": "right_center", "depth": "back", "anchor": "none", "purpose": "flank anti-air"}
       ],
       "confidence": 0.6
     }

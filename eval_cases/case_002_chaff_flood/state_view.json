@@ -1,0 +1,51 @@
+{
+  "match_mode": "VS_1_1",
+  "round": 4,
+  "player_name": "Player1",
+  "enemy_names": ["Enemy"],
+  "my_supply": 500,
+  "my_state": {
+    "name": "Player1",
+    "army_value": 400,
+    "units": [
+      {"name": "fortress", "index": 0},
+      {"name": "rhino", "index": 0},
+      {"name": "steel ball", "index": 0}
+    ],
+    "constructions": [],
+    "shop": {
+      "unlocked": ["arclight", "vulcan", "crawler", "mustang"],
+      "locked": ["fire badger", "warfactory"],
+      "buys_remaining": 3,
+      "unlocks_remaining": 1
+    },
+    "officers": [],
+    "commander_skills": [],
+    "contraptions": []
+  },
+  "enemy_states": [
+    {
+      "name": "Enemy",
+      "army_value": 400,
+      "units": [
+        {"name": "crawler"},
+        {"name": "crawler"},
+        {"name": "crawler"},
+        {"name": "crawler"},
+        {"name": "crawler"}
+      ],
+      "constructions": [],
+      "officers": [],
+      "commander_skills": [],
+      "contraptions": []
+    }
+  ],
+  "recent_rounds": [],
+  "strategic_memory": {
+    "enemy_plan_read": null,
+    "my_plan_read": null,
+    "critical_events": [],
+    "committed_investments": [],
+    "do_not_forget": []
+  }
+}

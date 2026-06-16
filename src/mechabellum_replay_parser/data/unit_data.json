@@ -2,146 +2,233 @@
     "fortress": {
         "ident": 1,
         "name": "fortress",
-        "value": 400
+        "value": 400,
+        "tags": ["heavy_frontline", "tank", "ground"],
+        "answers": ["frontline_pressure", "chaff_absorption"],
+        "weak_against": ["single_target", "anti_heavy", "flank_pressure"]
     },
     "marksmen": {
         "ident": 2,
         "name": "marksmen",
-        "value": 100
+        "value": 100,
+        "tags": ["anti_air", "single_target", "artillery", "backline_carry", "ranged"],
+        "answers": ["air", "heavy_frontline", "high_value_targets"],
+        "weak_against": ["flank_pressure", "anti_missile", "fast_units"]
     },
     "vulcan": {
         "ident": 3,
         "name": "vulcan",
-        "value": 400
+        "value": 400,
+        "tags": ["anti_chaff", "ground"],
+        "answers": ["chaff_flood", "light_ground"],
+        "weak_against": ["single_target", "heavy_frontline", "air"]
     },
     "melting point": {
         "ident": 4,
         "name": "melting point",
-        "value": 400
+        "value": 400,
+        "tags": ["single_target", "artillery", "backline_carry", "ranged"],
+        "answers": ["heavy_frontline", "tank_wall"],
+        "weak_against": ["flank_pressure", "air", "fast_units"]
     },
     "rhino": {
         "ident": 5,
         "name": "rhino",
-        "value": 200
+        "value": 200,
+        "tags": ["heavy_frontline", "tank", "ground"],
+        "answers": ["absorbs_frontline_damage"],
+        "weak_against": ["single_target", "anti_heavy"]
     },
     "wasp": {
         "ident": 6,
         "name": "wasp",
-        "value": 200
+        "value": 200,
+        "tags": ["air", "flank_pressure"],
+        "answers": ["ground_backline"],
+        "weak_against": ["anti_air"]
     },
     "mustang": {
         "ident": 7,
         "name": "mustang",
-        "value": 200
+        "value": 200,
+        "tags": ["anti_air", "anti_chaff", "ranged"],
+        "answers": ["air", "light_chaff"],
+        "weak_against": ["heavy_armor", "artillery"]
     },
     "steel ball": {
         "ident": 8,
         "name": "steel ball",
-        "value": 200
+        "value": 200,
+        "tags": ["heavy_frontline", "tank", "ground"],
+        "answers": ["absorbs_frontline_damage"],
+        "weak_against": ["single_target", "anti_heavy"]
     },
     "fang": {
         "ident": 9,
         "name": "fang",
-        "value": 100
+        "value": 100,
+        "tags": ["chaff", "ground", "flank_pressure"],
+        "answers": ["backline_distraction"],
+        "weak_against": ["anti_chaff", "splash"]
     },
     "crawler": {
         "ident": 10,
         "name": "crawler",
-        "value": 100
+        "value": 100,
+        "tags": ["chaff", "ground", "flank_pressure"],
+        "answers": ["single_target_distraction"],
+        "weak_against": ["anti_chaff", "splash"]
     },
     "overlord": {
         "ident": 11,
         "name": "overlord",
-        "value": 500
+        "value": 500,
+        "tags": ["air", "backline_carry", "scaling"],
+        "answers": ["ground_only_armies"],
+        "weak_against": ["anti_air", "aa_heavy_comps"]
     },
     "stormcaller": {
         "ident": 12,
         "name": "stormcaller",
-        "value": 200
+        "value": 200,
+        "tags": ["artillery", "anti_chaff", "anti_air", "backline_carry", "ranged"],
+        "answers": ["chaff_flood", "clumped_ground", "air_swarm"],
+        "weak_against": ["flank_pressure", "anti_missile", "fast_units"]
     },
     "sledgehammer": {
         "ident": 13,
         "name": "sledgehammer",
-        "value": 200
+        "value": 200,
+        "tags": ["artillery", "backline_carry", "ranged"],
+        "answers": ["static_backline", "clumped_units"],
+        "weak_against": ["flank_pressure", "anti_missile"]
     },
     "hacker": {
         "ident": 14,
         "name": "hacker",
-        "value": 200
+        "value": 200,
+        "tags": ["ground", "support"],
+        "answers": ["enemy_debuffs"],
+        "weak_against": ["anti_chaff", "flank_pressure"]
     },
     "arclight": {
         "ident": 15,
         "name": "arclight",
-        "value": 100
+        "value": 100,
+        "tags": ["anti_air", "anti_chaff", "ground"],
+        "answers": ["air", "light_chaff"],
+        "weak_against": ["heavy_armor", "artillery"]
     },
     "phoenix": {
         "ident": 16,
         "name": "phoenix",
-        "value": 200
+        "value": 200,
+        "tags": ["air", "single_target", "flank_pressure", "backline_carry"],
+        "answers": ["heavy_armor", "ground_backline"],
+        "weak_against": ["anti_air"]
     },
     "warfactory": {
         "ident": 17,
         "name": "warfactory",
-        "value": 800
+        "value": 800,
+        "tags": ["backline_carry", "scaling", "ground", "tank"],
+        "answers": ["attrition_war", "resource_advantage"],
+        "weak_against": ["burst_damage", "early_aggression"]
     },
     "wraith": {
         "ident": 18,
         "name": "wraith",
-        "value": 300
+        "value": 300,
+        "tags": ["air", "scaling", "backline_carry"],
+        "answers": ["ground_only_armies"],
+        "weak_against": ["anti_air"]
     },
     "scorpion": {
         "ident": 19,
         "name": "scorpion",
-        "value": 300
+        "value": 300,
+        "tags": ["single_target", "backline_carry", "scaling", "ranged", "artillery"],
+        "answers": ["heavy_armor", "high_value_targets"],
+        "weak_against": ["flank_pressure", "chaff_swarm"]
     },
     "fire badger": {
         "ident": 20,
         "name": "fire badger",
-        "value": 200
+        "value": 200,
+        "tags": ["anti_chaff", "ground"],
+        "answers": ["chaff_flood", "light_ground"],
+        "weak_against": ["heavy_armor", "single_target"]
     },
     "sabertooth": {
         "ident": 21,
         "name": "sabertooth",
-        "value": 200
+        "value": 200,
+        "tags": ["heavy_frontline", "tank", "ground"],
+        "answers": ["frontline_wall", "chaff_pressure"],
+        "weak_against": ["single_target", "anti_heavy", "air"]
     },
     "typhoon": {
         "ident": 22,
         "name": "typhoon",
-        "value": 300
+        "value": 300,
+        "tags": ["air", "flank_pressure", "backline_carry"],
+        "answers": ["ground_backline", "clustered_units"],
+        "weak_against": ["anti_air"]
     },
     "sandworm": {
         "ident": 23,
         "name": "sandworm",
-        "value": 400
+        "value": 400,
+        "tags": ["heavy_frontline", "tank", "ground"],
+        "answers": ["absorbs_massive_frontline_damage"],
+        "weak_against": ["single_target", "anti_heavy"]
     },
     "tarantula": {
         "ident": 24,
         "name": "tarantula",
-        "value": 200
+        "value": 200,
+        "tags": ["heavy_frontline", "tank", "ground", "single_target"],
+        "answers": ["durable_ground_pressure"],
+        "weak_against": ["air", "flank_pressure"]
     },
     "phantom ray": {
         "ident": 25,
         "name": "phantom ray",
-        "value": 200
+        "value": 200,
+        "tags": ["air", "flank_pressure"],
+        "answers": ["ground_backline", "clustered_units"],
+        "weak_against": ["anti_air"]
     },
     "farseer": {
         "ident": 26,
         "name": "farseer",
-        "value": 300
+        "value": 300,
+        "tags": ["artillery", "backline_carry", "ranged", "scaling"],
+        "answers": ["ranged_pressure", "vision_denial"],
+        "weak_against": ["flank_pressure", "anti_missile"]
     },
     "raiden": {
         "ident": 27,
         "name": "raiden",
-        "value": 400
+        "value": 400,
+        "tags": ["single_target", "backline_carry", "scaling", "ranged"],
+        "answers": ["heavy_armor", "high_value_targets"],
+        "weak_against": ["flank_pressure", "chaff_distraction"]
     },
     "hound": {
         "ident": 28,
         "name": "hound",
-        "value": 100
+        "value": 100,
+        "tags": ["chaff", "ground", "flank_pressure"],
+        "answers": ["backline_harassment"],
+        "weak_against": ["anti_chaff", "splash"]
     },
     "abyss": {
         "ident": 29,
         "name": "abyss",
-        "value": 800
+        "value": 800,
+        "tags": ["backline_carry", "scaling", "ground", "tank"],
+        "answers": ["endgame_dominance"],
+        "weak_against": ["burst_damage", "early_aggression"]
     }
 }

@@ -2,9 +2,9 @@
   "best_plan_id": "plan_buy_arclight",
   "confidence": 0.85,
   "main_reason": "Arclight directly counters the air threat posed by enemy wasps.",
-  "placement": [
-    {"unit": "arclight", "x": 0, "y": -90, "action": "new"},
-    {"unit": "crawler", "x": -40, "y": -80, "action": "keep"}
+  "why_not_others": [],
+  "final_actions": [
+    {"type": "buy_unit", "unit": "arclight"}
   ],
   "watch_next_round": ["Check if enemy adds more air units"],
   "mistake_to_avoid": "Do not leave arclight unprotected at the front"

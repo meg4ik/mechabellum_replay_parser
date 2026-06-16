@@ -232,6 +232,71 @@ async def test_invalid_plans_skipped_valid_kept():
     assert plans[0].id == "plan_good"
 
 
+# ── LLM contract enforcement ─────────────────────────────────────────────────
+
+
+@pytest.mark.anyio
+async def test_raw_coordinates_stripped_from_plan():
+    """Plans returned by LLM with raw x/y in placement have placement stripped."""
+    planner = _make_planner(
+        {
+            "plans": [
+                {
+                    "id": "plan_with_coords",
+                    "title": "Plan with raw coords",
+                    "action_ids": ["buy_arclight"],
+                    "total_cost": 100,
+                    "main_goal": "Test",
+                    "why_it_works": "Test",
+                    "risks": [],
+                    "expected_enemy_response": [],
+                    "placement": [
+                        {"unit": "arclight", "x": 0, "y": -100, "action": "new"}
+                    ],
+                    "confidence": 0.5,
+                }
+            ]
+        }
+    )
+    plans = await planner.generate_plans(_make_state(), _no_features(), _no_groups())
+    assert len(plans) == 1
+    assert plans[0].id == "plan_with_coords"
+    assert plans[0].placement == []
+
+
+@pytest.mark.anyio
+async def test_unknown_action_ids_rejected():
+    """Plan whose every action_id is unknown is rejected; planner falls back."""
+    planner = _make_planner(
+        {
+            "plans": [
+                {
+                    "id": "plan_fake_ids",
+                    "title": "Plan with fake actions",
+                    "action_ids": ["buy_nonexistent_xyz", "buy_another_fake_unit"],
+                    "total_cost": 100,
+                    "main_goal": "Test",
+                    "why_it_works": "Test",
+                    "risks": [],
+                    "expected_enemy_response": [],
+                    "placement": [],
+                    "confidence": 0.5,
+                }
+            ]
+        }
+    )
+    state = _make_state()
+    gen = LegalActionGenerator()
+    extractor = FeatureExtractor()
+    features = extractor.extract(state)
+    legal_actions, groups = gen.generate(state, features)
+
+    plans = await planner.generate_plans(
+        state, _no_features(), groups, legal_actions=legal_actions
+    )
+    assert plans[0].id == "plan_fallback"
+
+
 # ── Integration with parsed_replay fixture ────────────────────────────────────
 
 
@@ -242,7 +307,7 @@ async def test_generate_plans_from_parsed_replay(parsed_replay):
     gen = LegalActionGenerator()
     state = builder.build(parsed_replay, supply=200, player_name="Player1")
     features = extractor.extract(state)
-    _, groups = gen.generate(state, features)
+    legal_actions, groups = gen.generate(state, features)
 
     planner = _make_planner(
         {
@@ -264,6 +329,8 @@ async def test_generate_plans_from_parsed_replay(parsed_replay):
             ]
         }
     )
-    plans = await planner.generate_plans(state, features, groups)
+    plans = await planner.generate_plans(
+        state, features, groups, legal_actions=legal_actions
+    )
     assert len(plans) >= 1
     assert plans[0].id == "plan_keep"

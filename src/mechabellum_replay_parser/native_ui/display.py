@@ -118,6 +118,9 @@ class CoachWindow:
     def show_error(self, message: str) -> None:
         self._schedule(lambda: self._show_error_impl(message))
 
+    def show_backend_unavailable(self) -> None:
+        self._schedule(self._show_backend_unavailable_impl)
+
     # ── Thread-safe scheduler ─────────────────────────────────────────────────
 
     def _schedule(self, func: Callable[[], None]) -> None:
@@ -460,6 +463,24 @@ class CoachWindow:
             cursor="hand2",
         )
         btn_no.pack(side="left", padx=4)
+
+    # ── State: backend unavailable ───────────────────────────────────────────
+
+    def _show_backend_unavailable_impl(self) -> None:
+        self._clear()
+
+        outer = tk.Frame(self._root, bg=_BG)
+        outer.place(relx=0.5, rely=0.5, anchor="center")
+
+        self._lbl(outer, "⟳  Подключение…", size=24, bold=True, color=_FG2).pack(
+            pady=(0, 16)
+        )
+        self._lbl(
+            outer,
+            "Сервер недоступен — повторное подключение через 2 с",
+            size=13,
+            color=_FG2,
+        ).pack()
 
     # ── State: error ──────────────────────────────────────────────────────────
 

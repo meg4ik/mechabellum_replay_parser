@@ -156,6 +156,17 @@ class OutcomeSnapshot(Base):
         String(36), ForeignKey("recommendations.id")
     )
     next_round_number: Mapped[int] = mapped_column(Integer)
+    before_hp: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    next_round_hp: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    hp_delta: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fight_outcome_next_round: Mapped[str | None] = mapped_column(Text, nullable=True)
+    units_survived_next_round: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    enemy_units_survived_next_round: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
+    tower_lost_next_round: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    player_followed_plan: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     next_round_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     result_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)

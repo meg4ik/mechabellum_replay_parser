@@ -11,10 +11,11 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from .repositories import FeedbackRepository, RecommendationRepository
+from .repositories import FeedbackRepository, OutcomeRepository, RecommendationRepository
 
 if TYPE_CHECKING:
     from ..coach.engine import CoachAnalysis
+    from ..learning.outcomes import OutcomeSummary
 
 
 class PersistenceService:
@@ -124,6 +125,36 @@ class PersistenceService:
                 comment=comment,
                 followed_plan=followed_plan,
             )
+
+    # ── outcome linking ───────────────────────────────────────────────────────
+
+    async def link_outcome(
+        self,
+        recommendation_id: str,
+        outcome: OutcomeSummary,
+        next_round_state: dict | None = None,
+    ) -> None:
+        if not self.enabled:
+            return
+
+        assert self._factory is not None
+        async with self._factory() as session:
+            async with session.begin():
+                repo = OutcomeRepository(session)
+                await repo.save_outcome_snapshot(
+                    recommendation_id=recommendation_id,
+                    next_round_number=outcome.next_round_number,
+                    before_hp=outcome.before_hp,
+                    next_round_hp=outcome.next_round_hp,
+                    hp_delta=outcome.hp_delta,
+                    fight_outcome_next_round=outcome.fight_outcome_next_round,
+                    units_survived_next_round=outcome.units_survived_next_round,
+                    enemy_units_survived_next_round=outcome.enemy_units_survived_next_round,
+                    tower_lost_next_round=outcome.tower_lost_next_round,
+                    player_followed_plan=outcome.player_followed_plan,
+                    notes=outcome.notes,
+                    next_round_state=next_round_state,
+                )
 
 
 def create_persistence_service() -> PersistenceService:

@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import time
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -16,6 +17,8 @@ from .coordinates import CoordinateFrame
 from .feature_extractor import FeatureExtractor
 from .judge import Judge, _make_fallback_judge_output
 from .legal_actions import LegalActionGenerator
+from .tactical_bundles import TacticalBundleGenerator
+from .plan_scorer import PlanScorer
 from .placement_resolver import PlacementResolver
 from .planner import Planner, _make_fallback_plan
 from .recommendation_builder import RecommendationBuilder
@@ -49,6 +52,8 @@ class CoachAnalysis:
     )
     judge_output: JudgeOutput | None = None
     model_name: str | None = None
+    pipeline_run_id: str | None = None
+    stage_timings: dict[str, int] = field(default_factory=dict)
 
 
 def _load_prompt(name: str) -> str:
@@ -102,6 +107,8 @@ class CoachEngine:
         self._state_view_builder = StateViewBuilder()
         self._feature_extractor = FeatureExtractor()
         self._legal_action_generator = LegalActionGenerator()
+        self._bundle_generator = TacticalBundleGenerator()
+        self._plan_scorer = PlanScorer()
         self._plan_validator = PlanValidator()
         self._placement_resolver = PlacementResolver()
         self._planner = Planner(p, _load_prompt("planner_v1"))
@@ -124,60 +131,111 @@ class CoachEngine:
         parsed: dict,
         supply: int | None,
         player_name: str,
+        rec_id: str | None = None,
     ) -> CoachAnalysis:
-        _start = time.monotonic()
+        pipeline_run_id = uuid.uuid4().hex[:8]
         timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
         model_name = os.getenv("OPENAI_MODEL", "gpt-4o")
+        timings: dict[str, int] = {}
 
+        def _ms(t0: float) -> int:
+            return int((time.monotonic() - t0) * 1000)
+
+        _ctx = f"run_id={pipeline_run_id}"
+        if rec_id:
+            _ctx += f" rec_id={rec_id}"
+
+        _t = time.monotonic()
         state = self._state_view_builder.build(parsed, supply, player_name)
+        timings["state_view_ms"] = _ms(_t)
         _log.info(
-            "stage=state_view_built round=%s player=%s supply=%s",
-            state.round,
-            player_name,
-            supply,
+            "%s stage=state_view_built round=%s player=%s supply=%s elapsed_ms=%d",
+            _ctx, state.round, player_name, supply, timings["state_view_ms"],
         )
         _write_debug("latest_state_view.json", state.model_dump())
+        _write_debug(
+            "latest_constructions.json",
+            [c.model_dump() for c in state.my_state.constructions],
+        )
 
+        _t = time.monotonic()
         features = self._feature_extractor.extract(state)
+        timings["features_ms"] = _ms(_t)
         _log.info(
-            "stage=features_extracted threats=%d tempo=%s posture=%s",
-            len(features.threats),
-            features.tempo_state,
-            features.board_posture,
+            "%s stage=features_extracted threats=%d tempo=%s posture=%s elapsed_ms=%d",
+            _ctx, len(features.threats), features.tempo_state,
+            features.board_posture, timings["features_ms"],
         )
         _write_debug("latest_features.json", features.model_dump())
 
+        _t = time.monotonic()
         legal_actions, action_groups = self._legal_action_generator.generate(
             state, features
         )
+        timings["legal_actions_ms"] = _ms(_t)
         _log.info(
-            "stage=legal_actions_generated count=%d groups=%d",
-            len(legal_actions),
-            len(action_groups),
+            "%s stage=legal_actions_generated count=%d groups=%d elapsed_ms=%d",
+            _ctx, len(legal_actions), len(action_groups), timings["legal_actions_ms"],
         )
         _write_debug(
             "latest_legal_actions.json", [a.model_dump() for a in legal_actions]
         )
 
-        knowledge_chunks = self._retriever.retrieve(state, features)
-        _log.info("stage=knowledge_retrieved chunks=%d", len(knowledge_chunks))
+        _t = time.monotonic()
+        bundles = self._bundle_generator.generate(state, features, legal_actions)
+        timings["tactical_bundles_ms"] = _ms(_t)
+        _log.info(
+            "%s stage=bundles_generated count=%d elapsed_ms=%d",
+            _ctx, len(bundles), timings["tactical_bundles_ms"],
+        )
+        _write_debug("latest_bundles.json", [b.model_dump() for b in bundles])
 
-        _log.info("stage=planner_started timeout_s=%s model=%s", timeout, model_name)
+        _t = time.monotonic()
+        knowledge_chunks = self._retriever.retrieve(state, features)
+        timings["knowledge_retrieval_ms"] = _ms(_t)
+        _log.info(
+            "%s stage=knowledge_retrieved chunks=%d elapsed_ms=%d",
+            _ctx, len(knowledge_chunks), timings["knowledge_retrieval_ms"],
+        )
+
+        # Coordinate frame — always compute for debug visibility
+        frame = CoordinateFrame.from_units_and_constructions(
+            state.my_state.units, state.my_state.constructions
+        )
+        _write_debug("latest_coordinate_frame.json", frame.model_dump())
+
+        planner_call_id = uuid.uuid4().hex[:8]
+        _log.info(
+            "%s stage=planner_started planner_call_id=%s timeout_s=%s model=%s",
+            _ctx, planner_call_id, timeout, model_name,
+        )
+        _t = time.monotonic()
         try:
             plans = await asyncio.wait_for(
                 self._planner.generate_plans(
-                    state, features, action_groups, knowledge_chunks
+                    state,
+                    features,
+                    action_groups,
+                    knowledge_chunks,
+                    bundles,
+                    legal_actions,
                 ),
                 timeout=timeout,
             )
         except asyncio.TimeoutError:
             _log.warning(
-                "stage=planner_timeout seconds=%s — using fallback plan", timeout
+                "%s stage=planner_timeout planner_call_id=%s seconds=%s — using fallback plan",
+                _ctx, planner_call_id, timeout,
             )
             plans = [_make_fallback_plan(state)]
-        _log.info("stage=planner_completed plans=%d", len(plans))
+        timings["planner_llm_ms"] = _ms(_t)
+        _log.info(
+            "%s stage=planner_completed planner_call_id=%s plans=%d elapsed_ms=%d",
+            _ctx, planner_call_id, len(plans), timings["planner_llm_ms"],
+        )
         _write_debug("latest_planner_response.json", [p.model_dump() for p in plans])
 
+        _t = time.monotonic()
         validated_plans = [
             (
                 plan,
@@ -187,11 +245,11 @@ class CoachEngine:
             )
             for plan in plans
         ]
+        timings["validator_ms"] = _ms(_t)
         valid_count = sum(1 for _, r in validated_plans if r.is_valid)
         _log.info(
-            "stage=validation_completed total=%d valid=%d",
-            len(validated_plans),
-            valid_count,
+            "%s stage=validation_completed total=%d valid=%d elapsed_ms=%d",
+            _ctx, len(validated_plans), valid_count, timings["validator_ms"],
         )
         _write_debug(
             "latest_validation.json",
@@ -205,23 +263,42 @@ class CoachEngine:
             ],
         )
 
+        _t = time.monotonic()
+        score_breakdowns = self._plan_scorer.score_all(validated_plans, features, state)
+        timings["plan_scorer_ms"] = _ms(_t)
+        _log.info(
+            "%s stage=plans_scored count=%d elapsed_ms=%d",
+            _ctx, len(score_breakdowns), timings["plan_scorer_ms"],
+        )
+        _write_debug(
+            "latest_plan_scores.json",
+            [s.model_dump() for s in score_breakdowns],
+        )
+
+        judge_call_id = uuid.uuid4().hex[:8]
+        _log.info(
+            "%s stage=judge_started judge_call_id=%s model=%s",
+            _ctx, judge_call_id, model_name,
+        )
+        _t = time.monotonic()
         try:
             judge_output = await asyncio.wait_for(
                 self._judge.select_plan(
-                    state, features, validated_plans, knowledge_chunks
+                    state, features, validated_plans, knowledge_chunks, score_breakdowns
                 ),
                 timeout=timeout,
             )
         except asyncio.TimeoutError:
             _log.warning(
-                "stage=judge_timeout seconds=%s — picking highest-confidence valid plan",
-                timeout,
+                "%s stage=judge_timeout judge_call_id=%s seconds=%s — picking highest-confidence valid plan",
+                _ctx, judge_call_id, timeout,
             )
-            judge_output = _make_fallback_judge_output(validated_plans)
+            judge_output = _make_fallback_judge_output(validated_plans, score_breakdowns)
+        timings["judge_llm_ms"] = _ms(_t)
         _log.info(
-            "stage=judge_completed best_plan_id=%s confidence=%s",
-            judge_output.best_plan_id,
-            judge_output.confidence,
+            "%s stage=judge_completed judge_call_id=%s best_plan_id=%s confidence=%s elapsed_ms=%d",
+            _ctx, judge_call_id, judge_output.best_plan_id,
+            judge_output.confidence, timings["judge_llm_ms"],
         )
         _write_debug("latest_judge_response.json", judge_output.model_dump())
 
@@ -229,15 +306,17 @@ class CoachEngine:
             (p for p, _ in validated_plans if p.id == judge_output.best_plan_id),
             validated_plans[0][0] if validated_plans else None,
         )
+        _t = time.monotonic()
         resolved_placements = []
         if selected_plan and selected_plan.placement_intents:
-            frame = CoordinateFrame.from_units_and_constructions(
-                state.my_state.units, state.my_state.constructions
-            )
             resolved_placements = self._placement_resolver.resolve(
                 selected_plan.placement_intents, frame, state.my_state.units
             )
-            _log.info("stage=placement_resolved count=%d", len(resolved_placements))
+        timings["placement_resolver_ms"] = _ms(_t)
+        _log.info(
+            "%s stage=placement_resolved count=%d elapsed_ms=%d",
+            _ctx, len(resolved_placements), timings["placement_resolver_ms"],
+        )
         _write_debug(
             "latest_resolved_placement.json",
             [r.model_dump() for r in resolved_placements],
@@ -250,10 +329,13 @@ class CoachEngine:
             state,
             resolved_placements=resolved_placements or None,
         )
+        total_ms = sum(timings.values())
         _log.info(
-            "stage=recommendation_ready summary=%r placement_items=%d",
+            "%s stage=recommendation_ready summary=%r placement_items=%d total_ms=%d",
+            _ctx,
             recommendation.summary,
             len(recommendation.placement or []),
+            total_ms,
         )
         _write_debug(
             "latest_recommendation.json",
@@ -263,12 +345,18 @@ class CoachEngine:
                 "placement": recommendation.placement,
             },
         )
+        _write_debug("latest_timings.json", timings)
 
-        elapsed_ms = int((time.monotonic() - _start) * 1000)
+        if _is_debug():
+            from ..debug.report_builder import save_report as _save_report
+            try:
+                _save_report(_DEBUG_DIR)
+            except Exception as exc:
+                _log.debug("Debug report generation failed: %s", exc)
+
         _log.info(
-            "pipeline_complete elapsed_ms=%d model=%s",
-            elapsed_ms,
-            model_name,
+            "%s pipeline_complete round=%s total_ms=%d model=%s",
+            _ctx, state.round, total_ms, model_name,
         )
 
         return CoachAnalysis(
@@ -277,6 +365,8 @@ class CoachEngine:
             validated_plans=validated_plans,
             judge_output=judge_output,
             model_name=model_name,
+            pipeline_run_id=pipeline_run_id,
+            stage_timings=timings,
         )
 
     def build_state_view(self, parsed: dict, supply: int | None, player_name: str):

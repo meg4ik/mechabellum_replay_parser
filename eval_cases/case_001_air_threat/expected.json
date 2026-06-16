@@ -1,0 +1,9 @@
+{
+  "must_address_threats": ["enemy_air_pressure"],
+  "recommended_response_types": ["add_anti_air", "upgrade_anti_air"],
+  "forbidden_response_types": ["more_ground_chaff", "slow_ground_only"],
+  "acceptable_units": ["arclight", "mustang", "marksmen", "stormcaller"],
+  "placement_expectations": [
+    {"unit_role": "anti_air", "allowed_depths": ["mid_back", "back"]}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "must_address_threats": ["construction_lost"],
+  "recommended_response_types": ["rebuild_construction", "protect_flanks"],
+  "forbidden_response_types": ["ignore_construction_loss"],
+  "acceptable_units": [],
+  "placement_expectations": [
+    {"unit_role": "frontline", "allowed_depths": ["mid_back", "back"]}
+  ]
+}

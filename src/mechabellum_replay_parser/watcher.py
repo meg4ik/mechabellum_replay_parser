@@ -262,7 +262,7 @@ async def process_replay(
             pending_supplies.pop(rec_id, None)
 
         analysis = await _coach_engine.analyze_replay_detailed(
-            parsed, supply, player_name
+            parsed, supply, player_name, rec_id=rec_id
         )
         recommendation = analysis.recommendation
 

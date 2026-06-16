@@ -6,6 +6,8 @@ from mechabellum_replay_parser.coach.feature_extractor import (
     FeatureExtractor,
 )
 from mechabellum_replay_parser.coach.schemas import (
+    ArmyProfile,
+    AnswerStrength,
     ConstructionType,
     ConstructionView,
     PlayerRoundView,
@@ -14,6 +16,7 @@ from mechabellum_replay_parser.coach.schemas import (
     StateView,
     StrategicMemory,
     TacticalFeatures,
+    ThreatUrgency,
     UnitView,
 )
 
@@ -109,7 +112,7 @@ def test_air_threat_good_with_two_aa(extractor):
     )
     features = extractor.extract(state)
     air = next(t for t in features.threats if t.key == "enemy_air_pressure")
-    assert air.my_answer == "good"
+    assert air.my_answer == "strong"
     assert air.severity < 0.5
 
 
@@ -159,7 +162,7 @@ def test_chaff_threat_with_splash_my_answer_good(extractor):
     )
     features = extractor.extract(state)
     chaff = next(t for t in features.threats if t.key == "enemy_chaff_overload")
-    assert chaff.my_answer == "good"
+    assert chaff.my_answer == "strong"
 
 
 # ── Artillery pressure ────────────────────────────────────────────────────────
@@ -264,7 +267,9 @@ def test_tower_notes_with_construction(extractor):
         [],
         [],
         my_constructions=[
-            ConstructionView(type=ConstructionType.SUPPLY_TOWER, position=Position(x=100, y=-270))
+            ConstructionView(
+                type=ConstructionType.SUPPLY_TOWER, position=Position(x=100, y=-270)
+            )
         ],
     )
     features = extractor.extract(state)
@@ -317,3 +322,128 @@ def test_extract_from_parsed_replay(parsed_replay):
     assert features.threats == []
     # Player1 has 1 crawler at y=-80 → aggro
     assert features.board_posture == "aggro"
+    assert isinstance(features.my_army_profile, ArmyProfile)
+    assert isinstance(features.enemy_army_profile, ArmyProfile)
+
+
+# ── ThreatSignal urgency ──────────────────────────────────────────────────────
+
+
+def test_air_threat_urgency_critical_no_aa(extractor):
+    state = _make_state([], [_make_unit("phoenix")])
+    features = extractor.extract(state)
+    air = next(t for t in features.threats if t.key == "enemy_air_pressure")
+    assert air.urgency == ThreatUrgency.CRITICAL
+
+
+def test_air_threat_urgency_high_weak_aa(extractor):
+    state = _make_state([_make_unit("arclight")], [_make_unit("phoenix")])
+    features = extractor.extract(state)
+    air = next(t for t in features.threats if t.key == "enemy_air_pressure")
+    assert air.urgency == ThreatUrgency.HIGH
+
+
+def test_air_threat_urgency_low_strong_aa(extractor):
+    state = _make_state(
+        [_make_unit("arclight"), _make_unit("mustang")], [_make_unit("phoenix")]
+    )
+    features = extractor.extract(state)
+    air = next(t for t in features.threats if t.key == "enemy_air_pressure")
+    assert air.urgency == ThreatUrgency.LOW
+
+
+def test_threat_has_recommended_response_types(extractor):
+    state = _make_state([], [_make_unit("phoenix")])
+    features = extractor.extract(state)
+    air = next(t for t in features.threats if t.key == "enemy_air_pressure")
+    assert len(air.recommended_response_types) > 0
+    assert len(air.bad_response_types) > 0
+
+
+def test_answer_strength_enum_equality(extractor):
+    state = _make_state([], [_make_unit("phoenix")])
+    features = extractor.extract(state)
+    air = next(t for t in features.threats if t.key == "enemy_air_pressure")
+    assert air.my_answer == AnswerStrength.NONE
+    assert air.my_answer == "none"  # str-enum equality
+
+
+# ── ArmyProfile ───────────────────────────────────────────────────────────────
+
+
+def test_army_profile_empty_units(extractor):
+    state = _make_state([], [])
+    features = extractor.extract(state)
+    assert features.my_army_profile.chaff == 0.0
+    assert features.my_army_profile.anti_air == 0.0
+
+
+def test_army_profile_chaff_with_crawlers(extractor):
+    state = _make_state([_make_unit("crawler"), _make_unit("fang")], [])
+    features = extractor.extract(state)
+    assert features.my_army_profile.chaff > 0.0
+
+
+def test_army_profile_anti_air_with_arclight(extractor):
+    state = _make_state([_make_unit("arclight")], [])
+    features = extractor.extract(state)
+    assert features.my_army_profile.anti_air > 0.0
+
+
+def test_enemy_profile_air_pressure_with_phoenix(extractor):
+    state = _make_state([], [_make_unit("phoenix")])
+    features = extractor.extract(state)
+    assert features.enemy_army_profile.air_pressure > 0.0
+
+
+def test_army_profile_scaling_with_warfactory(extractor):
+    state = _make_state([_make_unit("warfactory")], [])
+    features = extractor.extract(state)
+    assert features.my_army_profile.scaling > 0.0
+
+
+# ── New feature keys ──────────────────────────────────────────────────────────
+
+
+def test_enemy_scaling_threat_detected(extractor):
+    state = _make_state([], [_make_unit("warfactory"), _make_unit("warfactory")])
+    features = extractor.extract(state)
+    keys = {t.key for t in features.threats}
+    assert "enemy_has_scaling_carry" in keys
+
+
+def test_enemy_lacks_anti_heavy_adds_weakness(extractor):
+    state = _make_state(
+        [_make_unit("fortress"), _make_unit("rhino")],
+        [_make_unit("fang")],
+    )
+    features = extractor.extract(state)
+    assert any("anti-heavy" in w for w in features.enemy_weaknesses)
+
+
+def test_positioning_clump_risk_detected(extractor):
+    state = _make_state(
+        [
+            _make_unit("crawler", x=10, y=-100),
+            _make_unit("fang", x=20, y=-120),
+            _make_unit("hound", x=30, y=-110),
+        ],
+        [],
+    )
+    features = extractor.extract(state)
+    keys = {t.key for t in features.threats}
+    assert "positioning_clump_risk" in keys
+
+
+def test_positioning_clump_risk_not_detected_when_spread(extractor):
+    state = _make_state(
+        [
+            _make_unit("crawler", x=-200, y=-100),
+            _make_unit("fang", x=0, y=-150),
+            _make_unit("hound", x=200, y=-200),
+        ],
+        [],
+    )
+    features = extractor.extract(state)
+    keys = {t.key for t in features.threats}
+    assert "positioning_clump_risk" not in keys

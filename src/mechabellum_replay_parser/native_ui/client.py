@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 
 import httpx2 as httpx
 import websockets
@@ -56,8 +56,14 @@ class CoreAPIClient:
                 timeout=10.0,
             )
 
-    async def events(self) -> AsyncGenerator[UIEvent, None]:
-        """Yields UIEvents from the WebSocket; reconnects automatically on failure."""
+    async def events(
+        self,
+        on_disconnect: Callable[[], None] | None = None,
+    ) -> AsyncGenerator[UIEvent, None]:
+        """Yields UIEvents from the WebSocket; reconnects automatically on failure.
+
+        on_disconnect is called each time the connection drops before retrying.
+        """
         while True:
             try:
                 async with websockets.connect(self.ws_url) as ws:
@@ -71,4 +77,6 @@ class CoreAPIClient:
                 OSError,
             ) as exc:
                 print(f"[native_ui] WebSocket error: {exc}. Reconnecting in 2 s...")
+                if on_disconnect is not None:
+                    on_disconnect()
                 await asyncio.sleep(2)

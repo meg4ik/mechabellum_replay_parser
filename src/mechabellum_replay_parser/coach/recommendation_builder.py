@@ -101,9 +101,7 @@ class RecommendationBuilder:
         if resolved_placements:
             placement_dicts = [r.model_dump() for r in resolved_placements]
         else:
-            placement_dicts = judge.placement or (
-                selected_plan.placement if selected_plan else []
-            )
+            placement_dicts = selected_plan.placement if selected_plan else []
 
         coach_text = _format_coach_text(
             judge, selected_plan, state, features, final_placement=placement_dicts

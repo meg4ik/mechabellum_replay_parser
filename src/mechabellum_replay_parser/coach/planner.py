@@ -7,7 +7,9 @@ from ..llm.client import LLMProvider
 from .schemas import (
     ActionGroup,
     CandidatePlan,
+    LegalAction,
     StateView,
+    TacticalBundle,
     TacticalFeatures,
 )
 
@@ -21,6 +23,7 @@ def _compact_state(
     features: TacticalFeatures,
     action_groups: list[ActionGroup],
     knowledge_chunks: list[str],
+    bundles: list[TacticalBundle] | None = None,
 ) -> str:
     data: dict = {
         "round": state.round,
@@ -93,6 +96,31 @@ def _compact_state(
     }
     if knowledge_chunks:
         data["relevant_knowledge"] = knowledge_chunks
+    if bundles:
+        data["tactical_bundles"] = [
+            {
+                "id": b.id,
+                "theme": b.theme,
+                "title": b.title,
+                "target_threats": b.target_threats,
+                "required_action_ids": b.required_action_ids,
+                "optional_action_ids": b.optional_action_ids,
+                "estimated_cost": b.estimated_cost,
+                "placement_intents": [
+                    {
+                        "unit": p.unit,
+                        "action": p.action,
+                        "lane": p.lane,
+                        "depth": p.depth,
+                        "purpose": p.purpose,
+                    }
+                    for p in b.placement_intents
+                ],
+                "why_considered": b.why_considered,
+                "risks": b.risks,
+            }
+            for b in bundles
+        ]
     return json.dumps(data, ensure_ascii=False, indent=2)
 
 
@@ -133,8 +161,12 @@ class Planner:
         features: TacticalFeatures,
         action_groups: list[ActionGroup],
         knowledge_chunks: list[str] | None = None,
+        bundles: list[TacticalBundle] | None = None,
+        legal_actions: list[LegalAction] | None = None,
     ) -> list[CandidatePlan]:
-        user = _compact_state(state, features, action_groups, knowledge_chunks or [])
+        user = _compact_state(
+            state, features, action_groups, knowledge_chunks or [], bundles
+        )
 
         try:
             raw = await self._provider.complete_json(
@@ -154,18 +186,58 @@ class Planner:
             )
             return [_make_fallback_plan(state)]
 
-        plans: list[CandidatePlan] = []
+        parsed: list[CandidatePlan] = []
         for raw_plan in plans_raw:
             try:
-                plans.append(CandidatePlan.model_validate(raw_plan))
+                parsed.append(CandidatePlan.model_validate(raw_plan))
             except Exception as exc:  # noqa: BLE001
                 plan_id = (
                     raw_plan.get("id") if isinstance(raw_plan, dict) else repr(raw_plan)
                 )
                 _log.debug("Skipping invalid plan from LLM: %s — %s", plan_id, exc)
 
-        if not plans:
+        if not parsed:
             _log.warning("Planner returned 0 valid plans — using fallback")
-            plans = [_make_fallback_plan(state)]
+            return [_make_fallback_plan(state)]
+
+        # ── LLM contract enforcement ───────────────────────────────────────────
+        # Prefer the flat legal_actions list (complete); fall back to action_groups.
+        known_ids: set[str] = set()
+        if legal_actions:
+            known_ids = {a.id for a in legal_actions}
+        elif action_groups:
+            known_ids = {a.id for g in action_groups for a in g.actions}
+        if known_ids:
+            known_ids.add("skip")
+
+        plans: list[CandidatePlan] = []
+        for plan in parsed:
+            # Strip raw placement — LLM must not own coordinates.
+            plan = plan.model_copy(update={"placement": []})
+
+            # Filter unknown action IDs when we have a known set.
+            if known_ids and plan.action_ids:
+                valid_ids = [aid for aid in plan.action_ids if aid in known_ids]
+                if not valid_ids:
+                    _log.warning(
+                        "Rejected plan %s: all %d action_ids unknown (%s…)",
+                        plan.id,
+                        len(plan.action_ids),
+                        plan.action_ids[:3],
+                    )
+                    continue
+                if len(valid_ids) < len(plan.action_ids):
+                    _log.warning(
+                        "Plan %s: stripped %d unknown action_ids",
+                        plan.id,
+                        len(plan.action_ids) - len(valid_ids),
+                    )
+                    plan = plan.model_copy(update={"action_ids": valid_ids})
+
+            plans.append(plan)
+
+        if not plans:
+            _log.warning("All plans rejected by contract — using fallback")
+            return [_make_fallback_plan(state)]
 
         return plans

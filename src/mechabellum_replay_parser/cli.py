@@ -35,6 +35,24 @@ def start_watch(args):
     asyncio.run(watch(replay_dir))
 
 
+def export_dataset(args):
+    import asyncio
+
+    from .db.service import create_persistence_service
+    from .learning.dataset_export import export_dataset as _export
+
+    svc = create_persistence_service()
+    if not svc.enabled:
+        print("Database not available. Set DATABASE_URL or unset DEBUG_NO_DB.")
+        return
+
+    from .db.session import get_session_factory
+
+    output = Path(args.output)
+    count = asyncio.run(_export(get_session_factory(), output, format=args.format))
+    print(f"Exported {count} rows to {output}")
+
+
 def ingest_knowledge(args):
     from .knowledge.parser import parse_knowledge_file
 
@@ -95,6 +113,24 @@ def main():
     ingest_parser.add_argument("file", help="Path to the knowledge markdown file")
     ingest_parser.set_defaults(func=ingest_knowledge)
     knowledge_parser.set_defaults(func=lambda a: knowledge_parser.print_help())
+
+    learning_parser = subparsers.add_parser(
+        "learning", help="Dataset export and feedback learning commands."
+    )
+    l_subparsers = learning_parser.add_subparsers(dest="l_command")
+    export_parser = l_subparsers.add_parser(
+        "export", help="Export recommendation dataset as JSONL for training."
+    )
+    export_parser.add_argument(
+        "--output",
+        default="data/recommendation_dataset.jsonl",
+        help="Output file path (default: data/recommendation_dataset.jsonl)",
+    )
+    export_parser.add_argument(
+        "--format", default="jsonl", choices=["jsonl"], help="Export format"
+    )
+    export_parser.set_defaults(func=export_dataset)
+    learning_parser.set_defaults(func=lambda a: learning_parser.print_help())
 
     args = parser.parse_args()
 

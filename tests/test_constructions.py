@@ -1,6 +1,5 @@
 """Tests for construction normalization (Phase 2)."""
 
-
 from mechabellum_replay_parser.coach.constructions import normalize_construction
 from mechabellum_replay_parser.coach.coordinates import CoordinateFrame
 from mechabellum_replay_parser.coach.schemas import (

@@ -5,7 +5,15 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import CandidatePlanRow, Feedback, LLMCall, Match, Recommendation, Round
+from .models import (
+    CandidatePlanRow,
+    Feedback,
+    LLMCall,
+    Match,
+    OutcomeSnapshot,
+    Recommendation,
+    Round,
+)
 
 if TYPE_CHECKING:
     from ..coach.schemas import CandidatePlan, CoachRecommendation, PlanValidationResult
@@ -156,4 +164,43 @@ class FeedbackRepository:
         )
         self._session.add(row)
         await self._session.commit()
+        return row
+
+
+class OutcomeRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def save_outcome_snapshot(
+        self,
+        recommendation_id: str,
+        next_round_number: int,
+        *,
+        before_hp: int | None = None,
+        next_round_hp: int | None = None,
+        hp_delta: int | None = None,
+        fight_outcome_next_round: str | None = None,
+        units_survived_next_round: int | None = None,
+        enemy_units_survived_next_round: int | None = None,
+        tower_lost_next_round: bool | None = None,
+        player_followed_plan: bool | None = None,
+        notes: str | None = None,
+        next_round_state: dict | None = None,
+    ) -> OutcomeSnapshot:
+        row = OutcomeSnapshot(
+            recommendation_id=recommendation_id,
+            next_round_number=next_round_number,
+            before_hp=before_hp,
+            next_round_hp=next_round_hp,
+            hp_delta=hp_delta,
+            fight_outcome_next_round=fight_outcome_next_round,
+            units_survived_next_round=units_survived_next_round,
+            enemy_units_survived_next_round=enemy_units_survived_next_round,
+            tower_lost_next_round=tower_lost_next_round,
+            player_followed_plan=player_followed_plan,
+            notes=notes,
+            next_round_state=next_round_state,
+        )
+        self._session.add(row)
+        await self._session.flush()
         return row
