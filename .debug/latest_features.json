@@ -1,0 +1,40 @@
+{
+  "threats": [],
+  "my_weaknesses": [],
+  "enemy_weaknesses": [],
+  "tempo_state": "unknown",
+  "board_posture": "aggro",
+  "tower_notes": [
+    "No constructions visible for this player."
+  ],
+  "likely_enemy_continuation": [
+    "Enemy has been investing in crawler for 2 round(s)."
+  ],
+  "priority_questions": [],
+  "my_army_profile": {
+    "chaff": 1.0,
+    "anti_chaff": 0.0,
+    "anti_air": 0.0,
+    "air_pressure": 0.0,
+    "single_target": 0.0,
+    "heavy_frontline": 0.0,
+    "artillery": 0.0,
+    "backline_carry": 0.0,
+    "flank_pressure": 1.0,
+    "tankiness": 0.0,
+    "scaling": 0.0
+  },
+  "enemy_army_profile": {
+    "chaff": 1.0,
+    "anti_chaff": 0.0,
+    "anti_air": 0.0,
+    "air_pressure": 0.0,
+    "single_target": 0.0,
+    "heavy_frontline": 0.0,
+    "artillery": 0.0,
+    "backline_carry": 0.0,
+    "flank_pressure": 1.0,
+    "tankiness": 0.0,
+    "scaling": 0.0
+  }
+}

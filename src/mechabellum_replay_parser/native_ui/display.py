@@ -12,8 +12,10 @@ the actual Tkinter code via root.after(0, ...) on the main thread.
 
 from __future__ import annotations
 
+import json
 import tkinter as tk
 from collections.abc import Callable
+from pathlib import Path
 from tkinter import scrolledtext
 
 # ── Board geometry ─────────────────────────────────────────────────────────────
@@ -22,6 +24,34 @@ _BOARD_W = 840
 _BOARD_H = 460
 _MARGIN = 50
 _RADIUS = 17
+
+# Canvas pixels per 1 game-coordinate unit (used to scale size_x / size_y)
+_SCALE_X = _BOARD_W / (_X_MAX - _X_MIN)  # ≈ 1.47 px/unit
+_SCALE_Y = _BOARD_H / 290                # ≈ 1.59 px/unit  (y span is always 290)
+
+# ── Size data ──────────────────────────────────────────────────────────────────
+_DATA_DIR = Path(__file__).parent.parent / "data"
+
+def _load_json(name: str) -> dict:
+    try:
+        with open(_DATA_DIR / name) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+_UNIT_SIZES: dict[str, dict] = _load_json("unit_data.json")
+_CONSTRUCTION_SIZES: dict[str, dict] = _load_json("construction_data.json")
+
+# Maps snake_case coach names → display names used as keys in construction_data.json
+_SNAKE_TO_DISPLAY: dict[str, str] = {
+    "defensive_wall": "Defensive Wall",
+    "anti_armor_cannon": "Anti-Armor Cannon",
+    "rapid_fire_cannon": "Rapid-Fire Cannon",
+    "magnetic_barricade": "Magnetic Barricade",
+    "supply_tower": "Supply Tower",
+    "command_tower": "Command Tower",
+    "research_tower": "Research Tower",
+}
 
 # ── Colour palette (dark gaming theme) ────────────────────────────────────────
 _BG = "#1a1a2e"  # window background
@@ -42,15 +72,22 @@ _GRID = "#1e2d4a"
 _LOADING_FRAMES = ["●  ○  ○", "●  ●  ○", "●  ●  ●", "○  ●  ●", "○  ○  ●", "○  ○  ○"]
 
 _BUILDING_ABBR = {
-    # normalized values (Phase 2)
-    "supply_tower": "S",
-    "command_tower": "C",
-    "research_tower": "R",
-    "unknown": "?",
-    # legacy raw values (backward compat)
+    # combat constructions
+    "Defensive Wall": "DW",
+    "Anti-Armor Cannon": "AA",
+    "Rapid-Fire Cannon": "RF",
+    "Magnetic Barricade": "MB",
+    # utility towers
     "Supply Tower": "S",
     "Command Tower": "C",
     "Research Tower": "R",
+    # normalized names (coach engine)
+    "supply_tower": "S",
+    "command_tower": "C",
+    "research_tower": "R",
+    "defensive_wall": "DW",
+    "anti_armor_cannon": "AA",
+    "rapid_fire_cannon": "RF",
 }
 
 
@@ -514,9 +551,9 @@ class CoachWindow:
     def _detect_zone(units: list[dict]) -> tuple[int, int]:
         ys = [u["position"]["y"] for u in units if u.get("position")]
         if not ys:
-            return -45, -295
+            return -10, -300
         avg_y = sum(ys) / len(ys)
-        return (45, 295) if avg_y >= 0 else (-45, -295)
+        return (10, 300) if avg_y >= 0 else (-10, -300)
 
     @staticmethod
     def _to_canvas(x: int, y: int, y_front: int, y_back: int) -> tuple[int, int]:
@@ -623,20 +660,18 @@ class CoachWindow:
         outline: str,
     ) -> None:
         cx, cy = self._to_canvas(x, y, y_front, y_back)
+        info = _UNIT_SIZES.get(label, {})
+        sx, sy = info.get("size_x"), info.get("size_y")
+        rx = max(8, int(sx * _SCALE_X)) if sx is not None else _RADIUS
+        ry = max(8, int(sy * _SCALE_Y)) if sy is not None else _RADIUS
         canvas.create_oval(
-            cx - _RADIUS,
-            cy - _RADIUS,
-            cx + _RADIUS,
-            cy + _RADIUS,
-            fill=fill,
-            outline=outline,
-            width=2,
+            cx - rx, cy - ry, cx + rx, cy + ry, fill=fill, outline=outline, width=2
         )
         canvas.create_text(
             cx, cy, text=label[:4], fill="#ffffff", font=("Arial", 8, "bold")
         )
         canvas.create_text(
-            cx, cy + _RADIUS + 9, text=label[:12], fill=outline, font=("Arial", 8)
+            cx, cy + ry + 9, text=label[:12], fill=outline, font=("Arial", 8)
         )
 
     def _draw_building(
@@ -650,13 +685,17 @@ class CoachWindow:
     ) -> None:
         cx, cy = self._to_canvas(x, y, y_front, y_back)
         abbr = _BUILDING_ABBR.get(btype, btype[:2].upper())
-        s = 13
+        display_name = _SNAKE_TO_DISPLAY.get(btype, btype)
+        info = _CONSTRUCTION_SIZES.get(display_name, {})
+        sx, sy = info.get("size_x"), info.get("size_y")
+        rx = max(8, int(sx * _SCALE_X)) if sx is not None else 13
+        ry = max(8, int(sy * _SCALE_Y)) if sy is not None else 13
         canvas.create_rectangle(
-            cx - s, cy - s, cx + s, cy + s, fill=_GOLD, outline=_GOLD_DK, width=2
+            cx - rx, cy - ry, cx + rx, cy + ry, fill=_GOLD, outline=_GOLD_DK, width=2
         )
         canvas.create_text(cx, cy, text=abbr, fill="#000000", font=("Arial", 8, "bold"))
         canvas.create_text(
-            cx, cy + s + 9, text=btype[:14], fill=_GOLD_DK, font=("Arial", 8)
+            cx, cy + ry + 9, text=display_name[:14], fill=_GOLD_DK, font=("Arial", 8)
         )
 
     # ── Legend helpers ────────────────────────────────────────────────────────

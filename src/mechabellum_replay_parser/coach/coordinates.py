@@ -25,8 +25,8 @@ class CoordinateFrame(BaseModel):
     @classmethod
     def for_side(cls, side: PlayerSide) -> CoordinateFrame:
         if side == PlayerSide.NEGATIVE_Y:
-            return cls(side=side, front_y=-45, back_y=-295)
-        return cls(side=side, front_y=45, back_y=295)
+            return cls(side=side, front_y=-10, back_y=-300)
+        return cls(side=side, front_y=10, back_y=300)
 
     @classmethod
     def from_units_and_constructions(

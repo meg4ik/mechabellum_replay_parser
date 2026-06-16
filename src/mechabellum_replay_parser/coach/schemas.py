@@ -87,6 +87,12 @@ class UnitView(BaseModel):
 
 
 class ConstructionType(str, Enum):
+    # Combat constructions — player-placed, present in replay file
+    DEFENSIVE_WALL = "defensive_wall"
+    ANTI_ARMOR_CANNON = "anti_armor_cannon"
+    RAPID_FIRE_CANNON = "rapid_fire_cannon"
+    MAGNETIC_BARRICADE = "magnetic_barricade"
+    # Utility towers — engine-generated at fixed positions, NOT in replay file
     SUPPLY_TOWER = "supply_tower"
     COMMAND_TOWER = "command_tower"
     RESEARCH_TOWER = "research_tower"
@@ -94,6 +100,7 @@ class ConstructionType(str, Enum):
 
 
 class ConstructionRole(str, Enum):
+    COMBAT = "combat"
     ECONOMY = "economy"
     COMMAND = "command"
     RESEARCH = "research"

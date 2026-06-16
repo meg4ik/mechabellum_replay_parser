@@ -50,12 +50,12 @@ def test_unit_null_position():
 
 def test_construction_model():
     c = Construction(
-        type="Supply Tower",
+        type="Defensive Wall",
         construction_id=1,
         index=0,
         position={"x": 100, "y": -270},
     )
-    assert c.type == "Supply Tower"
+    assert c.type == "Defensive Wall"
     assert c.position.x == 100
 
 
@@ -102,7 +102,7 @@ def test_parsed_replay_unit_deserialized(parsed_replay):
 def test_parsed_replay_construction_deserialized(parsed_replay):
     replay = ParsedReplay.model_validate(parsed_replay)
     c = replay.rounds[0].players["Player1"].constructions[0]
-    assert c.type == "Supply Tower"
+    assert c.type == "Defensive Wall"
     assert c.position.y == -270
 
 

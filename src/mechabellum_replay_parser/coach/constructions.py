@@ -12,18 +12,27 @@ from .schemas import (
 # ── Mapping tables ────────────────────────────────────────────────────────────
 
 _ID_TO_TYPE: dict[int, ConstructionType] = {
-    1: ConstructionType.SUPPLY_TOWER,
-    2: ConstructionType.COMMAND_TOWER,
-    3: ConstructionType.RESEARCH_TOWER,
+    1: ConstructionType.DEFENSIVE_WALL,
+    2: ConstructionType.ANTI_ARMOR_CANNON,
+    3: ConstructionType.RAPID_FIRE_CANNON,
+    4: ConstructionType.MAGNETIC_BARRICADE,
 }
 
 _NAME_TO_TYPE: dict[str, ConstructionType] = {
+    "defensive wall": ConstructionType.DEFENSIVE_WALL,
+    "anti-armor cannon": ConstructionType.ANTI_ARMOR_CANNON,
+    "rapid-fire cannon": ConstructionType.RAPID_FIRE_CANNON,
+    "magnetic barricade": ConstructionType.MAGNETIC_BARRICADE,
     "supply tower": ConstructionType.SUPPLY_TOWER,
     "command tower": ConstructionType.COMMAND_TOWER,
     "research tower": ConstructionType.RESEARCH_TOWER,
 }
 
 _TYPE_TO_ROLE: dict[ConstructionType, ConstructionRole] = {
+    ConstructionType.DEFENSIVE_WALL: ConstructionRole.COMBAT,
+    ConstructionType.ANTI_ARMOR_CANNON: ConstructionRole.COMBAT,
+    ConstructionType.RAPID_FIRE_CANNON: ConstructionRole.COMBAT,
+    ConstructionType.MAGNETIC_BARRICADE: ConstructionRole.COMBAT,
     ConstructionType.SUPPLY_TOWER: ConstructionRole.ECONOMY,
     ConstructionType.COMMAND_TOWER: ConstructionRole.COMMAND,
     ConstructionType.RESEARCH_TOWER: ConstructionRole.RESEARCH,

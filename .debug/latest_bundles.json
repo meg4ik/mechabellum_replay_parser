@@ -1,0 +1,20 @@
+[
+  {
+    "id": "bundle_safe_default",
+    "theme": "safe_default",
+    "title": "Hold position",
+    "target_threats": [],
+    "required_action_ids": [
+      "keep_crawler_0",
+      "keep_crawler_1",
+      "skip"
+    ],
+    "optional_action_ids": [],
+    "estimated_cost": 0,
+    "placement_intents": [],
+    "why_considered": "Safe fallback — maintain current army, spend supply carefully.",
+    "risks": [
+      "no adaptation this round; opponent may pull ahead"
+    ]
+  }
+]

@@ -1,0 +1,186 @@
+[
+  {
+    "id": "unlock_mustang",
+    "type": "unlock_unit",
+    "cost": 0,
+    "unit": "mustang",
+    "unit_index": null,
+    "tech": null,
+    "construction": null,
+    "allowed_positions": [],
+    "reason_tags": [
+      "available_in_shop"
+    ],
+    "constraints": []
+  },
+  {
+    "id": "unlock_wasp",
+    "type": "unlock_unit",
+    "cost": 0,
+    "unit": "wasp",
+    "unit_index": null,
+    "tech": null,
+    "construction": null,
+    "allowed_positions": [],
+    "reason_tags": [
+      "available_in_shop"
+    ],
+    "constraints": []
+  },
+  {
+    "id": "buy_arclight",
+    "type": "buy_unit",
+    "cost": 100,
+    "unit": "arclight",
+    "unit_index": null,
+    "tech": null,
+    "construction": null,
+    "allowed_positions": [],
+    "reason_tags": [],
+    "constraints": []
+  },
+  {
+    "id": "buy_crawler",
+    "type": "buy_unit",
+    "cost": 100,
+    "unit": "crawler",
+    "unit_index": null,
+    "tech": null,
+    "construction": null,
+    "allowed_positions": [],
+    "reason_tags": [],
+    "constraints": []
+  },
+  {
+    "id": "keep_crawler_0",
+    "type": "keep_unit",
+    "cost": 0,
+    "unit": "crawler",
+    "unit_index": 0,
+    "tech": null,
+    "construction": null,
+    "allowed_positions": [],
+    "reason_tags": [],
+    "constraints": []
+  },
+  {
+    "id": "move_crawler_0",
+    "type": "move_unit",
+    "cost": 0,
+    "unit": "crawler",
+    "unit_index": 0,
+    "tech": null,
+    "construction": null,
+    "allowed_positions": [
+      {
+        "label": "front_center",
+        "x": 0,
+        "y": -60
+      },
+      {
+        "label": "mid_center",
+        "x": 0,
+        "y": -150
+      },
+      {
+        "label": "back_center",
+        "x": 0,
+        "y": -260
+      },
+      {
+        "label": "left_flank",
+        "x": -220,
+        "y": -100
+      },
+      {
+        "label": "right_flank",
+        "x": 220,
+        "y": -100
+      },
+      {
+        "label": "protect_tower",
+        "x": 100,
+        "y": -270
+      },
+      {
+        "label": "anti_flank",
+        "x": -200,
+        "y": -200
+      }
+    ],
+    "reason_tags": [],
+    "constraints": []
+  },
+  {
+    "id": "keep_crawler_1",
+    "type": "keep_unit",
+    "cost": 0,
+    "unit": "crawler",
+    "unit_index": 1,
+    "tech": null,
+    "construction": null,
+    "allowed_positions": [],
+    "reason_tags": [],
+    "constraints": []
+  },
+  {
+    "id": "move_crawler_1",
+    "type": "move_unit",
+    "cost": 0,
+    "unit": "crawler",
+    "unit_index": 1,
+    "tech": null,
+    "construction": null,
+    "allowed_positions": [
+      {
+        "label": "front_center",
+        "x": 0,
+        "y": -60
+      },
+      {
+        "label": "mid_center",
+        "x": 0,
+        "y": -150
+      },
+      {
+        "label": "back_center",
+        "x": 0,
+        "y": -260
+      },
+      {
+        "label": "left_flank",
+        "x": -220,
+        "y": -100
+      },
+      {
+        "label": "right_flank",
+        "x": 220,
+        "y": -100
+      },
+      {
+        "label": "protect_tower",
+        "x": 100,
+        "y": -270
+      },
+      {
+        "label": "anti_flank",
+        "x": -200,
+        "y": -200
+      }
+    ],
+    "reason_tags": [],
+    "constraints": []
+  },
+  {
+    "id": "skip",
+    "type": "skip",
+    "cost": 0,
+    "unit": null,
+    "unit_index": null,
+    "tech": null,
+    "construction": null,
+    "allowed_positions": [],
+    "reason_tags": [],
+    "constraints": []
+  }
+]

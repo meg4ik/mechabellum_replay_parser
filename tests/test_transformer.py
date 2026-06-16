@@ -81,7 +81,7 @@ def test_construction_shape(parsed_replay):
     constructions = parsed_replay["rounds"][0]["players"]["Player1"]["constructions"]
     assert len(constructions) == 1
     c = constructions[0]
-    assert c["type"] == "Supply Tower"
+    assert c["type"] == "Defensive Wall"
     assert c["construction_id"] == 1
     assert c["index"] == 0
     assert c["position"] == {"x": 100, "y": -270}

@@ -1,5 +1,7 @@
+import json
 import threading
 import tkinter as tk
+from pathlib import Path
 from tkinter import simpledialog
 
 _X_MIN, _X_MAX = -285, 285
@@ -7,6 +9,31 @@ _CANVAS_W = 600
 _CANVAS_H = 520
 _MARGIN = 50
 _RADIUS = 14
+
+_SCALE_X = _CANVAS_W / (_X_MAX - _X_MIN)
+_SCALE_Y = _CANVAS_H / 290
+
+_DATA_DIR = Path(__file__).parent / "data"
+
+def _load_json(name: str) -> dict:
+    try:
+        with open(_DATA_DIR / name) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+_UNIT_SIZES: dict = _load_json("unit_data.json")
+_CONSTRUCTION_SIZES: dict = _load_json("construction_data.json")
+
+_SNAKE_TO_DISPLAY: dict[str, str] = {
+    "defensive_wall": "Defensive Wall",
+    "anti_armor_cannon": "Anti-Armor Cannon",
+    "rapid_fire_cannon": "Rapid-Fire Cannon",
+    "magnetic_barricade": "Magnetic Barricade",
+    "supply_tower": "Supply Tower",
+    "command_tower": "Command Tower",
+    "research_tower": "Research Tower",
+}
 
 
 def ask_supply(round_num: int | str) -> int | None:
@@ -28,17 +55,9 @@ def _detect_zone(units: list[dict]) -> tuple[int, int]:
     """Return (y_front, y_back) based on whether the player uses negative or positive Y."""
     ys = [u["position"]["y"] for u in units if u.get("position")]
     if not ys:
-        return -45, -295  # default: negative zone
+        return -10, -300
     avg_y = sum(ys) / len(ys)
-    if avg_y >= 0:
-        return (
-            45,
-            295,
-        )  # positive zone (back = large positive y, front = small positive y)
-    return (
-        -45,
-        -295,
-    )  # negative zone (back = large negative y, front = small negative y)
+    return (10, 300) if avg_y >= 0 else (-10, -300)
 
 
 def _to_canvas(x: int, y: int, y_front: int, y_back: int) -> tuple[int, int]:
@@ -49,11 +68,15 @@ def _to_canvas(x: int, y: int, y_front: int, y_back: int) -> tuple[int, int]:
 
 
 _BUILDING_ABBR = {
+    "Defensive Wall": "DW",
+    "Anti-Armor Cannon": "AA",
+    "Rapid-Fire Cannon": "RF",
+    "Magnetic Barricade": "MB",
     "Supply Tower": "ST",
     "Command Tower": "CT",
     "Research Tower": "RT",
 }
-_BSIZE = 12  # half-side of building square
+_BSIZE = 12  # half-side of building square (fallback when size_x/size_y not set)
 
 
 def _draw_unit(
@@ -67,19 +90,13 @@ def _draw_unit(
     outline: str,
 ) -> None:
     cx, cy = _to_canvas(x, y, y_front, y_back)
-    canvas.create_oval(
-        cx - _RADIUS,
-        cy - _RADIUS,
-        cx + _RADIUS,
-        cy + _RADIUS,
-        fill=color,
-        outline=outline,
-        width=2,
-    )
+    info = _UNIT_SIZES.get(label, {})
+    sx, sy = info.get("size_x"), info.get("size_y")
+    rx = max(6, int(sx * _SCALE_X)) if sx is not None else _RADIUS
+    ry = max(6, int(sy * _SCALE_Y)) if sy is not None else _RADIUS
+    canvas.create_oval(cx - rx, cy - ry, cx + rx, cy + ry, fill=color, outline=outline, width=2)
     canvas.create_text(cx, cy, text=label[:4], fill="white", font=("Arial", 7, "bold"))
-    canvas.create_text(
-        cx, cy + _RADIUS + 7, text=label[:10], fill=outline, font=("Arial", 7)
-    )
+    canvas.create_text(cx, cy + ry + 7, text=label[:10], fill=outline, font=("Arial", 7))
 
 
 def _draw_building(
@@ -91,20 +108,15 @@ def _draw_building(
     btype: str,
 ) -> None:
     cx, cy = _to_canvas(x, y, y_front, y_back)
-    abbr = _BUILDING_ABBR.get(btype, btype[:2].upper())
-    canvas.create_rectangle(
-        cx - _BSIZE,
-        cy - _BSIZE,
-        cx + _BSIZE,
-        cy + _BSIZE,
-        fill="#d4a017",
-        outline="#8b6914",
-        width=2,
-    )
+    display_name = _SNAKE_TO_DISPLAY.get(btype, btype)
+    abbr = _BUILDING_ABBR.get(display_name, display_name[:2].upper())
+    info = _CONSTRUCTION_SIZES.get(display_name, {})
+    sx, sy = info.get("size_x"), info.get("size_y")
+    rx = max(6, int(sx * _SCALE_X)) if sx is not None else _BSIZE
+    ry = max(6, int(sy * _SCALE_Y)) if sy is not None else _BSIZE
+    canvas.create_rectangle(cx - rx, cy - ry, cx + rx, cy + ry, fill="#d4a017", outline="#8b6914", width=2)
     canvas.create_text(cx, cy, text=abbr, fill="white", font=("Arial", 7, "bold"))
-    canvas.create_text(
-        cx, cy + _BSIZE + 7, text=btype[:12], fill="#8b6914", font=("Arial", 7)
-    )
+    canvas.create_text(cx, cy + ry + 7, text=display_name[:12], fill="#8b6914", font=("Arial", 7))
 
 
 def show_board(

@@ -12,7 +12,7 @@ from mechabellum_replay_parser.coach.schemas import (
 
 
 def _raw(
-    ctype: str = "Supply Tower",
+    ctype: str = "Defensive Wall",
     cid: int = 1,
     x: int = 100,
     y: int = -270,
@@ -32,22 +32,28 @@ def _raw(
 # ── ID-based normalization ────────────────────────────────────────────────────
 
 
-def test_id_1_is_supply_tower():
-    c = normalize_construction({"construction_id": 1, "type": "Supply Tower"})
-    assert c.type == ConstructionType.SUPPLY_TOWER
-    assert c.role == ConstructionRole.ECONOMY
+def test_id_1_is_defensive_wall():
+    c = normalize_construction({"construction_id": 1, "type": "Defensive Wall"})
+    assert c.type == ConstructionType.DEFENSIVE_WALL
+    assert c.role == ConstructionRole.COMBAT
 
 
-def test_id_2_is_command_tower():
-    c = normalize_construction({"construction_id": 2, "type": "Command Tower"})
-    assert c.type == ConstructionType.COMMAND_TOWER
-    assert c.role == ConstructionRole.COMMAND
+def test_id_2_is_anti_armor_cannon():
+    c = normalize_construction({"construction_id": 2, "type": "Anti-Armor Cannon"})
+    assert c.type == ConstructionType.ANTI_ARMOR_CANNON
+    assert c.role == ConstructionRole.COMBAT
 
 
-def test_id_3_is_research_tower():
-    c = normalize_construction({"construction_id": 3, "type": "Research Tower"})
-    assert c.type == ConstructionType.RESEARCH_TOWER
-    assert c.role == ConstructionRole.RESEARCH
+def test_id_3_is_rapid_fire_cannon():
+    c = normalize_construction({"construction_id": 3, "type": "Rapid-Fire Cannon"})
+    assert c.type == ConstructionType.RAPID_FIRE_CANNON
+    assert c.role == ConstructionRole.COMBAT
+
+
+def test_id_4_is_magnetic_barricade():
+    c = normalize_construction({"construction_id": 4, "type": "Magnetic Barricade"})
+    assert c.type == ConstructionType.MAGNETIC_BARRICADE
+    assert c.role == ConstructionRole.COMBAT
 
 
 def test_unknown_id_stays_unknown():
@@ -83,13 +89,13 @@ def test_unknown_string_stays_unknown():
 
 
 def test_default_status_is_alive():
-    c = normalize_construction({"type": "Supply Tower", "construction_id": 1})
+    c = normalize_construction({"type": "Defensive Wall", "construction_id": 1})
     assert c.status == ConstructionStatus.ALIVE
 
 
 def test_destroyed_status_parsed():
     c = normalize_construction(
-        {"type": "Supply Tower", "construction_id": 1, "status": "destroyed"}
+        {"type": "Defensive Wall", "construction_id": 1, "status": "destroyed"}
     )
     assert c.status == ConstructionStatus.DESTROYED
 
@@ -110,7 +116,7 @@ def test_position_preserved():
 
 
 def test_no_position_is_none():
-    c = normalize_construction({"type": "Supply Tower", "construction_id": 1})
+    c = normalize_construction({"type": "Defensive Wall", "construction_id": 1})
     assert c.position is None
 
 
@@ -118,8 +124,8 @@ def test_no_position_is_none():
 
 
 def test_raw_type_stored():
-    c = normalize_construction({"type": "Supply Tower", "construction_id": 1})
-    assert c.raw_type == "Supply Tower"
+    c = normalize_construction({"type": "Defensive Wall", "construction_id": 1})
+    assert c.raw_type == "Defensive Wall"
 
 
 def test_raw_type_stored_for_unknown():
@@ -151,7 +157,7 @@ def test_position_label_none_when_no_position():
 
 
 def test_returns_construction_view_instance():
-    c = normalize_construction({"type": "Supply Tower", "construction_id": 1})
+    c = normalize_construction({"type": "Defensive Wall", "construction_id": 1})
     assert isinstance(c, ConstructionView)
 
 
@@ -164,9 +170,9 @@ def test_state_view_contains_normalized_constructions(parsed_replay):
     state = StateViewBuilder().build(parsed_replay, supply=100, player_name="Player1")
     assert len(state.my_state.constructions) == 1
     c = state.my_state.constructions[0]
-    # conftest has construction_id=1 (Supply Tower) at (100, -270)
-    assert c.type == ConstructionType.SUPPLY_TOWER
-    assert c.role == ConstructionRole.ECONOMY
+    # conftest has construction_id=1 → Defensive Wall (combat construction)
+    assert c.type == ConstructionType.DEFENSIVE_WALL
+    assert c.role == ConstructionRole.COMBAT
     assert c.status == ConstructionStatus.ALIVE
 
 
@@ -188,6 +194,6 @@ def test_serialized_type_is_enum_value(parsed_replay):
 
     state = StateViewBuilder().build(parsed_replay, supply=100, player_name="Player1")
     serialized = state.my_state.constructions[0].model_dump()
-    assert serialized["type"] == "supply_tower"
-    assert serialized["role"] == "economy"
+    assert serialized["type"] == "defensive_wall"
+    assert serialized["role"] == "combat"
     assert serialized["status"] == "alive"

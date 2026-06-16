@@ -5,6 +5,7 @@ from prettytable import PrettyTable
 
 from . import parse_battle_record
 from . import battle_record_to_string
+from .transformer import replay_to_dict
 from .watcher import watch, REPLAY_DIR
 
 
@@ -26,6 +27,83 @@ def show_tech(args):
             table.add_divider()
         print(table)
         print()
+
+
+def show_units(args):
+    from .native_ui.display import CoachWindow
+
+    path = Path(args.file).absolute()
+    data = replay_to_dict(path)
+
+    last_round = data["last_round"]
+    target_round = args.round if args.round is not None else last_round
+
+    round_data = next((r for r in data["rounds"] if r["round"] == target_round), None)
+    if round_data is None:
+        available = [r["round"] for r in data["rounds"]]
+        print(f"Round {target_round} not found. Available rounds: {available}")
+        return
+
+    players = round_data["players"]
+    if not players:
+        print(f"No player data for round {target_round}.")
+        return
+
+    # Pick player: explicit --player, else first non-Bot, else first
+    player_name = args.player
+    if player_name:
+        if player_name not in players:
+            print(f"Player '{player_name}' not found. Available: {list(players.keys())}")
+            return
+    else:
+        player_name = next((n for n in players if "bot" not in n.lower()), list(players.keys())[0])
+
+    pdata = players[player_name]
+    units = pdata["units"]
+    constructions = pdata["constructions"]
+
+    # Console summary
+    print(f"v{data['metadata']['version']} | {data['metadata']['match_mode']} | round {target_round} | player: {player_name}")
+    print(f"units: {len(units)}  constructions: {len(constructions)}")
+
+    # Y-coordinate stats across ALL rounds for this player (helps calibrate boundaries)
+    all_ys = []
+    all_xs = []
+    for r in data["rounds"]:
+        for u in r["players"].get(player_name, {}).get("units", []):
+            pos = u.get("position") or {}
+            if pos.get("y") is not None:
+                all_ys.append(pos["y"])
+            if pos.get("x") is not None:
+                all_xs.append(pos["x"])
+    if all_ys:
+        print(f"\nCoord range across all rounds:")
+        print(f"  x: {min(all_xs)} … {max(all_xs)}")
+        print(f"  y: {min(all_ys)} … {max(all_ys)}  (front=closer to 0, back=farther)")
+
+    unknown = [u for u in units if u["name"].startswith("unknown(")]
+    if unknown:
+        print("\nUnknown unit IDs (add to UNIT_LOOKUP in __init__.py):")
+        for u in unknown:
+            pos = u.get("position") or {}
+            print(f"  {u['unit_id']}: \"???\"  # x={pos.get('x','?')} y={pos.get('y','?')}")
+
+    if not units and not constructions:
+        print("Nothing to display (no units or constructions in this round).")
+        return
+
+    print("\nOpening board visualization…")
+    window = CoachWindow()
+    window.show_result(
+        round_num=target_round,
+        player_name=player_name,
+        summary=f"{path.name}  —  раунд {target_round}",
+        coach_text="",
+        current_units=units,
+        placement=[],
+        constructions=constructions,
+    )
+    window.mainloop()
 
 
 def start_watch(args):
@@ -88,6 +166,14 @@ def main():
         "file", help="Path to the Mechabellum replay file (.grbr)"
     )
     battle_parser.set_defaults(func=show_battle_record)
+
+    units_parser = subparsers.add_parser(
+        "units", help="Visualize units and constructions from a replay in a Tkinter window."
+    )
+    units_parser.add_argument("file", help="Path to the Mechabellum replay file (.grbr)")
+    units_parser.add_argument("--round", type=int, default=None, help="Round number to display (default: last round)")
+    units_parser.add_argument("--player", default=None, help="Player name to display (default: first non-bot player)")
+    units_parser.set_defaults(func=show_units)
 
     tech_parser = subparsers.add_parser(
         "tech", help="Show tech information of both players in a replay file."

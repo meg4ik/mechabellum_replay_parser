@@ -1,0 +1,150 @@
+{
+  "match_mode": "VS_1_1",
+  "round": 2,
+  "player_name": "Player1",
+  "enemy_names": [
+    "Player2"
+  ],
+  "my_supply": 200,
+  "my_state": {
+    "name": "Player1",
+    "hp": 3,
+    "supply": 200,
+    "army_value": null,
+    "fight_outcome": null,
+    "officers": [],
+    "commander_skills": [],
+    "units": [
+      {
+        "name": "crawler",
+        "unit_id": null,
+        "index": 0,
+        "level": 1,
+        "exp": null,
+        "rounds_survived": null,
+        "position": {
+          "x": -40,
+          "y": -80
+        },
+        "equipment": null,
+        "sell_supply": null,
+        "rotate": null,
+        "active_techs": []
+      },
+      {
+        "name": "crawler",
+        "unit_id": null,
+        "index": 1,
+        "level": 1,
+        "exp": null,
+        "rounds_survived": null,
+        "position": {
+          "x": 0,
+          "y": -80
+        },
+        "equipment": null,
+        "sell_supply": null,
+        "rotate": null,
+        "active_techs": []
+      }
+    ],
+    "constructions": [],
+    "contraptions": [],
+    "shop": {
+      "unlocked": [
+        "crawler",
+        "arclight"
+      ],
+      "locked": [
+        "wasp",
+        "mustang"
+      ],
+      "buys_remaining": 3,
+      "unlocks_remaining": 1
+    }
+  },
+  "enemy_states": [
+    {
+      "name": "Player2",
+      "hp": 3,
+      "supply": null,
+      "army_value": null,
+      "fight_outcome": null,
+      "officers": [],
+      "commander_skills": [],
+      "units": [
+        {
+          "name": "crawler",
+          "unit_id": null,
+          "index": 0,
+          "level": 1,
+          "exp": null,
+          "rounds_survived": null,
+          "position": {
+            "x": -40,
+            "y": 80
+          },
+          "equipment": null,
+          "sell_supply": null,
+          "rotate": null,
+          "active_techs": []
+        },
+        {
+          "name": "crawler",
+          "unit_id": null,
+          "index": 1,
+          "level": 1,
+          "exp": null,
+          "rounds_survived": null,
+          "position": {
+            "x": 0,
+            "y": 80
+          },
+          "equipment": null,
+          "sell_supply": null,
+          "rotate": null,
+          "active_techs": []
+        }
+      ],
+      "constructions": [],
+      "contraptions": [],
+      "shop": {
+        "unlocked": [
+          "crawler"
+        ],
+        "locked": [
+          "arclight"
+        ],
+        "buys_remaining": 3,
+        "unlocks_remaining": 1
+      }
+    }
+  ],
+  "recent_rounds": [
+    {
+      "round": 1,
+      "my_outcome": "win",
+      "enemy_outcome": "loss",
+      "my_army_value": null,
+      "enemy_army_value": 0,
+      "important_changes": []
+    },
+    {
+      "round": 2,
+      "my_outcome": null,
+      "enemy_outcome": null,
+      "my_army_value": null,
+      "enemy_army_value": 0,
+      "important_changes": []
+    }
+  ],
+  "strategic_memory": {
+    "enemy_plan_read": null,
+    "my_plan_read": null,
+    "critical_events": [],
+    "committed_investments": [],
+    "do_not_forget": [
+      "Enemy has been investing in crawler for 2 round(s)."
+    ]
+  }
+}

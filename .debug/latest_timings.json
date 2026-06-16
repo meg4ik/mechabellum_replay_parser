@@ -1,0 +1,12 @@
+{
+  "state_view_ms": 0,
+  "features_ms": 0,
+  "legal_actions_ms": 0,
+  "tactical_bundles_ms": 0,
+  "knowledge_retrieval_ms": 0,
+  "planner_llm_ms": 0,
+  "validator_ms": 0,
+  "plan_scorer_ms": 0,
+  "judge_llm_ms": 10,
+  "placement_resolver_ms": 0
+}

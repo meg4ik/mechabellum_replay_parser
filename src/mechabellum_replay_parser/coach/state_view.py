@@ -88,7 +88,11 @@ class StateViewBuilder:
             for u in raw.get("units", [])
         ]
 
-        frame = CoordinateFrame.from_units_and_constructions(units, [])
+        # Two-pass: detect side from units + construction positions, then label.
+        temp_constructions = [
+            normalize_construction(c) for c in raw.get("constructions", [])
+        ]
+        frame = CoordinateFrame.from_units_and_constructions(units, temp_constructions)
         constructions = [
             normalize_construction(c, frame) for c in raw.get("constructions", [])
         ]

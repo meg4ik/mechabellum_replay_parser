@@ -1,0 +1,30 @@
+[
+  {
+    "id": "plan_buy_arclight",
+    "title": "Buy Arclight to counter air threat",
+    "action_ids": [
+      "buy_arclight"
+    ],
+    "total_cost": 100,
+    "main_goal": "Counter enemy air pressure",
+    "why_it_works": "Arclight has strong anti-air capabilities.",
+    "risks": [
+      "Arclight is expensive"
+    ],
+    "expected_enemy_response": [
+      "Enemy may switch to ground"
+    ],
+    "placement": [],
+    "placement_intents": [
+      {
+        "unit": "arclight",
+        "action": "new",
+        "lane": "center",
+        "depth": "back",
+        "anchor": "none",
+        "purpose": "anti-air coverage"
+      }
+    ],
+    "confidence": 0.8
+  }
+]

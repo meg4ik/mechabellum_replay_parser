@@ -1,7 +1,0 @@
-{
-  "must_address_threats": ["enemy_chaff_overload"],
-  "recommended_response_types": ["add_splash", "add_arclight", "add_vulcan"],
-  "forbidden_response_types": ["more_single_target", "heavy_frontline_only"],
-  "acceptable_units": ["arclight", "vulcan", "fire badger", "mustang"],
-  "placement_expectations": []
-}

@@ -1,0 +1,10 @@
+{
+  "best_plan_id": "plan_buy_arclight",
+  "confidence": 0.8,
+  "main_reason": "Selected automatically: highest-scoring valid plan (Judge LLM unavailable).",
+  "why_not_others": [],
+  "final_actions": [],
+  "placement": [],
+  "watch_next_round": [],
+  "mistake_to_avoid": ""
+}

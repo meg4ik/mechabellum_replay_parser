@@ -16,9 +16,11 @@ from . import (
 )
 
 CONSTRUCTION_LOOKUP = {
-    1: "Supply Tower",
-    2: "Command Tower",
-    3: "Research Tower",
+    1: "Defensive Wall",
+    2: "Anti-Armor Cannon",
+    3: "Rapid-Fire Cannon",
+    4: "Magnetic Barricade",
+    # IDs 5+ are utility towers — add when observed in replays
 }
 
 
