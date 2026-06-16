@@ -13,30 +13,33 @@ the actual Tkinter code via root.after(0, ...) on the main thread.
 from __future__ import annotations
 
 import json
+import math
 import tkinter as tk
 from collections.abc import Callable
 from pathlib import Path
 from tkinter import scrolledtext
 
 # ── Board geometry ─────────────────────────────────────────────────────────────
-_X_MIN, _X_MAX = -285, 285
+_X_MIN, _X_MAX = -294, 294          # derived: arclight center ±290, size_x=4
+_Y_FRONT = -16                      # derived: arclight center -20, size_y=4
+_Y_BACK = -304                      # derived: arclight center -300, size_y=4
 _BOARD_W = 840
 _BOARD_H = 460
 _MARGIN = 50
 _RADIUS = 17
 
 # Canvas pixels per 1 game-coordinate unit (used to scale size_x / size_y)
-_SCALE_X = _BOARD_W / (_X_MAX - _X_MIN)  # ≈ 1.47 px/unit
-_SCALE_Y = _BOARD_H / 290                # ≈ 1.59 px/unit  (y span is always 290)
+_SCALE_X = _BOARD_W / (_X_MAX - _X_MIN)          # ≈ 1.43 px/unit  (x span = 588)
+_SCALE_Y = _BOARD_H / abs(_Y_FRONT - _Y_BACK)    # ≈ 1.60 px/unit  (y span = 288)
 
 # ── Size data ──────────────────────────────────────────────────────────────────
 _DATA_DIR = Path(__file__).parent.parent / "data"
 
 def _load_json(name: str) -> dict:
     try:
-        with open(_DATA_DIR / name) as f:
+        with open(_DATA_DIR / name, encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except OSError:
         return {}
 
 _UNIT_SIZES: dict[str, dict] = _load_json("unit_data.json")
@@ -551,14 +554,15 @@ class CoachWindow:
     def _detect_zone(units: list[dict]) -> tuple[int, int]:
         ys = [u["position"]["y"] for u in units if u.get("position")]
         if not ys:
-            return -10, -300
+            return _Y_FRONT, _Y_BACK
         avg_y = sum(ys) / len(ys)
-        return (10, 300) if avg_y >= 0 else (-10, -300)
+        return (-_Y_FRONT, -_Y_BACK) if avg_y >= 0 else (_Y_FRONT, _Y_BACK)
 
     @staticmethod
     def _to_canvas(x: int, y: int, y_front: int, y_back: int) -> tuple[int, int]:
         cx = _MARGIN + (x - _X_MIN) / (_X_MAX - _X_MIN) * _BOARD_W
-        cy = _MARGIN + abs(y_front - y) / abs(y_front - y_back) * _BOARD_H
+        # +30 accounts for the legend row above the board rectangle (zy0 = _MARGIN + 30)
+        cy = _MARGIN + 30 + abs(y_front - y) / abs(y_front - y_back) * _BOARD_H
         return int(cx), int(cy)
 
     def _draw_board(
@@ -593,20 +597,13 @@ class CoachWindow:
             canvas.create_line(px, zy0, px, zy1, fill=_GRID)
             canvas.create_text(px, zy1 + 11, text=str(gx), fill=_FG2, font=("Arial", 7))
 
-        # Horizontal grid lines
+        # Horizontal grid lines — snap to nearest multiple of 50 inside the range
         y_lo, y_hi = min(y_front, y_back), max(y_front, y_back)
-        for gy in range(y_lo, y_hi + 1, 50):
+        first_gy = math.ceil(y_lo / 50) * 50
+        for gy in range(first_gy, y_hi + 1, 50):
             _, py = self._to_canvas(0, gy, y_front, y_back)
-            canvas.create_line(
-                zx0, zy0 + py - _MARGIN, zx1, zy0 + py - _MARGIN, fill=_GRID
-            )
-            canvas.create_text(
-                zx0 - 14,
-                zy0 + py - _MARGIN,
-                text=str(gy),
-                fill=_FG2,
-                font=("Arial", 7),
-            )
+            canvas.create_line(zx0, py, zx1, py, fill=_GRID)
+            canvas.create_text(zx0 - 14, py, text=str(gy), fill=_FG2, font=("Arial", 7))
 
         canvas.create_text(
             zx0 - 10, zy0, text="▲ front", fill=_FG2, font=("Arial", 7), anchor="e"
@@ -662,9 +659,9 @@ class CoachWindow:
         cx, cy = self._to_canvas(x, y, y_front, y_back)
         info = _UNIT_SIZES.get(label, {})
         sx, sy = info.get("size_x"), info.get("size_y")
-        rx = max(8, int(sx * _SCALE_X)) if sx is not None else _RADIUS
-        ry = max(8, int(sy * _SCALE_Y)) if sy is not None else _RADIUS
-        canvas.create_oval(
+        rx = max(3, int(sx * _SCALE_X)) if sx is not None else _RADIUS
+        ry = max(3, int(sy * _SCALE_Y)) if sy is not None else _RADIUS
+        canvas.create_rectangle(
             cx - rx, cy - ry, cx + rx, cy + ry, fill=fill, outline=outline, width=2
         )
         canvas.create_text(

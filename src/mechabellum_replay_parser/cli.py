@@ -60,7 +60,23 @@ def show_units(args):
 
     pdata = players[player_name]
     units = pdata["units"]
-    constructions = pdata["constructions"]
+    constructions = list(pdata["constructions"])
+
+    # Inject fixed utility towers (not stored in replay — engine-generated at known positions).
+    # Positions were measured by surrounding each tower with 4 Arclight units (size_x=4, size_y=4):
+    #   Command Tower: center (-140, ±170), half-size 16×16
+    #   Research Tower: center (+140, ±170), half-size 16×16
+    # Y sign matches the player's side (negative or positive Y).
+    positioned_ys = [
+        u["position"]["y"]
+        for u in units
+        if u.get("position") and u["position"].get("y") is not None
+    ]
+    y_sign = -1 if (not positioned_ys or sum(positioned_ys) / len(positioned_ys) < 0) else 1
+    constructions += [
+        {"type": "Command Tower",  "position": {"x": -140, "y": y_sign * 170}},
+        {"type": "Research Tower", "position": {"x":  140, "y": y_sign * 170}},
+    ]
 
     # Console summary
     print(f"v{data['metadata']['version']} | {data['metadata']['match_mode']} | round {target_round} | player: {player_name}")
@@ -87,6 +103,26 @@ def show_units(args):
         for u in unknown:
             pos = u.get("position") or {}
             print(f"  {u['unit_id']}: \"???\"  # x={pos.get('x','?')} y={pos.get('y','?')}")
+
+    # Detailed position table for current round
+    if units:
+        sorted_units = sorted(units, key=lambda u: (u.get("name", ""), u.get("position", {}).get("x", 0)))
+        print(f"\nUnits  (round {target_round}):")
+        print(f"  {'name':<22} {'x':>6}  {'y':>6}")
+        print(f"  {'-'*22} {'-'*6}  {'-'*6}")
+        for u in sorted_units:
+            pos = u.get("position") or {}
+            x, y = pos.get("x", "?"), pos.get("y", "?")
+            print(f"  {u.get('name', '?'):<22} {str(x):>6}  {str(y):>6}")
+
+    if constructions:
+        print(f"\nConstructions  (round {target_round}):")
+        print(f"  {'type':<25} {'x':>6}  {'y':>6}")
+        print(f"  {'-'*25} {'-'*6}  {'-'*6}")
+        for c in constructions:
+            pos = c.get("position") or {}
+            x, y = pos.get("x", "?"), pos.get("y", "?")
+            print(f"  {c.get('type', '?'):<25} {str(x):>6}  {str(y):>6}")
 
     if not units and not constructions:
         print("Nothing to display (no units or constructions in this round).")

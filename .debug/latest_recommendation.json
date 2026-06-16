@@ -1,12 +1,12 @@
 {
   "summary": "Selected automatically: highest-scoring valid plan (Judge LLM unavailable).",
-  "coach_text": "Round 2 plan for Player1\nTempo: unknown  |  Posture: aggro\n\n** Buy Arclight to counter air threat **\nGoal: Counter enemy air pressure\nWhy: Arclight has strong anti-air capabilities.\n\nDecision: Selected automatically: highest-scoring valid plan (Judge LLM unavailable).\n\nPlacement:\n  arclight -> (0, -300) Lane.CENTER_Depth.BACK [PlacementAction.NEW]\n\nRisks: Arclight is expensive",
+  "coach_text": "Round 2 plan for Player1\nTempo: unknown  |  Posture: aggro\n\n** Buy Arclight to counter air threat **\nGoal: Counter enemy air pressure\nWhy: Arclight has strong anti-air capabilities.\n\nDecision: Selected automatically: highest-scoring valid plan (Judge LLM unavailable).\n\nPlacement:\n  arclight -> (0, -304) Lane.CENTER_Depth.BACK [PlacementAction.NEW]\n\nRisks: Arclight is expensive",
   "placement": [
     {
       "unit": "arclight",
       "action": "new",
       "x": 0,
-      "y": -300,
+      "y": -304,
       "lane": "center",
       "depth": "back",
       "purpose": "anti-air coverage"

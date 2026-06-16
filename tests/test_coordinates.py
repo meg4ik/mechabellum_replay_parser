@@ -53,21 +53,21 @@ def test_units_without_positions_default_to_negative_y():
 
 def test_negative_y_front_back():
     frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
-    assert frame.front_y == -10
-    assert frame.back_y == -300
+    assert frame.front_y == -16
+    assert frame.back_y == -304
 
 
 def test_positive_y_front_back():
     frame = CoordinateFrame.for_side(PlayerSide.POSITIVE_Y)
-    assert frame.front_y == 10
-    assert frame.back_y == 300
+    assert frame.front_y == 16
+    assert frame.back_y == 304
 
 
 def test_in_bounds_negative_y():
     frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
     assert frame.is_in_bounds(Position(x=0, y=-100))
-    assert frame.is_in_bounds(Position(x=-285, y=-295))
-    assert frame.is_in_bounds(Position(x=285, y=-45))
+    assert frame.is_in_bounds(Position(x=-290, y=-295))
+    assert frame.is_in_bounds(Position(x=290, y=-50))
 
 
 def test_out_of_bounds_x_negative_y():
@@ -79,20 +79,20 @@ def test_out_of_bounds_x_negative_y():
 def test_out_of_bounds_y_negative_y():
     frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
     assert not frame.is_in_bounds(Position(x=0, y=0))
-    assert not frame.is_in_bounds(Position(x=0, y=-301))
+    assert not frame.is_in_bounds(Position(x=0, y=-310))
 
 
 def test_in_bounds_positive_y():
     frame = CoordinateFrame.for_side(PlayerSide.POSITIVE_Y)
     assert frame.is_in_bounds(Position(x=0, y=100))
-    assert frame.is_in_bounds(Position(x=0, y=45))
+    assert frame.is_in_bounds(Position(x=0, y=50))
     assert frame.is_in_bounds(Position(x=0, y=295))
 
 
 def test_out_of_bounds_positive_y():
     frame = CoordinateFrame.for_side(PlayerSide.POSITIVE_Y)
     assert not frame.is_in_bounds(Position(x=0, y=0))
-    assert not frame.is_in_bounds(Position(x=0, y=301))
+    assert not frame.is_in_bounds(Position(x=0, y=310))
 
 
 # ── Clamp ─────────────────────────────────────────────────────────────────────
@@ -100,30 +100,30 @@ def test_out_of_bounds_positive_y():
 
 def test_clamp_x_too_large():
     frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
-    assert frame.clamp(Position(x=999, y=-100)).x == 285
+    assert frame.clamp(Position(x=999, y=-100)).x == 294
 
 
 def test_clamp_x_too_small():
     frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
-    assert frame.clamp(Position(x=-999, y=-100)).x == -285
+    assert frame.clamp(Position(x=-999, y=-100)).x == -294
 
 
 def test_clamp_y_above_front():
     frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
-    # y=0 is above front_y=-10 → clamps to -10
-    assert frame.clamp(Position(x=0, y=0)).y == -10
+    # y=0 is above front_y=-16 → clamps to -16
+    assert frame.clamp(Position(x=0, y=0)).y == -16
 
 
 def test_clamp_y_below_back():
     frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
-    # y=-400 is below back_y=-300 → clamps to -300
-    assert frame.clamp(Position(x=0, y=-400)).y == -300
+    # y=-400 is below back_y=-304 → clamps to -304
+    assert frame.clamp(Position(x=0, y=-400)).y == -304
 
 
 def test_clamp_positive_y_below_front():
     frame = CoordinateFrame.for_side(PlayerSide.POSITIVE_Y)
-    # y=0 is below front_y=10 → clamps to 10
-    assert frame.clamp(Position(x=0, y=0)).y == 10
+    # y=0 is below front_y=16 → clamps to 16
+    assert frame.clamp(Position(x=0, y=0)).y == 16
 
 
 def test_clamp_already_in_bounds():
@@ -139,28 +139,28 @@ def test_lane_depth_negative_y_center_front():
     frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
     pos = frame.lane_depth_to_xy(Lane.CENTER, Depth.FRONT)
     assert pos.x == 0
-    assert pos.y == -10
+    assert pos.y == -16
 
 
 def test_lane_depth_negative_y_center_back():
     frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
     pos = frame.lane_depth_to_xy(Lane.CENTER, Depth.BACK)
     assert pos.x == 0
-    assert pos.y == -300
+    assert pos.y == -304
 
 
 def test_lane_depth_positive_y_center_front():
     frame = CoordinateFrame.for_side(PlayerSide.POSITIVE_Y)
     pos = frame.lane_depth_to_xy(Lane.CENTER, Depth.FRONT)
     assert pos.x == 0
-    assert pos.y == 10
+    assert pos.y == 16
 
 
 def test_lane_depth_positive_y_center_back():
     frame = CoordinateFrame.for_side(PlayerSide.POSITIVE_Y)
     pos = frame.lane_depth_to_xy(Lane.CENTER, Depth.BACK)
     assert pos.x == 0
-    assert pos.y == 300
+    assert pos.y == 304
 
 
 def test_lane_x_values():
@@ -188,7 +188,7 @@ def test_all_lane_depth_combos_always_in_bounds():
 
 def test_position_to_label_center_front():
     frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
-    assert frame.position_to_label(Position(x=0, y=-45)) == "center_front"
+    assert frame.position_to_label(Position(x=0, y=-50)) == "center_front"
 
 
 def test_position_to_label_left_back():

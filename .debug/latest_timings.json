@@ -7,6 +7,6 @@
   "planner_llm_ms": 0,
   "validator_ms": 0,
   "plan_scorer_ms": 0,
-  "judge_llm_ms": 10,
+  "judge_llm_ms": 7,
   "placement_resolver_ms": 0
 }

@@ -1,25 +1,28 @@
 import json
+import math
 import threading
 import tkinter as tk
 from pathlib import Path
 from tkinter import simpledialog
 
-_X_MIN, _X_MAX = -285, 285
+_X_MIN, _X_MAX = -294, 294          # derived: arclight center ±290, size_x=4
+_Y_FRONT = -16                      # derived: arclight center -20, size_y=4
+_Y_BACK = -304                      # derived: arclight center -300, size_y=4
 _CANVAS_W = 600
 _CANVAS_H = 520
 _MARGIN = 50
 _RADIUS = 14
 
 _SCALE_X = _CANVAS_W / (_X_MAX - _X_MIN)
-_SCALE_Y = _CANVAS_H / 290
+_SCALE_Y = _CANVAS_H / abs(_Y_FRONT - _Y_BACK)
 
 _DATA_DIR = Path(__file__).parent / "data"
 
 def _load_json(name: str) -> dict:
     try:
-        with open(_DATA_DIR / name) as f:
+        with open(_DATA_DIR / name, encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except OSError:
         return {}
 
 _UNIT_SIZES: dict = _load_json("unit_data.json")
@@ -55,15 +58,15 @@ def _detect_zone(units: list[dict]) -> tuple[int, int]:
     """Return (y_front, y_back) based on whether the player uses negative or positive Y."""
     ys = [u["position"]["y"] for u in units if u.get("position")]
     if not ys:
-        return -10, -300
+        return _Y_FRONT, _Y_BACK
     avg_y = sum(ys) / len(ys)
-    return (10, 300) if avg_y >= 0 else (-10, -300)
+    return (-_Y_FRONT, -_Y_BACK) if avg_y >= 0 else (_Y_FRONT, _Y_BACK)
 
 
 def _to_canvas(x: int, y: int, y_front: int, y_back: int) -> tuple[int, int]:
     cx = _MARGIN + (x - _X_MIN) / (_X_MAX - _X_MIN) * _CANVAS_W
-    # front → top of canvas, back → bottom
-    cy = _MARGIN + abs(y_front - y) / abs(y_front - y_back) * _CANVAS_H
+    # +30 accounts for the title row above the board rectangle (zy0 = _MARGIN + 30)
+    cy = _MARGIN + 30 + abs(y_front - y) / abs(y_front - y_back) * _CANVAS_H
     return int(cx), int(cy)
 
 
@@ -94,7 +97,7 @@ def _draw_unit(
     sx, sy = info.get("size_x"), info.get("size_y")
     rx = max(6, int(sx * _SCALE_X)) if sx is not None else _RADIUS
     ry = max(6, int(sy * _SCALE_Y)) if sy is not None else _RADIUS
-    canvas.create_oval(cx - rx, cy - ry, cx + rx, cy + ry, fill=color, outline=outline, width=2)
+    canvas.create_rectangle(cx - rx, cy - ry, cx + rx, cy + ry, fill=color, outline=outline, width=2)
     canvas.create_text(cx, cy, text=label[:4], fill="white", font=("Arial", 7, "bold"))
     canvas.create_text(cx, cy + ry + 7, text=label[:10], fill=outline, font=("Arial", 7))
 
@@ -158,17 +161,13 @@ def show_board(
         canvas.create_line(px, zy0, px, zy1, fill="#dddddd")
         canvas.create_text(px, zy1 + 10, text=str(gx), fill="#999", font=("Arial", 7))
 
-    # Horizontal grid lines
-    step = 50
+    # Horizontal grid lines — snap to nearest multiple of 50 inside the range
     y_lo, y_hi = min(y_front, y_back), max(y_front, y_back)
-    for gy in range(y_lo, y_hi + 1, step):
+    first_gy = math.ceil(y_lo / 50) * 50
+    for gy in range(first_gy, y_hi + 1, 50):
         _, py = _to_canvas(0, gy, y_front, y_back)
-        canvas.create_line(
-            zx0, zy0 + py - _MARGIN, zx1, zy0 + py - _MARGIN, fill="#dddddd"
-        )
-        canvas.create_text(
-            zx0 - 14, zy0 + py - _MARGIN, text=str(gy), fill="#999", font=("Arial", 7)
-        )
+        canvas.create_line(zx0, py, zx1, py, fill="#dddddd")
+        canvas.create_text(zx0 - 14, py, text=str(gy), fill="#999", font=("Arial", 7))
 
     canvas.create_text(
         zx0 - 8, zy0, text="▲ front", fill="#999", font=("Arial", 7), anchor="e"

@@ -12,9 +12,9 @@
 ## Coordinate Frame
 
 - **Side:** negative_y
-- **Front Y:** -10
-- **Back Y:** -300
-- **X range:** [-285 .. 285]
+- **Front Y:** -16
+- **Back Y:** -304
+- **X range:** [-294 .. 294]
 
 ## Main Threats
 
@@ -46,7 +46,7 @@
 
 ## Resolved Placement
 
-- ?  x=0 y=-300  lane=center depth=back
+- ?  x=0 y=-304  lane=center depth=back
 
 ## Plan Scores
 
@@ -73,7 +73,7 @@ Why: Arclight has strong anti-air capabilities.
 Decision: Selected automatically: highest-scoring valid plan (Judge LLM unavailable).
 
 Placement:
-  arclight -> (0, -300) Lane.CENTER_Depth.BACK [PlacementAction.NEW]
+  arclight -> (0, -304) Lane.CENTER_Depth.BACK [PlacementAction.NEW]
 
 Risks: Arclight is expensive
 
@@ -89,7 +89,7 @@ Risks: Arclight is expensive
 - `planner_llm_ms`: 0 ms
 - `validator_ms`: 0 ms
 - `plan_scorer_ms`: 0 ms
-- `judge_llm_ms`: 10 ms
+- `judge_llm_ms`: 7 ms
 - `placement_resolver_ms`: 0 ms
 
 ## Suspected Failure Stage

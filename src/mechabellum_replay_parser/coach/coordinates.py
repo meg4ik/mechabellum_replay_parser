@@ -17,16 +17,16 @@ _DEPTHS = [Depth.FRONT, Depth.MID_FRONT, Depth.MID, Depth.MID_BACK, Depth.BACK]
 
 class CoordinateFrame(BaseModel):
     side: PlayerSide
-    x_min: int = -285
-    x_max: int = 285
+    x_min: int = -294
+    x_max: int = 294
     front_y: int
     back_y: int
 
     @classmethod
     def for_side(cls, side: PlayerSide) -> CoordinateFrame:
         if side == PlayerSide.NEGATIVE_Y:
-            return cls(side=side, front_y=-10, back_y=-300)
-        return cls(side=side, front_y=10, back_y=300)
+            return cls(side=side, front_y=-16, back_y=-304)
+        return cls(side=side, front_y=16, back_y=304)
 
     @classmethod
     def from_units_and_constructions(

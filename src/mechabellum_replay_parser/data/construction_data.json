@@ -2,36 +2,50 @@
     "Defensive Wall": {
         "name": "Defensive Wall",
         "size_x": 12,
-        "size_y": 2
+        "size_y": 2,
+        "position_x": null,
+        "position_y": null
     },
     "Anti-Armor Cannon": {
         "name": "Anti-Armor Cannon",
         "size_x": 4,
-        "size_y": 4
+        "size_y": 4,
+        "position_x": null,
+        "position_y": null
     },
     "Rapid-Fire Cannon": {
         "name": "Rapid-Fire Cannon",
         "size_x": 4,
-        "size_y": 4
+        "size_y": 4,
+        "position_x": null,
+        "position_y": null
     },
     "Magnetic Barricade": {
         "name": "Magnetic Barricade",
         "size_x": 10,
-        "size_y": 2
+        "size_y": 2,
+        "position_x": null,
+        "position_y": null
     },
     "Supply Tower": {
         "name": "Supply Tower",
         "size_x": 4,
-        "size_y": 4
+        "size_y": 4,
+        "position_x": null,
+        "position_y": null
     },
     "Command Tower": {
         "name": "Command Tower",
         "size_x": 4,
-        "size_y": 4
+        "size_y": 4,
+        "position_x": -140,
+        "position_y": -170
     },
     "Research Tower": {
         "name": "Research Tower",
         "size_x": 4,
-        "size_y": 4
+        "size_y": 4,
+        "position_x": 140,
+        "position_y": -170
     }
 }
