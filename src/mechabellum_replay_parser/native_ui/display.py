@@ -72,8 +72,11 @@ _GRAY_DK = "#37474f"
 _GOLD = "#ffd600"  # buildings
 _GOLD_DK = "#b29100"
 _RED = "#ef5350"  # error
+_RED_UNIT = "#e57373"  # opponent units
+_RED_UNIT_DK = "#b71c1c"
 _BORDER = "#2e3a59"
 _GRID = "#1e2d4a"
+_MIDFIELD = "#4a3a1e"  # midfield separator
 
 _LOADING_FRAMES = ["●  ○  ○", "●  ●  ○", "●  ●  ●", "○  ●  ●", "○  ○  ●", "○  ○  ○"]
 
@@ -150,6 +153,8 @@ class CoachWindow:
         recommendation_id: str = "",
         on_feedback: Callable[[str, int, str | None, str | None, bool | None], None]
         | None = None,
+        opponent_units: list[dict] | None = None,
+        opponent_constructions: list[dict] | None = None,
     ) -> None:
         self._schedule(
             lambda: self._show_result_impl(
@@ -162,6 +167,8 @@ class CoachWindow:
                 constructions,
                 recommendation_id,
                 on_feedback,
+                opponent_units,
+                opponent_constructions,
             )
         )
 
@@ -356,6 +363,8 @@ class CoachWindow:
         recommendation_id: str = "",
         on_feedback: Callable[[str, int, str | None, str | None, bool | None], None]
         | None = None,
+        opponent_units: list[dict] | None = None,
+        opponent_constructions: list[dict] | None = None,
     ) -> None:
         self._clear()
 
@@ -432,22 +441,44 @@ class CoachWindow:
             anchor="w",
         ).pack(fill="x", side="top", padx=26, pady=(0, 6))
 
-        # ── board canvas — takes all remaining vertical space ─────────────────
+        # ── board canvas — scrollable when full board doesn't fit ────────────
         board_frame = tk.Frame(outer, bg=_BG)
         board_frame.pack(fill="both", expand=True, side="top", padx=22, pady=(0, 12))
 
+        full_board = bool(opponent_units or opponent_constructions)
+        board_h = int(_BOARD_W * 620 / 600) if full_board else _BOARD_H
         canvas_w = _BOARD_W + 2 * _MARGIN
-        canvas_h = _BOARD_H + 2 * _MARGIN + 30
+        canvas_h = board_h + 2 * _MARGIN + 30
+
         canvas = tk.Canvas(
             board_frame,
-            width=canvas_w,
-            height=canvas_h,
             bg=_PANEL,
             highlightthickness=1,
             highlightbackground=_BORDER,
+            scrollregion=(0, 0, canvas_w, canvas_h),
         )
-        canvas.pack(expand=True)
-        self._draw_board(canvas, current_units, placement, constructions, round_num)
+        if full_board:
+            scrollbar = tk.Scrollbar(
+                board_frame, orient="vertical", command=canvas.yview,
+            )
+            scrollbar.pack(side="right", fill="y")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            canvas.pack(side="left", fill="both", expand=True)
+            canvas.bind_all(
+                "<MouseWheel>",
+                lambda e: canvas.yview_scroll(-1 * (e.delta // 120), "units"),
+            )
+        else:
+            canvas.configure(width=canvas_w, height=canvas_h)
+            canvas.pack(expand=True)
+
+        self._draw_board(
+            canvas, current_units, placement, constructions, round_num,
+            board_h, opponent_units or [], opponent_constructions or [],
+        )
+
+        if full_board:
+            canvas.yview_moveto(1.0)
 
     def _build_feedback_bar(
         self,
@@ -578,10 +609,11 @@ class CoachWindow:
         return (-_Y_FRONT, -_Y_BACK) if avg_y >= 0 else (_Y_FRONT, _Y_BACK)
 
     @staticmethod
-    def _to_canvas(x: int, y: int, y_front: int, y_back: int) -> tuple[int, int]:
-        cx = _MARGIN + (x - _X_MIN) / (_X_MAX - _X_MIN) * _BOARD_W
-        # +30 accounts for the legend row above the board rectangle (zy0 = _MARGIN + 30)
-        cy = _MARGIN + 30 + abs(y_front - y) / abs(y_front - y_back) * _BOARD_H
+    def _to_canvas(
+        x: int, y: int, y_top: int, y_bot: int, board_w: int, board_h: int,
+    ) -> tuple[int, int]:
+        cx = _MARGIN + (x - _X_MIN) / (_X_MAX - _X_MIN) * board_w
+        cy = _MARGIN + 30 + abs(y_top - y) / abs(y_top - y_bot) * board_h
         return int(cx), int(cy)
 
     def _draw_board(
@@ -591,90 +623,147 @@ class CoachWindow:
         placement: list[dict],
         constructions: list[dict],
         round_num: int | str,
+        board_h: int = _BOARD_H,
+        opponent_units: list[dict] | None = None,
+        opponent_constructions: list[dict] | None = None,
     ) -> None:
         y_front, y_back = self._detect_zone(current_units)
+        full_board = bool(opponent_units or opponent_constructions)
+
+        if full_board:
+            y_top = -y_back  # opponent's back (top of canvas)
+            y_bot = y_back   # player's back (bottom of canvas)
+        else:
+            y_top = y_front
+            y_bot = y_back
+
+        bw = _BOARD_W
+        tc = lambda gx, gy: self._to_canvas(gx, gy, y_top, y_bot, bw, board_h)
 
         # Legend row at top of canvas
         legend_y = 16
-        self._dot_legend(canvas, 26, legend_y, _GRAY, _GRAY_DK, "действующие")
-        self._dot_legend(
-            canvas, 180, legend_y, _GREEN, _GREEN_DK, "новые / переставить"
-        )
-        self._rect_legend(canvas, 390, legend_y, _GOLD, _GOLD_DK, "постройки")
+        self._dot_legend(canvas, 26, legend_y, _GRAY, _GRAY_DK, "свои юниты")
+        self._rect_legend(canvas, 180, legend_y, _GOLD, _GOLD_DK, "постройки")
+        if full_board:
+            self._dot_legend(canvas, 330, legend_y, _RED_UNIT, _RED_UNIT_DK, "противник")
+        else:
+            self._dot_legend(
+                canvas, 330, legend_y, _GREEN, _GREEN_DK, "новые / переставить"
+            )
 
         # Board zone rectangle
         zx0, zy0 = _MARGIN, _MARGIN + 30
-        zx1 = _MARGIN + _BOARD_W
-        zy1 = _MARGIN + _BOARD_H + 30
+        zx1 = _MARGIN + bw
+        zy1 = _MARGIN + board_h + 30
         canvas.create_rectangle(
             zx0, zy0, zx1, zy1, fill=_SURFACE, outline=_BORDER, width=2
         )
 
         # Vertical grid lines
         for gx in range(-200, 201, 100):
-            px, _ = self._to_canvas(gx, y_front, y_front, y_back)
+            px, _ = tc(gx, y_top)
             canvas.create_line(px, zy0, px, zy1, fill=_GRID)
             canvas.create_text(px, zy1 + 11, text=str(gx), fill=_FG2, font=("Arial", 7))
 
-        # Horizontal grid lines — snap to nearest multiple of 50 inside the range
-        y_lo, y_hi = min(y_front, y_back), max(y_front, y_back)
+        # Horizontal grid lines
+        y_lo, y_hi = min(y_top, y_bot), max(y_top, y_bot)
         first_gy = math.ceil(y_lo / 50) * 50
         for gy in range(first_gy, y_hi + 1, 50):
-            _, py = self._to_canvas(0, gy, y_front, y_back)
+            _, py = tc(0, gy)
             canvas.create_line(zx0, py, zx1, py, fill=_GRID)
             canvas.create_text(zx0 - 14, py, text=str(gy), fill=_FG2, font=("Arial", 7))
 
-        canvas.create_text(
-            zx0 - 10, zy0, text="▲ front", fill=_FG2, font=("Arial", 7), anchor="e"
-        )
-        canvas.create_text(
-            zx0 - 10, zy1, text="▼ back", fill=_FG2, font=("Arial", 7), anchor="e"
-        )
+        # Midfield zone (y = -10 .. +10)
+        if full_board:
+            _, mid_top = tc(0, _Y_FRONT)
+            _, mid_bot = tc(0, -_Y_FRONT)
+            canvas.create_rectangle(
+                zx0, mid_top, zx1, mid_bot,
+                fill="#2a2518", outline="", stipple="",
+            )
+            canvas.create_line(
+                zx0, mid_top, zx1, mid_top, fill=_MIDFIELD, width=1,
+            )
+            canvas.create_line(
+                zx0, mid_bot, zx1, mid_bot, fill=_MIDFIELD, width=1,
+            )
+            mid_cy = (mid_top + mid_bot) // 2
+            canvas.create_text(
+                zx0 - 10, mid_cy, text="— mid —", fill=_MIDFIELD,
+                font=("Arial", 8, "bold"), anchor="e",
+            )
+        else:
+            canvas.create_text(
+                zx0 - 10, zy0, text="▲ front", fill=_FG2, font=("Arial", 7), anchor="e"
+            )
+            canvas.create_text(
+                zx0 - 10, zy1, text="▼ back", fill=_FG2, font=("Arial", 7), anchor="e"
+            )
 
         # Placement (green — new/move)
         for u in placement:
             if round_num == 1 or u.get("action") in ("new", "move"):
                 self._draw_unit(
-                    canvas,
-                    u["x"],
-                    u["y"],
-                    y_front,
-                    y_back,
-                    u["unit"],
-                    _GREEN,
-                    _GREEN_DK,
+                    canvas, u["x"], u["y"], y_top, y_bot, bw, board_h,
+                    u["unit"], _GREEN, _GREEN_DK,
                 )
 
-        # Current units (gray — existing positions)
+        # Current units (gray)
         for u in current_units:
             pos = u.get("position") or {}
             x, y = pos.get("x"), pos.get("y")
             if x is None or y is None:
                 continue
             self._draw_unit(
-                canvas, x, y, y_front, y_back, u.get("name", "?"), _GRAY, _GRAY_DK
+                canvas, x, y, y_top, y_bot, bw, board_h,
+                u.get("name", "?"), _GRAY, _GRAY_DK,
             )
 
-        # Buildings (gold squares)
+        # Player buildings (gold)
         for b in constructions or []:
             pos = b.get("position") or {}
             bx, by = pos.get("x"), pos.get("y")
             if bx is None or by is None:
                 continue
-            self._draw_building(canvas, bx, by, y_front, y_back, b.get("type", "?"))
+            self._draw_building(
+                canvas, bx, by, y_top, y_bot, bw, board_h, b.get("type", "?"),
+            )
+
+        # Opponent units (red)
+        for u in opponent_units or []:
+            pos = u.get("position") or {}
+            x, y = pos.get("x"), pos.get("y")
+            if x is None or y is None:
+                continue
+            self._draw_unit(
+                canvas, x, y, y_top, y_bot, bw, board_h,
+                u.get("name", "?"), _RED_UNIT, _RED_UNIT_DK,
+            )
+
+        # Opponent buildings (gold, same as player)
+        for b in opponent_constructions or []:
+            pos = b.get("position") or {}
+            bx, by = pos.get("x"), pos.get("y")
+            if bx is None or by is None:
+                continue
+            self._draw_building(
+                canvas, bx, by, y_top, y_bot, bw, board_h, b.get("type", "?"),
+            )
 
     def _draw_unit(
         self,
         canvas: tk.Canvas,
         x: int,
         y: int,
-        y_front: int,
-        y_back: int,
+        y_top: int,
+        y_bot: int,
+        board_w: int,
+        board_h: int,
         label: str,
         fill: str,
         outline: str,
     ) -> None:
-        cx, cy = self._to_canvas(x, y, y_front, y_back)
+        cx, cy = self._to_canvas(x, y, y_top, y_bot, board_w, board_h)
         info = _UNIT_SIZES.get(label, {})
         sx, sy = info.get("size_x"), info.get("size_y")
         rx = max(3, int(sx * _GRID_SCALE * _SCALE)) if sx is not None else _RADIUS
@@ -694,11 +783,13 @@ class CoachWindow:
         canvas: tk.Canvas,
         x: int,
         y: int,
-        y_front: int,
-        y_back: int,
+        y_top: int,
+        y_bot: int,
+        board_w: int,
+        board_h: int,
         btype: str,
     ) -> None:
-        cx, cy = self._to_canvas(x, y, y_front, y_back)
+        cx, cy = self._to_canvas(x, y, y_top, y_bot, board_w, board_h)
         abbr = _BUILDING_ABBR.get(btype, btype[:2].upper())
         display_name = _SNAKE_TO_DISPLAY.get(btype, btype)
         info = _CONSTRUCTION_SIZES.get(display_name, {})

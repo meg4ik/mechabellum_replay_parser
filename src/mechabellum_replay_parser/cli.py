@@ -62,25 +62,38 @@ def show_units(args):
     units = pdata["units"]
     constructions = list(pdata["constructions"])
 
-    # Inject fixed utility towers (not stored in replay — engine-generated at known positions).
-    # Positions were measured by surrounding each tower with 4 Arclight units (size_x=4, size_y=4):
-    #   Command Tower: center (-140, ±170), half-size 16×16
-    #   Research Tower: center (+140, ±170), half-size 16×16
-    # Y sign matches the player's side (negative or positive Y).
+    # Detect which Y-side this player is on
     positioned_ys = [
         u["position"]["y"]
         for u in units
         if u.get("position") and u["position"].get("y") is not None
     ]
     y_sign = -1 if (not positioned_ys or sum(positioned_ys) / len(positioned_ys) < 0) else 1
+
+    # Inject fixed utility towers (not stored in replay)
     constructions += [
         {"type": "Command Tower",  "position": {"x": -140, "y": y_sign * 170}},
         {"type": "Research Tower", "position": {"x":  140, "y": y_sign * 170}},
     ]
 
+    # Gather opponent data
+    opponent_name = next((n for n in players if n != player_name), None)
+    opponent_units: list[dict] = []
+    opponent_constructions: list[dict] = []
+    if opponent_name:
+        odata = players[opponent_name]
+        opponent_units = odata["units"]
+        opponent_constructions = list(odata["constructions"])
+        opponent_constructions += [
+            {"type": "Command Tower",  "position": {"x": -140, "y": -y_sign * 170}},
+            {"type": "Research Tower", "position": {"x":  140, "y": -y_sign * 170}},
+        ]
+
     # Console summary
     print(f"v{data['metadata']['version']} | {data['metadata']['match_mode']} | round {target_round} | player: {player_name}")
     print(f"units: {len(units)}  constructions: {len(constructions)}")
+    if opponent_name:
+        print(f"opponent: {opponent_name} | units: {len(opponent_units)}  constructions: {len(opponent_constructions)}")
 
     # Y-coordinate stats across ALL rounds for this player (helps calibrate boundaries)
     all_ys = []
@@ -138,6 +151,8 @@ def show_units(args):
         current_units=units,
         placement=[],
         constructions=constructions,
+        opponent_units=opponent_units,
+        opponent_constructions=opponent_constructions,
     )
     window.mainloop()
 
