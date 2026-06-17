@@ -8,13 +8,16 @@ from tkinter import simpledialog
 _X_MIN, _X_MAX = -300, 300          # derived: arclight center ±290, size_x=10
 _Y_FRONT = -10                      # derived: arclight center -20, size_y=10
 _Y_BACK = -310                      # derived: arclight center -300, size_y=10
-_CANVAS_W = 600
-_CANVAS_H = 520
+_CANVAS_W = 840
+_CANVAS_H = 420
 _MARGIN = 50
 _RADIUS = 14
 
-_SCALE_X = _CANVAS_W / (_X_MAX - _X_MIN)
-_SCALE_Y = _CANVAS_H / abs(_Y_FRONT - _Y_BACK)
+_SCALE = _CANVAS_W / (_X_MAX - _X_MIN)  # 1.4 px per game-unit
+
+# unit_data.json / construction_data.json store sizes in game grid cells;
+# 1 grid cell = 2.5 coordinate units.
+_GRID_SCALE = 2.5
 
 _DATA_DIR = Path(__file__).parent / "data"
 
@@ -95,8 +98,8 @@ def _draw_unit(
     cx, cy = _to_canvas(x, y, y_front, y_back)
     info = _UNIT_SIZES.get(label, {})
     sx, sy = info.get("size_x"), info.get("size_y")
-    rx = max(6, int(sx * _SCALE_X)) if sx is not None else _RADIUS
-    ry = max(6, int(sy * _SCALE_Y)) if sy is not None else _RADIUS
+    rx = max(6, int(sx * _GRID_SCALE * _SCALE)) if sx is not None else _RADIUS
+    ry = max(6, int(sy * _GRID_SCALE * _SCALE)) if sy is not None else _RADIUS
     canvas.create_rectangle(cx - rx, cy - ry, cx + rx, cy + ry, fill=color, outline=outline, width=2)
     canvas.create_text(cx, cy, text=label[:4], fill="white", font=("Arial", 7, "bold"))
     canvas.create_text(cx, cy + ry + 7, text=label[:10], fill=outline, font=("Arial", 7))
@@ -115,8 +118,8 @@ def _draw_building(
     abbr = _BUILDING_ABBR.get(display_name, display_name[:2].upper())
     info = _CONSTRUCTION_SIZES.get(display_name, {})
     sx, sy = info.get("size_x"), info.get("size_y")
-    rx = max(6, int(sx * _SCALE_X)) if sx is not None else _BSIZE
-    ry = max(6, int(sy * _SCALE_Y)) if sy is not None else _BSIZE
+    rx = max(6, int(sx * _GRID_SCALE * _SCALE)) if sx is not None else _BSIZE
+    ry = max(6, int(sy * _GRID_SCALE * _SCALE)) if sy is not None else _BSIZE
     canvas.create_rectangle(cx - rx, cy - ry, cx + rx, cy + ry, fill="#d4a017", outline="#8b6914", width=2)
     canvas.create_text(cx, cy, text=abbr, fill="white", font=("Arial", 7, "bold"))
     canvas.create_text(cx, cy + ry + 7, text=display_name[:12], fill="#8b6914", font=("Arial", 7))
@@ -184,16 +187,15 @@ def show_board(
                 canvas, u["x"], u["y"], y_front, y_back, u["unit"], "#22aa55", "#116633"
             )
 
-    # Current units from replay (dark gray) — skipped on round 1 since all are freely repositioned
-    if round_num != 1:
-        for u in current_units:
-            pos = u.get("position") or {}
-            x, y = pos.get("x"), pos.get("y")
-            if x is None or y is None:
-                continue
-            _draw_unit(
-                canvas, x, y, y_front, y_back, u.get("name", "?"), "#555555", "#333333"
-            )
+    # Current units from replay (dark gray)
+    for u in current_units:
+        pos = u.get("position") or {}
+        x, y = pos.get("x"), pos.get("y")
+        if x is None or y is None:
+            continue
+        _draw_unit(
+            canvas, x, y, y_front, y_back, u.get("name", "?"), "#555555", "#333333"
+        )
 
     # Buildings (gold squares)
     for b in constructions or []:

@@ -227,7 +227,9 @@ UNIT_LOOKUP = {
     29: "abyss",
     30: "void eye",
     31: "vortex",
+    2001: "death knell",
     2002: "mountain",
+    4001: "experimental death knell",
 }
 
 UNIT_DATA = _load_data_file("unit_data.json")
@@ -457,8 +459,6 @@ TECH_LOOKUP = {
     180329: "Photon coating",
 }
 
-# 2001 death knell
-# 2002 mountain
 
 
 @dataclass
@@ -1083,8 +1083,6 @@ def parse_battle_record(file_path: Path) -> BattleRecord:
                 for tech_element in data_element.find("techs").findall("tech")
             ]
             for data_element in unit_datas_element.findall("unitData")
-            if data_element.find("id").text
-            != "2001"  # For now a special case for death knell to just keep it out.
         }
 
         # Parse round records

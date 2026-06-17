@@ -36,15 +36,15 @@
     },
     "Command Tower": {
         "name": "Command Tower",
-        "size_x": 10,
-        "size_y": 10,
+        "size_x": 4,
+        "size_y": 4,
         "position_x": -140,
         "position_y": -170
     },
     "Research Tower": {
         "name": "Research Tower",
-        "size_x": 10,
-        "size_y": 10,
+        "size_x": 4,
+        "size_y": 4,
         "position_x": 140,
         "position_y": -170
     }

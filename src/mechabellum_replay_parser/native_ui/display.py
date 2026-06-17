@@ -24,13 +24,16 @@ _X_MIN, _X_MAX = -300, 300          # derived: arclight center ±290, size_x=10
 _Y_FRONT = -10                      # derived: arclight center -20, size_y=10
 _Y_BACK = -310                      # derived: arclight center -300, size_y=10
 _BOARD_W = 840
-_BOARD_H = 460
+_BOARD_H = 420
 _MARGIN = 50
 _RADIUS = 17
 
-# Canvas pixels per 1 game-coordinate unit (used to scale size_x / size_y)
-_SCALE_X = _BOARD_W / (_X_MAX - _X_MIN)          # ≈ 1.43 px/unit  (x span = 588)
-_SCALE_Y = _BOARD_H / abs(_Y_FRONT - _Y_BACK)    # ≈ 1.60 px/unit  (y span = 288)
+# Uniform scale: game board is 600×300 (2:1), canvas is 840×420 (2:1)
+_SCALE = _BOARD_W / (_X_MAX - _X_MIN)  # 1.4 px per game-unit
+
+# unit_data.json / construction_data.json store sizes in game grid cells;
+# 1 grid cell = 2.5 coordinate units.
+_GRID_SCALE = 2.5
 
 # ── Size data ──────────────────────────────────────────────────────────────────
 _DATA_DIR = Path(__file__).parent.parent / "data"
@@ -643,15 +646,14 @@ class CoachWindow:
                 )
 
         # Current units (gray — existing positions)
-        if round_num != 1:
-            for u in current_units:
-                pos = u.get("position") or {}
-                x, y = pos.get("x"), pos.get("y")
-                if x is None or y is None:
-                    continue
-                self._draw_unit(
-                    canvas, x, y, y_front, y_back, u.get("name", "?"), _GRAY, _GRAY_DK
-                )
+        for u in current_units:
+            pos = u.get("position") or {}
+            x, y = pos.get("x"), pos.get("y")
+            if x is None or y is None:
+                continue
+            self._draw_unit(
+                canvas, x, y, y_front, y_back, u.get("name", "?"), _GRAY, _GRAY_DK
+            )
 
         # Buildings (gold squares)
         for b in constructions or []:
@@ -675,8 +677,8 @@ class CoachWindow:
         cx, cy = self._to_canvas(x, y, y_front, y_back)
         info = _UNIT_SIZES.get(label, {})
         sx, sy = info.get("size_x"), info.get("size_y")
-        rx = max(3, int(sx * _SCALE_X)) if sx is not None else _RADIUS
-        ry = max(3, int(sy * _SCALE_Y)) if sy is not None else _RADIUS
+        rx = max(3, int(sx * _GRID_SCALE * _SCALE)) if sx is not None else _RADIUS
+        ry = max(3, int(sy * _GRID_SCALE * _SCALE)) if sy is not None else _RADIUS
         canvas.create_rectangle(
             cx - rx, cy - ry, cx + rx, cy + ry, fill=fill, outline=outline, width=2
         )
@@ -701,8 +703,8 @@ class CoachWindow:
         display_name = _SNAKE_TO_DISPLAY.get(btype, btype)
         info = _CONSTRUCTION_SIZES.get(display_name, {})
         sx, sy = info.get("size_x"), info.get("size_y")
-        rx = max(8, int(sx * _SCALE_X)) if sx is not None else 13
-        ry = max(8, int(sy * _SCALE_Y)) if sy is not None else 13
+        rx = max(4, int(sx * _GRID_SCALE * _SCALE)) if sx is not None else 13
+        ry = max(4, int(sy * _GRID_SCALE * _SCALE)) if sy is not None else 13
         canvas.create_rectangle(
             cx - rx, cy - ry, cx + rx, cy + ry, fill=_GOLD, outline=_GOLD_DK, width=2
         )

@@ -146,8 +146,8 @@
         "tags": ["anti_air", "anti_chaff", "ground"],
         "answers": ["air", "light_chaff"],
         "weak_against": ["heavy_armor", "artillery"],
-        "size_x": 10,
-        "size_y": 10
+        "size_x": 4,
+        "size_y": 4
     },
     "phoenix": {
         "ident": 16,
@@ -312,6 +312,26 @@
     "mountain": {
         "ident": 2002,
         "name": "mountain",
+        "value": null,
+        "tags": [],
+        "answers": [],
+        "weak_against": [],
+        "size_x": 14,
+        "size_y": 14
+    },
+    "death knell": {
+        "ident": 2001,
+        "name": "death knell",
+        "value": null,
+        "tags": [],
+        "answers": [],
+        "weak_against": [],
+        "size_x": 14,
+        "size_y": 14
+    },
+    "experimental death knell": {
+        "ident": 4001,
+        "name": "experimental death knell",
         "value": null,
         "tags": [],
         "answers": [],
