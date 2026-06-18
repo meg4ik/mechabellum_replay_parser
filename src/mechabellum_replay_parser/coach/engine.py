@@ -202,6 +202,7 @@ class CoachEngine:
         frame = CoordinateFrame.from_units_and_constructions(
             state.my_state.units, state.my_state.constructions
         )
+        opp_frame = frame.opponent_frame() if state.round >= 2 else None
         _write_debug("latest_coordinate_frame.json", frame.model_dump())
 
         planner_call_id = uuid.uuid4().hex[:8]
@@ -310,7 +311,8 @@ class CoachEngine:
         resolved_placements = []
         if selected_plan and selected_plan.placement_intents:
             resolved_placements = self._placement_resolver.resolve(
-                selected_plan.placement_intents, frame, state.my_state.units
+                selected_plan.placement_intents, frame, state.my_state.units,
+                opponent_frame=opp_frame,
             )
         timings["placement_resolver_ms"] = _ms(_t)
         _log.info(

@@ -42,6 +42,14 @@ class CoordinateFrame(BaseModel):
         side = PlayerSide.NEGATIVE_Y if avg_y <= 0 else PlayerSide.POSITIVE_Y
         return cls.for_side(side)
 
+    def opponent_frame(self) -> CoordinateFrame:
+        opp_side = (
+            PlayerSide.POSITIVE_Y
+            if self.side == PlayerSide.NEGATIVE_Y
+            else PlayerSide.NEGATIVE_Y
+        )
+        return CoordinateFrame.for_side(opp_side)
+
     def clamp(self, position: Position) -> Position:
         y_lo = min(self.front_y, self.back_y)
         y_hi = max(self.front_y, self.back_y)

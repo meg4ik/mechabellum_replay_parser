@@ -27,6 +27,12 @@ _STRATEGIC_POSITIONS = [
     {"label": "anti_flank", "x": -200, "y": -200},
 ]
 
+_OPPONENT_FLANK_POSITIONS = [
+    {"label": "opp_left_flank", "x": -220, "y": 60, "zone": "opponent"},
+    {"label": "opp_right_flank", "x": 220, "y": 60, "zone": "opponent"},
+    {"label": "opp_center_front", "x": 0, "y": 60, "zone": "opponent"},
+]
+
 _FAST_FLANKER_UNITS = frozenset({"mustang", "sabertooth", "phoenix", "wasp"})
 
 
@@ -78,6 +84,10 @@ class LegalActionGenerator:
                 )
 
         # ── Keep / Move existing units ────────────────────────────────────────
+        move_positions = list(_STRATEGIC_POSITIONS)
+        if state.round >= 2:
+            move_positions += _OPPONENT_FLANK_POSITIONS
+
         for unit in state.my_state.units:
             idx = unit.index if unit.index is not None else 0
             actions.append(
@@ -96,7 +106,7 @@ class LegalActionGenerator:
                     cost=0,
                     unit=unit.name,
                     unit_index=unit.index,
-                    allowed_positions=_STRATEGIC_POSITIONS,
+                    allowed_positions=move_positions,
                 )
             )
 

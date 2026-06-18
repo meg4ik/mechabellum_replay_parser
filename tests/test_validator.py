@@ -247,6 +247,44 @@ def test_unknown_action_is_warning(validator):
     assert "unknown_action" in codes
 
 
+# ── Opponent zone (flank) validation ─────────────────────────────────────────
+
+
+def _opp_entry(unit: str, action: str = "new", x: int = 0, y: int = 100) -> dict:
+    return {"unit": unit, "x": x, "y": y, "action": action, "zone": "opponent"}
+
+
+def test_opponent_zone_valid_round2(validator):
+    state = _make_state(unlocked=["crawler"], buys_remaining=4)
+    assert state.round == 2
+    result = validator.validate_placement([_opp_entry("crawler", "new", y=60)], state)
+    bound_codes = [i.code for i in result.issues if "out_of_bounds" in i.code or "opponent_zone" in i.code]
+    assert bound_codes == []
+
+
+def test_opponent_zone_rejected_round1(validator):
+    state = _make_state(unlocked=["crawler"], buys_remaining=4)
+    state = state.model_copy(update={"round": 1})
+    result = validator.validate_placement([_opp_entry("crawler", "new", y=60)], state)
+    codes = [i.code for i in result.issues]
+    assert "opponent_zone_round1" in codes
+    assert result.is_valid is False
+
+
+def test_opponent_zone_y_out_of_bounds(validator):
+    state = _make_state(unlocked=["crawler"], buys_remaining=4)
+    result = validator.validate_placement([_opp_entry("crawler", "new", y=999)], state)
+    codes = [i.code for i in result.issues]
+    assert "out_of_bounds_y" in codes
+
+
+def test_own_zone_still_works_round2(validator):
+    state = _make_state(units=[UnitView(name="crawler")])
+    result = validator.validate_placement([_entry("crawler", "keep", y=-100)], state)
+    bound_codes = [i.code for i in result.issues if "out_of_bounds" in i.code]
+    assert bound_codes == []
+
+
 # ── Integration with parsed_replay fixture ────────────────────────────────────
 
 

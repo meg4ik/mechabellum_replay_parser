@@ -76,24 +76,46 @@ def show_units(args):
         {"type": "Research Tower", "position": {"x":  140, "y": y_sign * 170}},
     ]
 
-    # Gather opponent data
-    opponent_name = next((n for n in players if n != player_name), None)
+    # Split players into teammates / opponents using teams data
+    teams = data.get("teams", [])
+    my_team = next((t for t in teams if player_name in t), [player_name])
+    enemy_team = next((t for t in teams if player_name not in t), [])
+    teammate_names = [n for n in my_team if n != player_name]
+
+    # Gather all opponents
     opponent_units: list[dict] = []
     opponent_constructions: list[dict] = []
-    if opponent_name:
-        odata = players[opponent_name]
-        opponent_units = odata["units"]
-        opponent_constructions = list(odata["constructions"])
+    opponent_labels: list[str] = []
+    for oname in enemy_team:
+        if oname not in players:
+            continue
+        odata = players[oname]
+        opponent_units += odata["units"]
+        opponent_constructions += list(odata["constructions"])
+        opponent_labels.append(oname)
+    if enemy_team:
         opponent_constructions += [
             {"type": "Command Tower",  "position": {"x": -140, "y": -y_sign * 170}},
             {"type": "Research Tower", "position": {"x":  140, "y": -y_sign * 170}},
         ]
 
+    # Gather teammate (2v2)
+    teammate_units: list[dict] = []
+    teammate_constructions: list[dict] = []
+    for tname in teammate_names:
+        if tname not in players:
+            continue
+        tdata = players[tname]
+        teammate_units += tdata["units"]
+        teammate_constructions += list(tdata["constructions"])
+
     # Console summary
     print(f"v{data['metadata']['version']} | {data['metadata']['match_mode']} | round {target_round} | player: {player_name}")
     print(f"units: {len(units)}  constructions: {len(constructions)}")
-    if opponent_name:
-        print(f"opponent: {opponent_name} | units: {len(opponent_units)}  constructions: {len(opponent_constructions)}")
+    if teammate_names:
+        print(f"teammate: {', '.join(teammate_names)} | units: {len(teammate_units)}")
+    if opponent_labels:
+        print(f"opponent: {', '.join(opponent_labels)} | units: {len(opponent_units)}  constructions: {len(opponent_constructions)}")
 
     # Y-coordinate stats across ALL rounds for this player (helps calibrate boundaries)
     all_ys = []
@@ -153,6 +175,8 @@ def show_units(args):
         constructions=constructions,
         opponent_units=opponent_units,
         opponent_constructions=opponent_constructions,
+        teammate_units=teammate_units,
+        teammate_constructions=teammate_constructions,
     )
     window.mainloop()
 

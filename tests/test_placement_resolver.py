@@ -13,6 +13,7 @@ from mechabellum_replay_parser.coach.schemas import (
     Position,
     ResolvedPlacement,
     UnitView,
+    Zone,
 )
 
 
@@ -160,3 +161,60 @@ def test_resolved_placement_passes_validator_bounds():
     result = PlanValidator().validate_placement(placement, state)
     bound_issues = [i for i in result.issues if "out_of_bounds" in i.code]
     assert bound_issues == []
+
+
+# ── Opponent zone routing ────────────────────────────────────────────────────
+
+
+def test_opponent_zone_intent_resolves_to_positive_y(resolver, frame):
+    opp_frame = frame.opponent_frame()
+    intent = PlacementIntent(
+        unit="wasp", action=PlacementAction.NEW,
+        lane=Lane.LEFT, depth=Depth.FRONT, zone=Zone.OPPONENT,
+    )
+    results = resolver.resolve([intent], frame, opponent_frame=opp_frame)
+    r = results[0]
+    assert r.y > 0
+    assert r.zone == Zone.OPPONENT
+    assert opp_frame.is_in_bounds(Position(x=r.x, y=r.y))
+
+
+def test_own_zone_intent_stays_negative_y(resolver, frame):
+    opp_frame = frame.opponent_frame()
+    intent = PlacementIntent(
+        unit="crawler", action=PlacementAction.NEW,
+        lane=Lane.CENTER, depth=Depth.BACK, zone=Zone.OWN,
+    )
+    results = resolver.resolve([intent], frame, opponent_frame=opp_frame)
+    r = results[0]
+    assert r.y < 0
+    assert r.zone == Zone.OWN
+
+
+def test_mixed_zones_resolve_correctly(resolver, frame):
+    opp_frame = frame.opponent_frame()
+    intents = [
+        PlacementIntent(
+            unit="crawler", action=PlacementAction.NEW,
+            lane=Lane.CENTER, depth=Depth.BACK, zone=Zone.OWN,
+        ),
+        PlacementIntent(
+            unit="wasp", action=PlacementAction.NEW,
+            lane=Lane.LEFT, depth=Depth.FRONT, zone=Zone.OPPONENT,
+        ),
+    ]
+    results = resolver.resolve(intents, frame, opponent_frame=opp_frame)
+    assert results[0].y < 0
+    assert results[0].zone == Zone.OWN
+    assert results[1].y > 0
+    assert results[1].zone == Zone.OPPONENT
+
+
+def test_opponent_zone_without_frame_falls_back(resolver, frame):
+    intent = PlacementIntent(
+        unit="wasp", action=PlacementAction.NEW,
+        lane=Lane.LEFT, depth=Depth.FRONT, zone=Zone.OPPONENT,
+    )
+    results = resolver.resolve([intent], frame, opponent_frame=None)
+    r = results[0]
+    assert r.y < 0  # falls back to own frame

@@ -40,6 +40,10 @@ class PlanValidator:
         y_lo = min(frame.front_y, frame.back_y)
         y_hi = max(frame.front_y, frame.back_y)
 
+        opp_frame = frame.opponent_frame()
+        opp_y_lo = min(opp_frame.front_y, opp_frame.back_y)
+        opp_y_hi = max(opp_frame.front_y, opp_frame.back_y)
+
         buys_remaining = shop.buys_remaining if shop else None
         supply = state.my_supply
         new_count = sum(1 for p in placement if p.get("action") == "new")
@@ -87,6 +91,7 @@ class PlanValidator:
             y = entry.get("y", 0)
 
             # ── Coordinate bounds ─────────────────────────────────────────────
+            zone = entry.get("zone", "own")
             if not frame.x_min <= x <= frame.x_max:
                 issues.append(
                     ValidationIssue(
@@ -98,7 +103,30 @@ class PlanValidator:
                         ),
                     )
                 )
-            if not y_lo <= y <= y_hi:
+            if zone == "opponent":
+                if state.round < 2:
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="opponent_zone_round1",
+                            message=(
+                                f"{unit_name}: opponent zone placement "
+                                f"not available in round {state.round}."
+                            ),
+                        )
+                    )
+                elif not opp_y_lo <= y <= opp_y_hi:
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="out_of_bounds_y",
+                            message=(
+                                f"{unit_name}: y={y} outside opponent zone "
+                                f"[{opp_y_lo}, {opp_y_hi}]."
+                            ),
+                        )
+                    )
+            elif not y_lo <= y <= y_hi:
                 issues.append(
                     ValidationIssue(
                         severity="error",

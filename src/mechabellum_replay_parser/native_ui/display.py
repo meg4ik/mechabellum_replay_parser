@@ -74,6 +74,8 @@ _GOLD_DK = "#b29100"
 _RED = "#ef5350"  # error
 _RED_UNIT = "#e57373"  # opponent units
 _RED_UNIT_DK = "#b71c1c"
+_BLUE = "#64b5f6"  # teammate units
+_BLUE_DK = "#1565c0"
 _BORDER = "#2e3a59"
 _GRID = "#1e2d4a"
 _MIDFIELD = "#4a3a1e"  # midfield separator
@@ -155,6 +157,8 @@ class CoachWindow:
         | None = None,
         opponent_units: list[dict] | None = None,
         opponent_constructions: list[dict] | None = None,
+        teammate_units: list[dict] | None = None,
+        teammate_constructions: list[dict] | None = None,
     ) -> None:
         self._schedule(
             lambda: self._show_result_impl(
@@ -169,6 +173,8 @@ class CoachWindow:
                 on_feedback,
                 opponent_units,
                 opponent_constructions,
+                teammate_units,
+                teammate_constructions,
             )
         )
 
@@ -365,6 +371,8 @@ class CoachWindow:
         | None = None,
         opponent_units: list[dict] | None = None,
         opponent_constructions: list[dict] | None = None,
+        teammate_units: list[dict] | None = None,
+        teammate_constructions: list[dict] | None = None,
     ) -> None:
         self._clear()
 
@@ -445,7 +453,11 @@ class CoachWindow:
         board_frame = tk.Frame(outer, bg=_BG)
         board_frame.pack(fill="both", expand=True, side="top", padx=22, pady=(0, 12))
 
-        full_board = bool(opponent_units or opponent_constructions)
+        has_others = bool(
+            opponent_units or opponent_constructions
+            or teammate_units or teammate_constructions
+        )
+        full_board = has_others
         board_h = int(_BOARD_W * 620 / 600) if full_board else _BOARD_H
         canvas_w = _BOARD_W + 2 * _MARGIN
         canvas_h = board_h + 2 * _MARGIN + 30
@@ -475,6 +487,7 @@ class CoachWindow:
         self._draw_board(
             canvas, current_units, placement, constructions, round_num,
             board_h, opponent_units or [], opponent_constructions or [],
+            teammate_units or [], teammate_constructions or [],
         )
 
         if full_board:
@@ -626,9 +639,14 @@ class CoachWindow:
         board_h: int = _BOARD_H,
         opponent_units: list[dict] | None = None,
         opponent_constructions: list[dict] | None = None,
+        teammate_units: list[dict] | None = None,
+        teammate_constructions: list[dict] | None = None,
     ) -> None:
         y_front, y_back = self._detect_zone(current_units)
-        full_board = bool(opponent_units or opponent_constructions)
+        full_board = bool(
+            opponent_units or opponent_constructions
+            or teammate_units or teammate_constructions
+        )
 
         if full_board:
             y_top = -y_back  # opponent's back (top of canvas)
@@ -646,6 +664,8 @@ class CoachWindow:
         self._rect_legend(canvas, 180, legend_y, _GOLD, _GOLD_DK, "постройки")
         if full_board:
             self._dot_legend(canvas, 330, legend_y, _RED_UNIT, _RED_UNIT_DK, "противник")
+            if teammate_units or teammate_constructions:
+                self._dot_legend(canvas, 500, legend_y, _BLUE, _BLUE_DK, "союзник")
         else:
             self._dot_legend(
                 canvas, 330, legend_y, _GREEN, _GREEN_DK, "новые / переставить"
@@ -742,6 +762,27 @@ class CoachWindow:
 
         # Opponent buildings (gold, same as player)
         for b in opponent_constructions or []:
+            pos = b.get("position") or {}
+            bx, by = pos.get("x"), pos.get("y")
+            if bx is None or by is None:
+                continue
+            self._draw_building(
+                canvas, bx, by, y_top, y_bot, bw, board_h, b.get("type", "?"),
+            )
+
+        # Teammate units (blue)
+        for u in teammate_units or []:
+            pos = u.get("position") or {}
+            x, y = pos.get("x"), pos.get("y")
+            if x is None or y is None:
+                continue
+            self._draw_unit(
+                canvas, x, y, y_top, y_bot, bw, board_h,
+                u.get("name", "?"), _BLUE, _BLUE_DK,
+            )
+
+        # Teammate buildings (gold, same as others)
+        for b in teammate_constructions or []:
             pos = b.get("position") or {}
             bx, by = pos.get("x"), pos.get("y")
             if bx is None or by is None:

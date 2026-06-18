@@ -213,3 +213,37 @@ def test_position_to_label_roundtrip():
             assert label == f"{lane.value}_{depth.value}", (
                 f"{lane} {depth}: expected {lane.value}_{depth.value}, got {label}"
             )
+
+
+# ── opponent_frame ───────────────────────────────────────────────────────────
+
+
+def test_opponent_frame_of_negative_y_is_positive_y():
+    frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
+    opp = frame.opponent_frame()
+    assert opp.side == PlayerSide.POSITIVE_Y
+    assert opp.front_y == 10
+    assert opp.back_y == 310
+
+
+def test_opponent_frame_of_positive_y_is_negative_y():
+    frame = CoordinateFrame.for_side(PlayerSide.POSITIVE_Y)
+    opp = frame.opponent_frame()
+    assert opp.side == PlayerSide.NEGATIVE_Y
+    assert opp.front_y == -10
+    assert opp.back_y == -310
+
+
+def test_opponent_frame_roundtrip():
+    frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
+    assert frame.opponent_frame().opponent_frame().side == frame.side
+
+
+def test_opponent_frame_lane_depth_in_bounds():
+    frame = CoordinateFrame.for_side(PlayerSide.NEGATIVE_Y)
+    opp = frame.opponent_frame()
+    for lane in Lane:
+        for depth in Depth:
+            pos = opp.lane_depth_to_xy(lane, depth)
+            assert opp.is_in_bounds(pos)
+            assert not frame.is_in_bounds(pos)

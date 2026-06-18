@@ -292,7 +292,7 @@
     "void eye": {
         "ident": 30,
         "name": "void eye",
-        "value": null,
+        "value": 100,
         "tags": [],
         "answers": [],
         "weak_against": [],
@@ -302,7 +302,7 @@
     "vortex": {
         "ident": 31,
         "name": "vortex",
-        "value": null,
+        "value": 100,
         "tags": [],
         "answers": [],
         "weak_against": [],
@@ -312,7 +312,7 @@
     "mountain": {
         "ident": 2002,
         "name": "mountain",
-        "value": null,
+        "value": 800,
         "tags": [],
         "answers": [],
         "weak_against": [],

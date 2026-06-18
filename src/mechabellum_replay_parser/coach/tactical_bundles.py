@@ -18,6 +18,7 @@ from .schemas import (
     TacticalBundle,
     TacticalFeatures,
     TacticalTheme,
+    Zone,
 )
 
 _SINGLE_TARGET_UNITS = frozenset(
@@ -63,12 +64,14 @@ def _intent(
     depth: Depth,
     anchor: PlacementAnchor = PlacementAnchor.NONE,
     purpose: str = "",
+    zone: Zone = Zone.OWN,
 ) -> PlacementIntent:
     return PlacementIntent(
         unit=_unit_from_id(action_id),
         action=PlacementAction.NEW,
         lane=lane,
         depth=depth,
+        zone=zone,
         anchor=anchor,
         purpose=purpose or None,
     )
@@ -90,6 +93,7 @@ class TacticalBundleGenerator:
         unlocks = _unlock_map(legal_actions)
         move_ids = [a.id for a in legal_actions if a.type == "move_unit"]
         keep_ids = [a.id for a in legal_actions if a.type == "keep_unit"]
+        flank_zone = Zone.OPPONENT if state.round >= 2 else Zone.OWN
 
         # ── ANTI_AIR_RESPONSE ─────────────────────────────────────────────────
         if "enemy_air_pressure" in threat_map:
@@ -181,6 +185,7 @@ class TacticalBundleGenerator:
                                 Depth.FRONT,
                                 PlacementAnchor.FLANK_PRESSURE,
                                 "flank to pressure enemy backline",
+                                zone=flank_zone,
                             ),
                             _intent(
                                 required[0],
@@ -188,6 +193,7 @@ class TacticalBundleGenerator:
                                 Depth.FRONT,
                                 PlacementAnchor.FLANK_PRESSURE,
                                 "secondary flank pressure",
+                                zone=flank_zone,
                             ),
                         ],
                         why_considered=(
@@ -283,6 +289,7 @@ class TacticalBundleGenerator:
                                 Depth.FRONT,
                                 PlacementAnchor.FLANK_PRESSURE,
                                 "close game before enemy scales",
+                                zone=flank_zone,
                             )
                         ],
                         why_considered=(

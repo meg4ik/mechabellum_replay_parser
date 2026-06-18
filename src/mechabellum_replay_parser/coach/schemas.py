@@ -33,6 +33,11 @@ class Depth(str, Enum):
 # ── Placement models ──────────────────────────────────────────────────────────
 
 
+class Zone(str, Enum):
+    OWN = "own"
+    OPPONENT = "opponent"
+
+
 class PlacementAction(str, Enum):
     KEEP = "keep"
     MOVE = "move"
@@ -53,6 +58,7 @@ class PlacementIntent(BaseModel):
     action: PlacementAction
     lane: Lane
     depth: Depth
+    zone: Zone = Zone.OWN
     anchor: PlacementAnchor = PlacementAnchor.NONE
     purpose: str | None = None
 
@@ -64,6 +70,7 @@ class ResolvedPlacement(BaseModel):
     y: int
     lane: Lane
     depth: Depth
+    zone: Zone = Zone.OWN
     purpose: str | None = None
 
 
