@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+from ..coach.coordinates import CoordinateFrame
 from ..coach.feature_extractor import FeatureExtractor
+from ..coach.influence_analyzer import InfluenceAnalyzer
+from ..coach.influence_map import InfluenceMapBuilder
 from ..coach.legal_actions import LegalActionGenerator
 from ..coach.plan_scorer import PlanScorer
 from ..coach.schemas import (
@@ -11,6 +14,7 @@ from ..coach.schemas import (
     TacticalBundle,
 )
 from ..coach.tactical_bundles import TacticalBundleGenerator
+from ..coach.unit_stats import UnitStatsResolver
 from ..coach.validator import PlanValidator
 from .cases import EvalCase
 from .rubric import EvalRubric, RubricScores
@@ -25,6 +29,7 @@ class EvalResult(BaseModel):
     threat_keys_found: list[str]
     bundle_themes_found: list[str]
     best_plan_score: float | None = None
+    influence_findings_found: list[str] = []
 
 
 class EvalRunner:
@@ -32,19 +37,35 @@ class EvalRunner:
         self._feature_extractor = FeatureExtractor()
         self._legal_gen = LegalActionGenerator()
         self._bundle_gen = TacticalBundleGenerator()
+        self._unit_stats = UnitStatsResolver()
+        self._influence_builder = InfluenceMapBuilder(self._unit_stats)
+        self._influence_analyzer = InfluenceAnalyzer()
         self._plan_scorer = PlanScorer()
         self._validator = PlanValidator()
         self._rubric = EvalRubric()
 
     def run_case(self, case: EvalCase) -> EvalResult:
-        # Re-run deterministic pipeline (no LLM required)
         features = self._feature_extractor.extract(case.state_view)
         legal_actions, action_groups = self._legal_gen.generate(
             case.state_view, features
         )
         bundles = self._bundle_gen.generate(case.state_view, features, legal_actions)
 
-        # Build one synthetic plan per bundle for scoring
+        frame = CoordinateFrame.from_units_and_constructions(
+            case.state_view.my_state.units,
+            case.state_view.my_state.constructions,
+        )
+        influence_summary = None
+        try:
+            influence_result = self._influence_builder.build(case.state_view, frame)
+            influence_summary = self._influence_analyzer.analyze(
+                case.state_view,
+                features,
+                influence_result,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+
         plans = _build_plans(bundles, legal_actions)
         validated = [
             (
@@ -56,11 +77,19 @@ class EvalRunner:
             for plan in plans
         ]
         score_breakdowns = self._plan_scorer.score_all(
-            validated, features, case.state_view
+            validated,
+            features,
+            case.state_view,
+            influence=influence_summary,
         )
 
         rubric_scores = self._rubric.score_case(
-            case, features, bundles, score_breakdowns, validated
+            case,
+            features,
+            bundles,
+            score_breakdowns,
+            validated,
+            influence=influence_summary,
         )
 
         passed = (
@@ -72,6 +101,11 @@ class EvalRunner:
             if score_breakdowns
             else None
         )
+        influence_keys = (
+            [f.key for f in influence_summary.tactical_findings]
+            if influence_summary
+            else []
+        )
         return EvalResult(
             case_name=case.name,
             scores=rubric_scores,
@@ -79,6 +113,7 @@ class EvalRunner:
             threat_keys_found=[t.key for t in features.threats],
             bundle_themes_found=[b.theme for b in bundles],
             best_plan_score=best.total_score if best else None,
+            influence_findings_found=influence_keys,
         )
 
     def run_all(self, cases: list[EvalCase]) -> list[EvalResult]:

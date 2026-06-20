@@ -460,7 +460,6 @@ TECH_LOOKUP = {
 }
 
 
-
 @dataclass
 class Point:
     x: int

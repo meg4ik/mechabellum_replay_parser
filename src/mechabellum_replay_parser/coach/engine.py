@@ -15,6 +15,9 @@ from ..llm.client import LLMProvider
 from ..llm.providers.openai_provider import OpenAIProvider
 from .coordinates import CoordinateFrame
 from .feature_extractor import FeatureExtractor
+from .influence_analyzer import InfluenceAnalyzer
+from .influence_map import InfluenceMapBuilder
+from .influence_schemas import InfluenceAnalysisSummary
 from .judge import Judge, _make_fallback_judge_output
 from .legal_actions import LegalActionGenerator
 from .tactical_bundles import TacticalBundleGenerator
@@ -22,6 +25,7 @@ from .plan_scorer import PlanScorer
 from .placement_resolver import PlacementResolver
 from .planner import Planner, _make_fallback_plan
 from .recommendation_builder import RecommendationBuilder
+from .unit_stats import UnitStatsResolver
 from .schemas import (
     CandidatePlan,
     CoachRecommendation,
@@ -54,6 +58,8 @@ class CoachAnalysis:
     model_name: str | None = None
     pipeline_run_id: str | None = None
     stage_timings: dict[str, int] = field(default_factory=dict)
+    influence_summary: InfluenceAnalysisSummary | None = None
+    score_breakdowns: list = field(default_factory=list)
 
 
 def _load_prompt(name: str) -> str:
@@ -108,6 +114,9 @@ class CoachEngine:
         self._feature_extractor = FeatureExtractor()
         self._legal_action_generator = LegalActionGenerator()
         self._bundle_generator = TacticalBundleGenerator()
+        self._unit_stats_resolver = UnitStatsResolver()
+        self._influence_map_builder = InfluenceMapBuilder(self._unit_stats_resolver)
+        self._influence_analyzer = InfluenceAnalyzer()
         self._plan_scorer = PlanScorer()
         self._plan_validator = PlanValidator()
         self._placement_resolver = PlacementResolver()
@@ -150,7 +159,11 @@ class CoachEngine:
         timings["state_view_ms"] = _ms(_t)
         _log.info(
             "%s stage=state_view_built round=%s player=%s supply=%s elapsed_ms=%d",
-            _ctx, state.round, player_name, supply, timings["state_view_ms"],
+            _ctx,
+            state.round,
+            player_name,
+            supply,
+            timings["state_view_ms"],
         )
         _write_debug("latest_state_view.json", state.model_dump())
         _write_debug(
@@ -163,8 +176,11 @@ class CoachEngine:
         timings["features_ms"] = _ms(_t)
         _log.info(
             "%s stage=features_extracted threats=%d tempo=%s posture=%s elapsed_ms=%d",
-            _ctx, len(features.threats), features.tempo_state,
-            features.board_posture, timings["features_ms"],
+            _ctx,
+            len(features.threats),
+            features.tempo_state,
+            features.board_posture,
+            timings["features_ms"],
         )
         _write_debug("latest_features.json", features.model_dump())
 
@@ -175,7 +191,10 @@ class CoachEngine:
         timings["legal_actions_ms"] = _ms(_t)
         _log.info(
             "%s stage=legal_actions_generated count=%d groups=%d elapsed_ms=%d",
-            _ctx, len(legal_actions), len(action_groups), timings["legal_actions_ms"],
+            _ctx,
+            len(legal_actions),
+            len(action_groups),
+            timings["legal_actions_ms"],
         )
         _write_debug(
             "latest_legal_actions.json", [a.model_dump() for a in legal_actions]
@@ -186,7 +205,9 @@ class CoachEngine:
         timings["tactical_bundles_ms"] = _ms(_t)
         _log.info(
             "%s stage=bundles_generated count=%d elapsed_ms=%d",
-            _ctx, len(bundles), timings["tactical_bundles_ms"],
+            _ctx,
+            len(bundles),
+            timings["tactical_bundles_ms"],
         )
         _write_debug("latest_bundles.json", [b.model_dump() for b in bundles])
 
@@ -195,7 +216,9 @@ class CoachEngine:
         timings["knowledge_retrieval_ms"] = _ms(_t)
         _log.info(
             "%s stage=knowledge_retrieved chunks=%d elapsed_ms=%d",
-            _ctx, len(knowledge_chunks), timings["knowledge_retrieval_ms"],
+            _ctx,
+            len(knowledge_chunks),
+            timings["knowledge_retrieval_ms"],
         )
 
         # Coordinate frame — always compute for debug visibility
@@ -205,10 +228,62 @@ class CoachEngine:
         opp_frame = frame.opponent_frame() if state.round >= 2 else None
         _write_debug("latest_coordinate_frame.json", frame.model_dump())
 
+        # Influence map — non-fatal, pipeline continues if it fails
+        influence_summary: InfluenceAnalysisSummary | None = None
+        try:
+            _t = time.monotonic()
+            influence_result = self._influence_map_builder.build(state, frame)
+            timings["influence_map_ms"] = _ms(_t)
+            _log.info(
+                "%s stage=influence_map_built zones=%d elapsed_ms=%d",
+                _ctx,
+                len(influence_result.zones),
+                timings["influence_map_ms"],
+            )
+            _write_debug(
+                "latest_influence_map_summary.json",
+                [z.model_dump() for z in influence_result.zones],
+            )
+
+            _t = time.monotonic()
+            influence_summary = self._influence_analyzer.analyze(
+                state,
+                features,
+                influence_result,
+            )
+            timings["influence_analyzer_ms"] = _ms(_t)
+            _log.info(
+                "%s stage=influence_analyzed findings=%d elapsed_ms=%d",
+                _ctx,
+                len(influence_summary.tactical_findings),
+                timings["influence_analyzer_ms"],
+            )
+            _write_debug(
+                "latest_influence_findings.json",
+                influence_summary.model_dump(mode="json"),
+            )
+
+            if _is_debug():
+                try:
+                    from ..debug.influence_debug import write_influence_csv
+
+                    write_influence_csv(influence_result, _DEBUG_DIR)
+                except Exception:
+                    pass
+        except Exception as exc:
+            _log.warning(
+                "%s stage=influence_failed error=%s — continuing without influence",
+                _ctx,
+                exc,
+            )
+
         planner_call_id = uuid.uuid4().hex[:8]
         _log.info(
             "%s stage=planner_started planner_call_id=%s timeout_s=%s model=%s",
-            _ctx, planner_call_id, timeout, model_name,
+            _ctx,
+            planner_call_id,
+            timeout,
+            model_name,
         )
         _t = time.monotonic()
         try:
@@ -220,19 +295,25 @@ class CoachEngine:
                     knowledge_chunks,
                     bundles,
                     legal_actions,
+                    influence=influence_summary,
                 ),
                 timeout=timeout,
             )
         except asyncio.TimeoutError:
             _log.warning(
                 "%s stage=planner_timeout planner_call_id=%s seconds=%s — using fallback plan",
-                _ctx, planner_call_id, timeout,
+                _ctx,
+                planner_call_id,
+                timeout,
             )
             plans = [_make_fallback_plan(state)]
         timings["planner_llm_ms"] = _ms(_t)
         _log.info(
             "%s stage=planner_completed planner_call_id=%s plans=%d elapsed_ms=%d",
-            _ctx, planner_call_id, len(plans), timings["planner_llm_ms"],
+            _ctx,
+            planner_call_id,
+            len(plans),
+            timings["planner_llm_ms"],
         )
         _write_debug("latest_planner_response.json", [p.model_dump() for p in plans])
 
@@ -250,7 +331,10 @@ class CoachEngine:
         valid_count = sum(1 for _, r in validated_plans if r.is_valid)
         _log.info(
             "%s stage=validation_completed total=%d valid=%d elapsed_ms=%d",
-            _ctx, len(validated_plans), valid_count, timings["validator_ms"],
+            _ctx,
+            len(validated_plans),
+            valid_count,
+            timings["validator_ms"],
         )
         _write_debug(
             "latest_validation.json",
@@ -265,41 +349,72 @@ class CoachEngine:
         )
 
         _t = time.monotonic()
-        score_breakdowns = self._plan_scorer.score_all(validated_plans, features, state)
+        score_breakdowns = self._plan_scorer.score_all(
+            validated_plans,
+            features,
+            state,
+            influence=influence_summary,
+        )
         timings["plan_scorer_ms"] = _ms(_t)
         _log.info(
             "%s stage=plans_scored count=%d elapsed_ms=%d",
-            _ctx, len(score_breakdowns), timings["plan_scorer_ms"],
+            _ctx,
+            len(score_breakdowns),
+            timings["plan_scorer_ms"],
         )
         _write_debug(
             "latest_plan_scores.json",
             [s.model_dump() for s in score_breakdowns],
         )
+        if _is_debug() and influence_summary:
+            try:
+                from ..debug.influence_debug import write_influence_plan_deltas
+
+                write_influence_plan_deltas(
+                    [s.model_dump() for s in score_breakdowns],
+                    _DEBUG_DIR,
+                )
+            except Exception:
+                pass
 
         judge_call_id = uuid.uuid4().hex[:8]
         _log.info(
             "%s stage=judge_started judge_call_id=%s model=%s",
-            _ctx, judge_call_id, model_name,
+            _ctx,
+            judge_call_id,
+            model_name,
         )
         _t = time.monotonic()
         try:
             judge_output = await asyncio.wait_for(
                 self._judge.select_plan(
-                    state, features, validated_plans, knowledge_chunks, score_breakdowns
+                    state,
+                    features,
+                    validated_plans,
+                    knowledge_chunks,
+                    score_breakdowns,
+                    influence=influence_summary,
                 ),
                 timeout=timeout,
             )
         except asyncio.TimeoutError:
             _log.warning(
                 "%s stage=judge_timeout judge_call_id=%s seconds=%s — picking highest-confidence valid plan",
-                _ctx, judge_call_id, timeout,
+                _ctx,
+                judge_call_id,
+                timeout,
             )
-            judge_output = _make_fallback_judge_output(validated_plans, score_breakdowns)
+            judge_output = _make_fallback_judge_output(
+                validated_plans, score_breakdowns
+            )
         timings["judge_llm_ms"] = _ms(_t)
         _log.info(
             "%s stage=judge_completed judge_call_id=%s best_plan_id=%s confidence=%s elapsed_ms=%d",
-            _ctx, judge_call_id, judge_output.best_plan_id,
-            judge_output.confidence, timings["judge_llm_ms"],
+            _ctx,
+            judge_call_id,
+            judge_output.best_plan_id,
+            judge_output.confidence,
+            timings["judge_llm_ms"],
         )
         _write_debug("latest_judge_response.json", judge_output.model_dump())
 
@@ -311,13 +426,17 @@ class CoachEngine:
         resolved_placements = []
         if selected_plan and selected_plan.placement_intents:
             resolved_placements = self._placement_resolver.resolve(
-                selected_plan.placement_intents, frame, state.my_state.units,
+                selected_plan.placement_intents,
+                frame,
+                state.my_state.units,
                 opponent_frame=opp_frame,
             )
         timings["placement_resolver_ms"] = _ms(_t)
         _log.info(
             "%s stage=placement_resolved count=%d elapsed_ms=%d",
-            _ctx, len(resolved_placements), timings["placement_resolver_ms"],
+            _ctx,
+            len(resolved_placements),
+            timings["placement_resolver_ms"],
         )
         _write_debug(
             "latest_resolved_placement.json",
@@ -351,14 +470,32 @@ class CoachEngine:
 
         if _is_debug():
             from ..debug.report_builder import save_report as _save_report
+
             try:
                 _save_report(_DEBUG_DIR)
             except Exception as exc:
                 _log.debug("Debug report generation failed: %s", exc)
+            if influence_summary:
+                try:
+                    from ..debug.influence_debug import build_influence_report
+
+                    report_md = build_influence_report(
+                        influence_summary,
+                        [s.model_dump() for s in score_breakdowns],
+                    )
+                    (_DEBUG_DIR / "latest_influence_report.md").write_text(
+                        f"# Influence Analysis Report\n\n{report_md}",
+                        encoding="utf-8",
+                    )
+                except Exception as exc:
+                    _log.debug("Influence report generation failed: %s", exc)
 
         _log.info(
             "%s pipeline_complete round=%s total_ms=%d model=%s",
-            _ctx, state.round, total_ms, model_name,
+            _ctx,
+            state.round,
+            total_ms,
+            model_name,
         )
 
         return CoachAnalysis(
@@ -369,6 +506,8 @@ class CoachEngine:
             model_name=model_name,
             pipeline_run_id=pipeline_run_id,
             stage_timings=timings,
+            influence_summary=influence_summary,
+            score_breakdowns=score_breakdowns,
         )
 
     def build_state_view(self, parsed: dict, supply: int | None, player_name: str):

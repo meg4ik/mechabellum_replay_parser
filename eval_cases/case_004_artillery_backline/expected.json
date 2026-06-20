@@ -1,0 +1,12 @@
+{
+  "must_address_threats": [
+    "enemy_artillery_pressure"
+  ],
+  "expected_influence_findings": [
+    "artillery_danger"
+  ],
+  "recommended_response_types": [
+    "spread_backline",
+    "flank_attack"
+  ]
+}

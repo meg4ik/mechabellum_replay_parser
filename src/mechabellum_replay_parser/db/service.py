@@ -11,7 +11,11 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from .repositories import FeedbackRepository, OutcomeRepository, RecommendationRepository
+from .repositories import (
+    FeedbackRepository,
+    OutcomeRepository,
+    RecommendationRepository,
+)
 
 if TYPE_CHECKING:
     from ..coach.engine import CoachAnalysis
@@ -79,10 +83,24 @@ class PersistenceService:
                     model_name=analysis.model_name,
                 )
 
+                inf_summary = None
+                inf_findings = None
+                if analysis.influence_summary:
+                    try:
+                        inf_data = analysis.influence_summary.model_dump(mode="json")
+                        inf_summary = inf_data.get("global_assessment")
+                        inf_findings = [
+                            f for f in inf_data.get("tactical_findings", [])
+                        ]
+                    except Exception:
+                        pass
+
                 await repo.mark_completed(
                     rec_id=rec_id,
                     recommendation=analysis.recommendation,
                     supply=supply,
+                    influence_summary_json=inf_summary,
+                    influence_findings_json=inf_findings,
                 )
 
                 selected_id = (
@@ -94,6 +112,7 @@ class PersistenceService:
                     rec_id=rec_id,
                     validated_plans=analysis.validated_plans,
                     selected_plan_id=selected_id,
+                    score_breakdowns=analysis.score_breakdowns,
                 )
 
                 llm_calls = [

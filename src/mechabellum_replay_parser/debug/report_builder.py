@@ -25,6 +25,8 @@ _ARTIFACT_FILES = {
     "coordinate_frame": "latest_coordinate_frame.json",
     "constructions": "latest_constructions.json",
     "timings": "latest_timings.json",
+    "influence_findings": "latest_influence_findings.json",
+    "influence_map_summary": "latest_influence_map_summary.json",
 }
 
 
@@ -126,15 +128,23 @@ def _section_threats(features: dict | None) -> str:
     threats = features.get("threats", [])
     if not threats:
         return "> *No threats detected.*"
-    lines = [f"- **{t.get('key', '?')}** — severity={t.get('severity', '?')}" for t in threats]
-    lines.append(f"\nTempo: `{features.get('tempo_state', '—')}`  |  Posture: `{features.get('board_posture', '—')}`")
+    lines = [
+        f"- **{t.get('key', '?')}** — severity={t.get('severity', '?')}"
+        for t in threats
+    ]
+    lines.append(
+        f"\nTempo: `{features.get('tempo_state', '—')}`  |  Posture: `{features.get('board_posture', '—')}`"
+    )
     return "\n".join(lines)
 
 
 def _section_legal_actions(legal: list | None) -> str:
     if not legal:
         return "> *No legal actions.*"
-    lines = [f"- `{a.get('id', '?')}` ({a.get('type', '?')}) cost={a.get('cost', 0)}" for a in legal[:20]]
+    lines = [
+        f"- `{a.get('id', '?')}` ({a.get('type', '?')}) cost={a.get('cost', 0)}"
+        for a in legal[:20]
+    ]
     if len(legal) > 20:
         lines.append(f"… and {len(legal) - 20} more")
     return "\n".join(lines)
@@ -174,7 +184,9 @@ def _section_validation(validation: list | None) -> str:
         status = "✓" if v.get("is_valid") else "✗"
         lines.append(f"- {status} `{v.get('plan_id', '?')}`")
         for issue in v.get("issues", []):
-            lines.append(f"  - [{issue.get('severity', '?')}] {issue.get('message', '?')}")
+            lines.append(
+                f"  - [{issue.get('severity', '?')}] {issue.get('message', '?')}"
+            )
     return "\n".join(lines)
 
 
@@ -236,6 +248,53 @@ def _section_timings(timings: dict | None) -> str:
     return "\n".join(lines)
 
 
+def _section_influence(
+    findings_data: dict | None,
+    plan_scores: list | None,
+) -> str:
+    if not findings_data:
+        return "> *No influence data available.*"
+
+    parts: list[str] = []
+
+    ga = findings_data.get("global_assessment", {})
+    if ga:
+        lines = [f"- **{k}:** {v}" for k, v in ga.items()]
+        parts.append("**Global Assessment:**\n" + "\n".join(lines))
+
+    tf = findings_data.get("tactical_findings", [])
+    if tf:
+        header = "| Severity | Key | Zone | Evidence |"
+        sep = "|---:|---|---|---|"
+        rows = []
+        for f in tf:
+            zone = f.get("zone") or "—"
+            rows.append(
+                f"| {f.get('severity', 0):.2f} | {f.get('key', '?')} | {zone} | {f.get('evidence', '—')} |"
+            )
+        parts.append("**Tactical Findings:**\n" + "\n".join([header, sep, *rows]))
+
+    if plan_scores:
+        has_influence = any(s.get("influence_improvement", 0) for s in plan_scores)
+        if has_influence:
+            header = "| Plan | Influence | Anti-Air | Anti-Chaff | Anti-Heavy |"
+            sep = "|---|---:|---:|---:|---:|"
+            rows = []
+            for s in plan_scores:
+                rows.append(
+                    f"| {s.get('plan_id', '?')}"
+                    f" | {s.get('influence_improvement', 0):.2f}"
+                    f" | {s.get('anti_air_improvement', 0):.2f}"
+                    f" | {s.get('anti_chaff_improvement', 0):.2f}"
+                    f" | {s.get('anti_heavy_improvement', 0):.2f} |"
+                )
+            parts.append(
+                "**Plan Influence Deltas:**\n" + "\n".join([header, sep, *rows])
+            )
+
+    return "\n\n".join(parts) if parts else "> *No influence findings.*"
+
+
 # ── Public API ────────────────────────────────────────────────────────────────
 
 
@@ -245,16 +304,37 @@ def build_report(debug_dir: Path = _DEBUG_DIR) -> str:
 
     parts = ["# Latest Recommendation Debug Report\n"]
     parts.append(_section("Replay / Round", _section_replay_round(data["state_view"])))
-    parts.append(_section("Coordinate Frame", _section_coordinate_frame(data["coordinate_frame"])))
+    parts.append(
+        _section(
+            "Coordinate Frame", _section_coordinate_frame(data["coordinate_frame"])
+        )
+    )
     parts.append(_section("Main Threats", _section_threats(data["features"])))
-    parts.append(_section("Legal Actions", _section_legal_actions(data["legal_actions"])))
+    parts.append(
+        _section("Legal Actions", _section_legal_actions(data["legal_actions"]))
+    )
     parts.append(_section("Tactical Bundles", _section_bundles(data["bundles"])))
+    parts.append(
+        _section(
+            "Influence Analysis",
+            _section_influence(data.get("influence_findings"), data.get("plan_scores")),
+        )
+    )
     parts.append(_section("Planner Plans", _section_plans(data["plans"])))
     parts.append(_section("Validation Errors", _section_validation(data["validation"])))
-    parts.append(_section("Resolved Placement", _section_resolved_placement(data["resolved_placement"])))
+    parts.append(
+        _section(
+            "Resolved Placement",
+            _section_resolved_placement(data["resolved_placement"]),
+        )
+    )
     parts.append(_section("Plan Scores", _section_plan_scores(data["plan_scores"])))
     parts.append(_section("Judge Selection", _section_judge(data["judge"])))
-    parts.append(_section("Final Recommendation", _section_recommendation(data["recommendation"])))
+    parts.append(
+        _section(
+            "Final Recommendation", _section_recommendation(data["recommendation"])
+        )
+    )
     parts.append(_section("Stage Timings", _section_timings(data["timings"])))
     parts.append(_section("Suspected Failure Stage", _suspect_failure_stage(data)))
 

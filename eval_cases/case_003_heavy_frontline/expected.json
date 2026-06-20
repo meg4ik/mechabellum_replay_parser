@@ -1,0 +1,11 @@
+{
+  "must_address_threats": [
+    "enemy_frontline_wall"
+  ],
+  "expected_influence_findings": [
+    "anti_heavy_gap"
+  ],
+  "recommended_response_types": [
+    "add_single_target"
+  ]
+}

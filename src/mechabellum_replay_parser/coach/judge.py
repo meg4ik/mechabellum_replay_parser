@@ -4,6 +4,7 @@ import json
 import logging
 
 from ..llm.client import LLMProvider
+from .influence_schemas import InfluenceAnalysisSummary
 from .schemas import (
     CandidatePlan,
     JudgeOutput,
@@ -24,6 +25,7 @@ def _build_user(
     validated_plans: list[tuple[CandidatePlan, PlanValidationResult]],
     knowledge_chunks: list[str],
     score_breakdowns: list[PlanScoreBreakdown] | None = None,
+    influence: InfluenceAnalysisSummary | None = None,
 ) -> str:
     score_map = {s.plan_id: s for s in (score_breakdowns or [])}
     plans_data = []
@@ -48,7 +50,7 @@ def _build_user(
         }
         if plan.id in score_map:
             s = score_map[plan.id]
-            entry["score"] = {
+            score_entry: dict = {
                 "total": s.total_score,
                 "threat_coverage": s.threat_coverage,
                 "supply_efficiency": s.supply_efficiency,
@@ -56,6 +58,15 @@ def _build_user(
                 "tower_protection": s.tower_protection,
                 "warnings": s.warnings,
             }
+            if s.influence_improvement:
+                score_entry["influence_improvement"] = s.influence_improvement
+                score_entry["anti_air_improvement"] = s.anti_air_improvement
+                score_entry["anti_chaff_improvement"] = s.anti_chaff_improvement
+                score_entry["anti_heavy_improvement"] = s.anti_heavy_improvement
+                score_entry["artillery_risk_reduction"] = s.artillery_risk_reduction
+            if s.influence_explanation:
+                score_entry["influence_explanation"] = s.influence_explanation
+            entry["score"] = score_entry
         plans_data.append(entry)
 
     data: dict = {
@@ -75,6 +86,19 @@ def _build_user(
     }
     if knowledge_chunks:
         data["relevant_knowledge"] = knowledge_chunks
+    if influence and influence.tactical_findings:
+        data["influence_analysis"] = {
+            "global_assessment": influence.global_assessment,
+            "tactical_findings": [
+                {
+                    "key": f.key,
+                    "severity": f.severity,
+                    "zone": f.zone if f.zone else None,
+                    "evidence": f.evidence,
+                }
+                for f in influence.tactical_findings
+            ],
+        }
     return json.dumps(data, ensure_ascii=False, indent=2)
 
 
@@ -130,9 +154,15 @@ class Judge:
         validated_plans: list[tuple[CandidatePlan, PlanValidationResult]],
         knowledge_chunks: list[str] | None = None,
         score_breakdowns: list[PlanScoreBreakdown] | None = None,
+        influence: InfluenceAnalysisSummary | None = None,
     ) -> JudgeOutput:
         user = _build_user(
-            state, features, validated_plans, knowledge_chunks or [], score_breakdowns
+            state,
+            features,
+            validated_plans,
+            knowledge_chunks or [],
+            score_breakdowns,
+            influence=influence,
         )
 
         try:

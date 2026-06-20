@@ -145,15 +145,15 @@ def test_chaff_flood_case_detects_threat():
     assert "enemy_chaff_overload" in result.threat_keys_found
 
 
-# ── Tower exposure case ───────────────────────────────────────────────────────
+# ── Heavy frontline case ─────────────────────────────────────────────────────
 
 
-def test_tower_exposure_case_legality():
+def test_heavy_frontline_case_legality():
     """Case 003 must generate at least one valid plan."""
     cases = load_all_cases(_EVAL_CASES_DIR)
-    tower_case = next(c for c in cases if "tower_exposure" in c.name)
+    heavy_case = next(c for c in cases if "heavy_frontline" in c.name)
     runner = EvalRunner()
-    result = runner.run_case(tower_case)
+    result = runner.run_case(heavy_case)
     assert result.scores.legality == 1
 
 

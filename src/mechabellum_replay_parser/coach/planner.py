@@ -4,6 +4,7 @@ import json
 import logging
 
 from ..llm.client import LLMProvider
+from .influence_schemas import InfluenceAnalysisSummary
 from .schemas import (
     ActionGroup,
     CandidatePlan,
@@ -24,6 +25,7 @@ def _compact_state(
     action_groups: list[ActionGroup],
     knowledge_chunks: list[str],
     bundles: list[TacticalBundle] | None = None,
+    influence: InfluenceAnalysisSummary | None = None,
 ) -> str:
     data: dict = {
         "round": state.round,
@@ -121,6 +123,28 @@ def _compact_state(
             }
             for b in bundles
         ]
+    if influence and influence.tactical_findings:
+        data["influence_analysis"] = {
+            "global_assessment": influence.global_assessment,
+            "critical_zones": [
+                {
+                    "zone": z.zone,
+                    "danger_ground": z.danger_for_my_ground,
+                    "danger_air": z.danger_for_my_air,
+                }
+                for z in influence.critical_zones
+            ],
+            "tactical_findings": [
+                {
+                    "key": f.key,
+                    "severity": f.severity,
+                    "zone": f.zone if f.zone else None,
+                    "evidence": f.evidence,
+                    "recommended_response_types": f.recommended_response_types,
+                }
+                for f in influence.tactical_findings
+            ],
+        }
     return json.dumps(data, ensure_ascii=False, indent=2)
 
 
@@ -163,9 +187,15 @@ class Planner:
         knowledge_chunks: list[str] | None = None,
         bundles: list[TacticalBundle] | None = None,
         legal_actions: list[LegalAction] | None = None,
+        influence: InfluenceAnalysisSummary | None = None,
     ) -> list[CandidatePlan]:
         user = _compact_state(
-            state, features, action_groups, knowledge_chunks or [], bundles
+            state,
+            features,
+            action_groups,
+            knowledge_chunks or [],
+            bundles,
+            influence=influence,
         )
 
         try:

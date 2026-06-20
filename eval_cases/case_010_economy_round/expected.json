@@ -1,0 +1,9 @@
+{
+  "must_address_threats": [],
+  "expected_influence_findings": [],
+  "forbidden_high_severity_findings": [
+    "anti_air_gap",
+    "anti_heavy_gap",
+    "anti_chaff_gap"
+  ]
+}

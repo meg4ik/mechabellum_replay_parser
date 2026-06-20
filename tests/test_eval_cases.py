@@ -47,7 +47,7 @@ def test_load_case_air_threat():
     case = load_case(case_dir)
     assert isinstance(case, EvalCase)
     assert case.name == "case_001_air_threat"
-    assert case.state_view.round == 3
+    assert case.state_view.round == 4
     assert "enemy_air_pressure" in case.expected.must_address_threats
 
 
@@ -57,10 +57,10 @@ def test_load_case_chaff_flood():
     assert "enemy_chaff_overload" in case.expected.must_address_threats
 
 
-def test_load_case_tower_exposure():
-    case_dir = _EVAL_CASES_DIR / "case_003_tower_exposure"
+def test_load_case_heavy_frontline():
+    case_dir = _EVAL_CASES_DIR / "case_003_heavy_frontline"
     case = load_case(case_dir)
-    assert "construction_lost" in case.expected.must_address_threats
+    assert "enemy_frontline_wall" in case.expected.must_address_threats
 
 
 def test_load_case_missing_state_view(tmp_path):

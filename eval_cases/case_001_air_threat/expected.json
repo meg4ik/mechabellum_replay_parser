@@ -1,0 +1,11 @@
+{
+  "must_address_threats": [
+    "enemy_air_pressure"
+  ],
+  "expected_influence_findings": [
+    "anti_air_gap"
+  ],
+  "recommended_response_types": [
+    "add_anti_air"
+  ]
+}

@@ -35,7 +35,9 @@ REPLAY_DIR = Path(
 
 _STABLE_INTERVAL = 0.5
 _STABLE_COUNT = 3
-_STABLE_TIMEOUT = 15.0  # give up waiting and try to parse anyway after this many seconds
+_STABLE_TIMEOUT = (
+    15.0  # give up waiting and try to parse anyway after this many seconds
+)
 
 
 _DEBUG_DIR = Path(".debug")
@@ -170,7 +172,9 @@ async def _wait_for_file_stable(path: Path) -> bool:
         await asyncio.sleep(_STABLE_INTERVAL)
         elapsed += _STABLE_INTERVAL
     if elapsed >= _STABLE_TIMEOUT:
-        print(f"[!] Stability timeout for {path.name} — proceeding anyway (size={prev_size})")
+        print(
+            f"[!] Stability timeout for {path.name} — proceeding anyway (size={prev_size})"
+        )
     return True
 
 
@@ -271,11 +275,15 @@ async def process_replay(
         finally:
             pending_supplies.pop(rec_id, None)
 
-        print(f"[~] Analysing round {last_round} for {player_name} (supply={supply})...")
+        print(
+            f"[~] Analysing round {last_round} for {player_name} (supply={supply})..."
+        )
         analysis = await _coach_engine.analyze_replay_detailed(
             parsed, supply, player_name, rec_id=rec_id
         )
-        print(f"[✓] Analysis done. Placement items: {len(analysis.recommendation.placement or [])}")
+        print(
+            f"[✓] Analysis done. Placement items: {len(analysis.recommendation.placement or [])}"
+        )
         recommendation = analysis.recommendation
 
         if persistence is not None:
@@ -322,11 +330,13 @@ async def process_replay(
         )
         _log.info(
             "stage=ui_event_sent type=recommendation_ready rec_id=%s placement_items=%d",
-            rec_id, len(recommendation.placement or []),
+            rec_id,
+            len(recommendation.placement or []),
         )
 
     except Exception as e:
         import traceback
+
         print(f"[!] Pipeline error ({type(e).__name__}): {e}")
         traceback.print_exc()
         await broker.publish(

@@ -1,0 +1,11 @@
+{
+  "must_address_threats": [
+    "enemy_chaff_overload"
+  ],
+  "expected_influence_findings": [
+    "anti_chaff_gap"
+  ],
+  "recommended_response_types": [
+    "add_anti_chaff"
+  ]
+}

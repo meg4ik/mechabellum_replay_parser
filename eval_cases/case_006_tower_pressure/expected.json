@@ -1,0 +1,9 @@
+{
+  "must_address_threats": [],
+  "expected_influence_findings": [
+    "tower_pressure"
+  ],
+  "recommended_response_types": [
+    "protect_tower"
+  ]
+}

@@ -5,9 +5,9 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import simpledialog
 
-_X_MIN, _X_MAX = -300, 300          # derived: arclight center ±290, size_x=10
-_Y_FRONT = -10                      # derived: arclight center -20, size_y=10
-_Y_BACK = -310                      # derived: arclight center -300, size_y=10
+_X_MIN, _X_MAX = -300, 300  # derived: arclight center ±290, size_x=10
+_Y_FRONT = -10  # derived: arclight center -20, size_y=10
+_Y_BACK = -310  # derived: arclight center -300, size_y=10
 _CANVAS_W = 840
 _CANVAS_H = 420
 _MARGIN = 50
@@ -21,12 +21,14 @@ _GRID_SCALE = 2.5
 
 _DATA_DIR = Path(__file__).parent / "data"
 
+
 def _load_json(name: str) -> dict:
     try:
         with open(_DATA_DIR / name, encoding="utf-8") as f:
             return json.load(f)
     except OSError:
         return {}
+
 
 _UNIT_SIZES: dict = _load_json("unit_data.json")
 _CONSTRUCTION_SIZES: dict = _load_json("construction_data.json")
@@ -100,9 +102,13 @@ def _draw_unit(
     sx, sy = info.get("size_x"), info.get("size_y")
     rx = max(6, int(sx * _GRID_SCALE * _SCALE)) if sx is not None else _RADIUS
     ry = max(6, int(sy * _GRID_SCALE * _SCALE)) if sy is not None else _RADIUS
-    canvas.create_rectangle(cx - rx, cy - ry, cx + rx, cy + ry, fill=color, outline=outline, width=2)
+    canvas.create_rectangle(
+        cx - rx, cy - ry, cx + rx, cy + ry, fill=color, outline=outline, width=2
+    )
     canvas.create_text(cx, cy, text=label[:4], fill="white", font=("Arial", 7, "bold"))
-    canvas.create_text(cx, cy + ry + 7, text=label[:10], fill=outline, font=("Arial", 7))
+    canvas.create_text(
+        cx, cy + ry + 7, text=label[:10], fill=outline, font=("Arial", 7)
+    )
 
 
 def _draw_building(
@@ -120,9 +126,13 @@ def _draw_building(
     sx, sy = info.get("size_x"), info.get("size_y")
     rx = max(6, int(sx * _GRID_SCALE * _SCALE)) if sx is not None else _BSIZE
     ry = max(6, int(sy * _GRID_SCALE * _SCALE)) if sy is not None else _BSIZE
-    canvas.create_rectangle(cx - rx, cy - ry, cx + rx, cy + ry, fill="#d4a017", outline="#8b6914", width=2)
+    canvas.create_rectangle(
+        cx - rx, cy - ry, cx + rx, cy + ry, fill="#d4a017", outline="#8b6914", width=2
+    )
     canvas.create_text(cx, cy, text=abbr, fill="white", font=("Arial", 7, "bold"))
-    canvas.create_text(cx, cy + ry + 7, text=display_name[:12], fill="#8b6914", font=("Arial", 7))
+    canvas.create_text(
+        cx, cy + ry + 7, text=display_name[:12], fill="#8b6914", font=("Arial", 7)
+    )
 
 
 def show_board(

@@ -20,9 +20,9 @@ from pathlib import Path
 from tkinter import scrolledtext
 
 # ── Board geometry ─────────────────────────────────────────────────────────────
-_X_MIN, _X_MAX = -300, 300          # derived: arclight center ±290, size_x=10
-_Y_FRONT = -10                      # derived: arclight center -20, size_y=10
-_Y_BACK = -310                      # derived: arclight center -300, size_y=10
+_X_MIN, _X_MAX = -300, 300  # derived: arclight center ±290, size_x=10
+_Y_FRONT = -10  # derived: arclight center -20, size_y=10
+_Y_BACK = -310  # derived: arclight center -300, size_y=10
 _BOARD_W = 840
 _BOARD_H = 420
 _MARGIN = 50
@@ -38,12 +38,14 @@ _GRID_SCALE = 2.5
 # ── Size data ──────────────────────────────────────────────────────────────────
 _DATA_DIR = Path(__file__).parent.parent / "data"
 
+
 def _load_json(name: str) -> dict:
     try:
         with open(_DATA_DIR / name, encoding="utf-8") as f:
             return json.load(f)
     except OSError:
         return {}
+
 
 _UNIT_SIZES: dict[str, dict] = _load_json("unit_data.json")
 _CONSTRUCTION_SIZES: dict[str, dict] = _load_json("construction_data.json")
@@ -454,8 +456,10 @@ class CoachWindow:
         board_frame.pack(fill="both", expand=True, side="top", padx=22, pady=(0, 12))
 
         has_others = bool(
-            opponent_units or opponent_constructions
-            or teammate_units or teammate_constructions
+            opponent_units
+            or opponent_constructions
+            or teammate_units
+            or teammate_constructions
         )
         full_board = has_others
         board_h = int(_BOARD_W * 620 / 600) if full_board else _BOARD_H
@@ -471,7 +475,9 @@ class CoachWindow:
         )
         if full_board:
             scrollbar = tk.Scrollbar(
-                board_frame, orient="vertical", command=canvas.yview,
+                board_frame,
+                orient="vertical",
+                command=canvas.yview,
             )
             scrollbar.pack(side="right", fill="y")
             canvas.configure(yscrollcommand=scrollbar.set)
@@ -485,9 +491,16 @@ class CoachWindow:
             canvas.pack(expand=True)
 
         self._draw_board(
-            canvas, current_units, placement, constructions, round_num,
-            board_h, opponent_units or [], opponent_constructions or [],
-            teammate_units or [], teammate_constructions or [],
+            canvas,
+            current_units,
+            placement,
+            constructions,
+            round_num,
+            board_h,
+            opponent_units or [],
+            opponent_constructions or [],
+            teammate_units or [],
+            teammate_constructions or [],
         )
 
         if full_board:
@@ -623,7 +636,12 @@ class CoachWindow:
 
     @staticmethod
     def _to_canvas(
-        x: int, y: int, y_top: int, y_bot: int, board_w: int, board_h: int,
+        x: int,
+        y: int,
+        y_top: int,
+        y_bot: int,
+        board_w: int,
+        board_h: int,
     ) -> tuple[int, int]:
         cx = _MARGIN + (x - _X_MIN) / (_X_MAX - _X_MIN) * board_w
         cy = _MARGIN + 30 + abs(y_top - y) / abs(y_top - y_bot) * board_h
@@ -644,13 +662,15 @@ class CoachWindow:
     ) -> None:
         y_front, y_back = self._detect_zone(current_units)
         full_board = bool(
-            opponent_units or opponent_constructions
-            or teammate_units or teammate_constructions
+            opponent_units
+            or opponent_constructions
+            or teammate_units
+            or teammate_constructions
         )
 
         if full_board:
             y_top = -y_back  # opponent's back (top of canvas)
-            y_bot = y_back   # player's back (bottom of canvas)
+            y_bot = y_back  # player's back (bottom of canvas)
         else:
             y_top = y_front
             y_bot = y_back
@@ -663,7 +683,9 @@ class CoachWindow:
         self._dot_legend(canvas, 26, legend_y, _GRAY, _GRAY_DK, "свои юниты")
         self._rect_legend(canvas, 180, legend_y, _GOLD, _GOLD_DK, "постройки")
         if full_board:
-            self._dot_legend(canvas, 330, legend_y, _RED_UNIT, _RED_UNIT_DK, "противник")
+            self._dot_legend(
+                canvas, 330, legend_y, _RED_UNIT, _RED_UNIT_DK, "противник"
+            )
             if teammate_units or teammate_constructions:
                 self._dot_legend(canvas, 500, legend_y, _BLUE, _BLUE_DK, "союзник")
         else:
@@ -698,19 +720,38 @@ class CoachWindow:
             _, mid_top = tc(0, _Y_FRONT)
             _, mid_bot = tc(0, -_Y_FRONT)
             canvas.create_rectangle(
-                zx0, mid_top, zx1, mid_bot,
-                fill="#2a2518", outline="", stipple="",
+                zx0,
+                mid_top,
+                zx1,
+                mid_bot,
+                fill="#2a2518",
+                outline="",
+                stipple="",
             )
             canvas.create_line(
-                zx0, mid_top, zx1, mid_top, fill=_MIDFIELD, width=1,
+                zx0,
+                mid_top,
+                zx1,
+                mid_top,
+                fill=_MIDFIELD,
+                width=1,
             )
             canvas.create_line(
-                zx0, mid_bot, zx1, mid_bot, fill=_MIDFIELD, width=1,
+                zx0,
+                mid_bot,
+                zx1,
+                mid_bot,
+                fill=_MIDFIELD,
+                width=1,
             )
             mid_cy = (mid_top + mid_bot) // 2
             canvas.create_text(
-                zx0 - 10, mid_cy, text="— mid —", fill=_MIDFIELD,
-                font=("Arial", 8, "bold"), anchor="e",
+                zx0 - 10,
+                mid_cy,
+                text="— mid —",
+                fill=_MIDFIELD,
+                font=("Arial", 8, "bold"),
+                anchor="e",
             )
         else:
             canvas.create_text(
@@ -724,8 +765,16 @@ class CoachWindow:
         for u in placement:
             if round_num == 1 or u.get("action") in ("new", "move"):
                 self._draw_unit(
-                    canvas, u["x"], u["y"], y_top, y_bot, bw, board_h,
-                    u["unit"], _GREEN, _GREEN_DK,
+                    canvas,
+                    u["x"],
+                    u["y"],
+                    y_top,
+                    y_bot,
+                    bw,
+                    board_h,
+                    u["unit"],
+                    _GREEN,
+                    _GREEN_DK,
                 )
 
         # Current units (gray)
@@ -735,8 +784,16 @@ class CoachWindow:
             if x is None or y is None:
                 continue
             self._draw_unit(
-                canvas, x, y, y_top, y_bot, bw, board_h,
-                u.get("name", "?"), _GRAY, _GRAY_DK,
+                canvas,
+                x,
+                y,
+                y_top,
+                y_bot,
+                bw,
+                board_h,
+                u.get("name", "?"),
+                _GRAY,
+                _GRAY_DK,
             )
 
         # Player buildings (gold)
@@ -746,7 +803,14 @@ class CoachWindow:
             if bx is None or by is None:
                 continue
             self._draw_building(
-                canvas, bx, by, y_top, y_bot, bw, board_h, b.get("type", "?"),
+                canvas,
+                bx,
+                by,
+                y_top,
+                y_bot,
+                bw,
+                board_h,
+                b.get("type", "?"),
             )
 
         # Opponent units (red)
@@ -756,8 +820,16 @@ class CoachWindow:
             if x is None or y is None:
                 continue
             self._draw_unit(
-                canvas, x, y, y_top, y_bot, bw, board_h,
-                u.get("name", "?"), _RED_UNIT, _RED_UNIT_DK,
+                canvas,
+                x,
+                y,
+                y_top,
+                y_bot,
+                bw,
+                board_h,
+                u.get("name", "?"),
+                _RED_UNIT,
+                _RED_UNIT_DK,
             )
 
         # Opponent buildings (gold, same as player)
@@ -767,7 +839,14 @@ class CoachWindow:
             if bx is None or by is None:
                 continue
             self._draw_building(
-                canvas, bx, by, y_top, y_bot, bw, board_h, b.get("type", "?"),
+                canvas,
+                bx,
+                by,
+                y_top,
+                y_bot,
+                bw,
+                board_h,
+                b.get("type", "?"),
             )
 
         # Teammate units (blue)
@@ -777,8 +856,16 @@ class CoachWindow:
             if x is None or y is None:
                 continue
             self._draw_unit(
-                canvas, x, y, y_top, y_bot, bw, board_h,
-                u.get("name", "?"), _BLUE, _BLUE_DK,
+                canvas,
+                x,
+                y,
+                y_top,
+                y_bot,
+                bw,
+                board_h,
+                u.get("name", "?"),
+                _BLUE,
+                _BLUE_DK,
             )
 
         # Teammate buildings (gold, same as others)
@@ -788,7 +875,14 @@ class CoachWindow:
             if bx is None or by is None:
                 continue
             self._draw_building(
-                canvas, bx, by, y_top, y_bot, bw, board_h, b.get("type", "?"),
+                canvas,
+                bx,
+                by,
+                y_top,
+                y_bot,
+                bw,
+                board_h,
+                b.get("type", "?"),
             )
 
     def _draw_unit(

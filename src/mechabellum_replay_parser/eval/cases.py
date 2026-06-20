@@ -16,6 +16,10 @@ class EvalExpected(BaseModel):
     acceptable_units: list[str] = []
     placement_expectations: list[dict] = []
 
+    expected_influence_findings: list[str] = []
+    expected_critical_zones: list[str] = []
+    forbidden_high_severity_findings: list[str] = []
+
 
 class EvalCase(BaseModel):
     name: str
@@ -33,7 +37,9 @@ def load_case(case_dir: Path) -> EvalCase:
         raise FileNotFoundError(f"expected.json missing in {case_dir}")
 
     state_view = StateView.model_validate_json(sv_path.read_text(encoding="utf-8"))
-    expected = EvalExpected.model_validate_json(expected_path.read_text(encoding="utf-8"))
+    expected = EvalExpected.model_validate_json(
+        expected_path.read_text(encoding="utf-8")
+    )
 
     meta: dict = {}
     meta_path = case_dir / "metadata.json"

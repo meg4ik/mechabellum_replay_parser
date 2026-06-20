@@ -32,8 +32,11 @@ class DatasetRow(BaseModel):
     candidate_plans: list
     selected_plan: dict | None
     score_breakdowns: list
-    user_feedback: dict | None
-    outcome: dict | None
+    influence_summary: dict | None = None
+    influence_findings: list | None = None
+    plan_influence_deltas: list | None = None
+    user_feedback: dict | None = None
+    outcome: dict | None = None
     derived_quality_label: str
 
 
@@ -91,6 +94,15 @@ async def export_dataset(
             (cp.planner_output for cp in rec.candidate_plans if cp.is_selected), None
         )
 
+        score_breakdowns = [
+            cp.plan_score_json for cp in rec.candidate_plans if cp.plan_score_json
+        ]
+        influence_deltas = [
+            {"plan_id": cp.plan_key, **cp.influence_delta_json}
+            for cp in rec.candidate_plans
+            if cp.influence_delta_json
+        ]
+
         row = DatasetRow(
             recommendation_id=rec.id,
             state_view=rec.final_recommendation or {},
@@ -98,7 +110,10 @@ async def export_dataset(
             tactical_bundles=[],
             candidate_plans=[cp.planner_output or {} for cp in rec.candidate_plans],
             selected_plan=selected,
-            score_breakdowns=[],
+            score_breakdowns=score_breakdowns,
+            influence_summary=rec.influence_summary_json,
+            influence_findings=rec.influence_findings_json,
+            plan_influence_deltas=influence_deltas or None,
             user_feedback={
                 "rating": fb.rating,
                 "label": fb.label,

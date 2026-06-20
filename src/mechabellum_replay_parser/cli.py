@@ -53,10 +53,14 @@ def show_units(args):
     player_name = args.player
     if player_name:
         if player_name not in players:
-            print(f"Player '{player_name}' not found. Available: {list(players.keys())}")
+            print(
+                f"Player '{player_name}' not found. Available: {list(players.keys())}"
+            )
             return
     else:
-        player_name = next((n for n in players if "bot" not in n.lower()), list(players.keys())[0])
+        player_name = next(
+            (n for n in players if "bot" not in n.lower()), list(players.keys())[0]
+        )
 
     pdata = players[player_name]
     units = pdata["units"]
@@ -68,12 +72,14 @@ def show_units(args):
         for u in units
         if u.get("position") and u["position"].get("y") is not None
     ]
-    y_sign = -1 if (not positioned_ys or sum(positioned_ys) / len(positioned_ys) < 0) else 1
+    y_sign = (
+        -1 if (not positioned_ys or sum(positioned_ys) / len(positioned_ys) < 0) else 1
+    )
 
     # Inject fixed utility towers (not stored in replay)
     constructions += [
-        {"type": "Command Tower",  "position": {"x": -140, "y": y_sign * 170}},
-        {"type": "Research Tower", "position": {"x":  140, "y": y_sign * 170}},
+        {"type": "Command Tower", "position": {"x": -140, "y": y_sign * 170}},
+        {"type": "Research Tower", "position": {"x": 140, "y": y_sign * 170}},
     ]
 
     # Split players into teammates / opponents using teams data
@@ -95,8 +101,8 @@ def show_units(args):
         opponent_labels.append(oname)
     if enemy_team:
         opponent_constructions += [
-            {"type": "Command Tower",  "position": {"x": -140, "y": -y_sign * 170}},
-            {"type": "Research Tower", "position": {"x":  140, "y": -y_sign * 170}},
+            {"type": "Command Tower", "position": {"x": -140, "y": -y_sign * 170}},
+            {"type": "Research Tower", "position": {"x": 140, "y": -y_sign * 170}},
         ]
 
     # Gather teammate (2v2)
@@ -110,12 +116,16 @@ def show_units(args):
         teammate_constructions += list(tdata["constructions"])
 
     # Console summary
-    print(f"v{data['metadata']['version']} | {data['metadata']['match_mode']} | round {target_round} | player: {player_name}")
+    print(
+        f"v{data['metadata']['version']} | {data['metadata']['match_mode']} | round {target_round} | player: {player_name}"
+    )
     print(f"units: {len(units)}  constructions: {len(constructions)}")
     if teammate_names:
         print(f"teammate: {', '.join(teammate_names)} | units: {len(teammate_units)}")
     if opponent_labels:
-        print(f"opponent: {', '.join(opponent_labels)} | units: {len(opponent_units)}  constructions: {len(opponent_constructions)}")
+        print(
+            f"opponent: {', '.join(opponent_labels)} | units: {len(opponent_units)}  constructions: {len(opponent_constructions)}"
+        )
 
     # Y-coordinate stats across ALL rounds for this player (helps calibrate boundaries)
     all_ys = []
@@ -137,14 +147,18 @@ def show_units(args):
         print("\nUnknown unit IDs (add to UNIT_LOOKUP in __init__.py):")
         for u in unknown:
             pos = u.get("position") or {}
-            print(f"  {u['unit_id']}: \"???\"  # x={pos.get('x','?')} y={pos.get('y','?')}")
+            print(
+                f'  {u["unit_id"]}: "???"  # x={pos.get("x", "?")} y={pos.get("y", "?")}'
+            )
 
     # Detailed position table for current round
     if units:
-        sorted_units = sorted(units, key=lambda u: (u.get("name", ""), u.get("position", {}).get("x", 0)))
+        sorted_units = sorted(
+            units, key=lambda u: (u.get("name", ""), u.get("position", {}).get("x", 0))
+        )
         print(f"\nUnits  (round {target_round}):")
         print(f"  {'name':<22} {'x':>6}  {'y':>6}")
-        print(f"  {'-'*22} {'-'*6}  {'-'*6}")
+        print(f"  {'-' * 22} {'-' * 6}  {'-' * 6}")
         for u in sorted_units:
             pos = u.get("position") or {}
             x, y = pos.get("x", "?"), pos.get("y", "?")
@@ -153,7 +167,7 @@ def show_units(args):
     if constructions:
         print(f"\nConstructions  (round {target_round}):")
         print(f"  {'type':<25} {'x':>6}  {'y':>6}")
-        print(f"  {'-'*25} {'-'*6}  {'-'*6}")
+        print(f"  {'-' * 25} {'-' * 6}  {'-' * 6}")
         for c in constructions:
             pos = c.get("position") or {}
             x, y = pos.get("x", "?"), pos.get("y", "?")
@@ -243,11 +257,23 @@ def main():
     battle_parser.set_defaults(func=show_battle_record)
 
     units_parser = subparsers.add_parser(
-        "units", help="Visualize units and constructions from a replay in a Tkinter window."
+        "units",
+        help="Visualize units and constructions from a replay in a Tkinter window.",
     )
-    units_parser.add_argument("file", help="Path to the Mechabellum replay file (.grbr)")
-    units_parser.add_argument("--round", type=int, default=None, help="Round number to display (default: last round)")
-    units_parser.add_argument("--player", default=None, help="Player name to display (default: first non-bot player)")
+    units_parser.add_argument(
+        "file", help="Path to the Mechabellum replay file (.grbr)"
+    )
+    units_parser.add_argument(
+        "--round",
+        type=int,
+        default=None,
+        help="Round number to display (default: last round)",
+    )
+    units_parser.add_argument(
+        "--player",
+        default=None,
+        help="Player name to display (default: first non-bot player)",
+    )
     units_parser.set_defaults(func=show_units)
 
     tech_parser = subparsers.add_parser(

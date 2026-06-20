@@ -1,0 +1,11 @@
+{
+  "must_address_threats": [
+    "positioning_clump_risk"
+  ],
+  "expected_influence_findings": [
+    "artillery_danger"
+  ],
+  "recommended_response_types": [
+    "spread_backline"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "must_address_threats": [],
+  "expected_influence_findings": [
+    "flank_opportunity"
+  ],
+  "recommended_response_types": [
+    "flank_pressure"
+  ]
+}

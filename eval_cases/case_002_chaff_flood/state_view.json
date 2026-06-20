@@ -1,0 +1,173 @@
+{
+  "match_mode": "VS_1_1",
+  "round": 4,
+  "player_name": "Player1",
+  "enemy_names": [
+    "Player2"
+  ],
+  "my_supply": 600,
+  "my_state": {
+    "name": "Player1",
+    "hp": 3,
+    "supply": null,
+    "army_value": 500,
+    "fight_outcome": null,
+    "officers": [],
+    "commander_skills": [],
+    "units": [
+      {
+        "name": "marksmen",
+        "unit_id": 0,
+        "index": 0,
+        "level": 1,
+        "exp": 0,
+        "rounds_survived": null,
+        "position": {
+          "x": 0,
+          "y": -200
+        },
+        "equipment": null,
+        "sell_supply": null,
+        "rotate": null,
+        "active_techs": []
+      },
+      {
+        "name": "marksmen",
+        "unit_id": 0,
+        "index": 1,
+        "level": 1,
+        "exp": 0,
+        "rounds_survived": null,
+        "position": {
+          "x": 100,
+          "y": -200
+        },
+        "equipment": null,
+        "sell_supply": null,
+        "rotate": null,
+        "active_techs": []
+      }
+    ],
+    "constructions": [],
+    "contraptions": [],
+    "shop": {
+      "unlocked": [
+        "crawler",
+        "arclight",
+        "mustang",
+        "marksmen",
+        "vulcan"
+      ],
+      "locked": [
+        "phoenix",
+        "overlord"
+      ],
+      "buys_remaining": 3,
+      "unlocks_remaining": 1
+    }
+  },
+  "enemy_states": [
+    {
+      "name": "Player2",
+      "hp": 3,
+      "supply": null,
+      "army_value": 500,
+      "fight_outcome": null,
+      "officers": [],
+      "commander_skills": [],
+      "units": [
+        {
+          "name": "crawler",
+          "unit_id": 0,
+          "index": 0,
+          "level": 1,
+          "exp": 0,
+          "rounds_survived": null,
+          "position": {
+            "x": -80,
+            "y": -30
+          },
+          "equipment": null,
+          "sell_supply": null,
+          "rotate": null,
+          "active_techs": []
+        },
+        {
+          "name": "crawler",
+          "unit_id": 0,
+          "index": 1,
+          "level": 1,
+          "exp": 0,
+          "rounds_survived": null,
+          "position": {
+            "x": 0,
+            "y": -30
+          },
+          "equipment": null,
+          "sell_supply": null,
+          "rotate": null,
+          "active_techs": []
+        },
+        {
+          "name": "crawler",
+          "unit_id": 0,
+          "index": 2,
+          "level": 1,
+          "exp": 0,
+          "rounds_survived": null,
+          "position": {
+            "x": 80,
+            "y": -30
+          },
+          "equipment": null,
+          "sell_supply": null,
+          "rotate": null,
+          "active_techs": []
+        },
+        {
+          "name": "crawler",
+          "unit_id": 0,
+          "index": 3,
+          "level": 1,
+          "exp": 0,
+          "rounds_survived": null,
+          "position": {
+            "x": -40,
+            "y": -20
+          },
+          "equipment": null,
+          "sell_supply": null,
+          "rotate": null,
+          "active_techs": []
+        },
+        {
+          "name": "fang",
+          "unit_id": 0,
+          "index": 4,
+          "level": 1,
+          "exp": 0,
+          "rounds_survived": null,
+          "position": {
+            "x": 40,
+            "y": -20
+          },
+          "equipment": null,
+          "sell_supply": null,
+          "rotate": null,
+          "active_techs": []
+        }
+      ],
+      "constructions": [],
+      "contraptions": [],
+      "shop": null
+    }
+  ],
+  "recent_rounds": [],
+  "strategic_memory": {
+    "enemy_plan_read": null,
+    "my_plan_read": null,
+    "critical_events": [],
+    "committed_investments": [],
+    "do_not_forget": []
+  }
+}

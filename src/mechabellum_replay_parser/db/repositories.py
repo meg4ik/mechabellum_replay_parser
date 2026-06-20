@@ -86,6 +86,8 @@ class RecommendationRepository:
         rec_id: str,
         recommendation: CoachRecommendation,
         supply: int | None,
+        influence_summary_json: dict | None = None,
+        influence_findings_json: list | None = None,
     ) -> None:
         row = await self._session.get(Recommendation, rec_id)
         if row is None:
@@ -96,6 +98,8 @@ class RecommendationRepository:
         row.final_recommendation = recommendation.model_dump(mode="json")
         row.placement = recommendation.placement
         row.confidence = recommendation.confidence
+        row.influence_summary_json = influence_summary_json
+        row.influence_findings_json = influence_findings_json
         row.completed_at = datetime.now(timezone.utc)
         await self._session.flush()
 
@@ -112,14 +116,42 @@ class RecommendationRepository:
         rec_id: str,
         validated_plans: list[tuple[CandidatePlan, PlanValidationResult]],
         selected_plan_id: str | None,
+        score_breakdowns: list | None = None,
     ) -> None:
+        score_map: dict[str, dict] = {}
+        if score_breakdowns:
+            for s in score_breakdowns:
+                s_dict = s if isinstance(s, dict) else s.model_dump(mode="json")
+                score_map[s_dict.get("plan_id", "")] = s_dict
+
         for plan, validation in validated_plans:
+            score_data = score_map.get(plan.id)
+            influence_delta = None
+            if score_data and score_data.get("influence_improvement"):
+                influence_delta = {
+                    "influence_improvement": score_data.get("influence_improvement", 0),
+                    "anti_air_improvement": score_data.get("anti_air_improvement", 0),
+                    "anti_chaff_improvement": score_data.get(
+                        "anti_chaff_improvement", 0
+                    ),
+                    "anti_heavy_improvement": score_data.get(
+                        "anti_heavy_improvement", 0
+                    ),
+                    "artillery_risk_reduction": score_data.get(
+                        "artillery_risk_reduction", 0
+                    ),
+                    "influence_explanation": score_data.get(
+                        "influence_explanation", []
+                    ),
+                }
             cp = CandidatePlanRow(
                 recommendation_id=rec_id,
                 plan_key=plan.id,
                 planner_output=plan.model_dump(mode="json"),
                 validation_result=validation.model_dump(mode="json"),
                 is_selected=(plan.id == selected_plan_id),
+                plan_score_json=score_data,
+                influence_delta_json=influence_delta,
             )
             self._session.add(cp)
         await self._session.flush()

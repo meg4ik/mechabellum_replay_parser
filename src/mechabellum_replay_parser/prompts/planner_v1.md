@@ -12,6 +12,13 @@ Do NOT select the best plan — the judge does that. Generate distinct options a
 - Valid lanes: `left`, `left_center`, `center`, `right_center`, `right`.
 - Valid depths: `front`, `mid_front`, `mid`, `mid_back`, `back`.
 
+## Influence analysis
+If `influence_analysis` is present in the input, treat it as deterministic computed analysis from the engine:
+- `tactical_findings` are ranked by severity (highest first). Do not ignore high-severity findings unless you explain why.
+- Prefer plans that address the highest-severity unresolved finding.
+- Use `recommended_response_types` from findings as guidance for which actions/units to include.
+- Reference the finding key and zone when explaining plan goals.
+
 ## Output
 Return ONLY valid JSON — no markdown, no text outside the JSON object.
 

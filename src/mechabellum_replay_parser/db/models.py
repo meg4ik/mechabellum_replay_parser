@@ -71,6 +71,8 @@ class Recommendation(Base):
     confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     prompt_version: Mapped[str | None] = mapped_column(Text, nullable=True)
     model_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    influence_summary_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    influence_findings_json: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
     completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
@@ -101,6 +103,8 @@ class CandidatePlanRow(Base):
     validation_result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     judge_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     is_selected: Mapped[bool] = mapped_column(Boolean, default=False)
+    plan_score_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    influence_delta_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_now)
 
     recommendation: Mapped[Recommendation] = relationship(
@@ -160,7 +164,9 @@ class OutcomeSnapshot(Base):
     next_round_hp: Mapped[int | None] = mapped_column(Integer, nullable=True)
     hp_delta: Mapped[int | None] = mapped_column(Integer, nullable=True)
     fight_outcome_next_round: Mapped[str | None] = mapped_column(Text, nullable=True)
-    units_survived_next_round: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    units_survived_next_round: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
     enemy_units_survived_next_round: Mapped[int | None] = mapped_column(
         Integer, nullable=True
     )

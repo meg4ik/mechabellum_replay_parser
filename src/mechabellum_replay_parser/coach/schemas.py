@@ -351,6 +351,14 @@ class PlanScoreBreakdown(BaseModel):
     flexibility_next_round: float
     overreaction_risk: float
     legality_penalty: float
+
+    influence_improvement: float = 0.0
+    anti_air_improvement: float = 0.0
+    anti_chaff_improvement: float = 0.0
+    anti_heavy_improvement: float = 0.0
+    artillery_risk_reduction: float = 0.0
+    influence_explanation: list[str] = Field(default_factory=list)
+
     reasons: list[str] = []
     warnings: list[str] = []
 

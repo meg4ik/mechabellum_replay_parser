@@ -1,0 +1,123 @@
+{
+  "match_mode": "VS_1_1",
+  "round": 4,
+  "player_name": "Player1",
+  "enemy_names": [
+    "Player2"
+  ],
+  "my_supply": 600,
+  "my_state": {
+    "name": "Player1",
+    "hp": 3,
+    "supply": null,
+    "army_value": 500,
+    "fight_outcome": null,
+    "officers": [],
+    "commander_skills": [],
+    "units": [
+      {
+        "name": "crawler",
+        "unit_id": 0,
+        "index": 0,
+        "level": 1,
+        "exp": 0,
+        "rounds_survived": null,
+        "position": {
+          "x": 0,
+          "y": -200
+        },
+        "equipment": null,
+        "sell_supply": null,
+        "rotate": null,
+        "active_techs": []
+      }
+    ],
+    "constructions": [
+      {
+        "type": "command_tower",
+        "role": "command",
+        "status": "alive",
+        "raw_type": null,
+        "construction_id": null,
+        "index": null,
+        "position": {
+          "x": 0,
+          "y": -150
+        },
+        "position_label": "center_mid"
+      }
+    ],
+    "contraptions": [],
+    "shop": {
+      "unlocked": [
+        "crawler",
+        "arclight",
+        "mustang",
+        "marksmen",
+        "vulcan"
+      ],
+      "locked": [
+        "phoenix",
+        "overlord"
+      ],
+      "buys_remaining": 3,
+      "unlocks_remaining": 1
+    }
+  },
+  "enemy_states": [
+    {
+      "name": "Player2",
+      "hp": 3,
+      "supply": null,
+      "army_value": 500,
+      "fight_outcome": null,
+      "officers": [],
+      "commander_skills": [],
+      "units": [
+        {
+          "name": "sledgehammer",
+          "unit_id": 0,
+          "index": 0,
+          "level": 2,
+          "exp": 0,
+          "rounds_survived": null,
+          "position": {
+            "x": 0,
+            "y": -80
+          },
+          "equipment": null,
+          "sell_supply": null,
+          "rotate": null,
+          "active_techs": []
+        },
+        {
+          "name": "marksmen",
+          "unit_id": 0,
+          "index": 1,
+          "level": 2,
+          "exp": 0,
+          "rounds_survived": null,
+          "position": {
+            "x": 50,
+            "y": -80
+          },
+          "equipment": null,
+          "sell_supply": null,
+          "rotate": null,
+          "active_techs": []
+        }
+      ],
+      "constructions": [],
+      "contraptions": [],
+      "shop": null
+    }
+  ],
+  "recent_rounds": [],
+  "strategic_memory": {
+    "enemy_plan_read": null,
+    "my_plan_read": null,
+    "critical_events": [],
+    "committed_investments": [],
+    "do_not_forget": []
+  }
+}
