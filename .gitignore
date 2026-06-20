@@ -184,3 +184,7 @@ cython_debug/
 
 # PyCharm
 .idea/
+
+# Project-specific
+uv.lock
+PROJECT_OVERVIEW.md
