@@ -57,6 +57,7 @@ def _compact_state(
                 "x": u.position.x if u.position else None,
                 "y": u.position.y if u.position else None,
                 "active_techs": u.active_techs,
+                "is_new": u.is_new,
             }
             for u in state.my_state.units
         ],

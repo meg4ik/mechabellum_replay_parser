@@ -12,6 +12,16 @@ from .schemas import (
     UnitView,
 )
 
+_UNIT_LOOKUP: dict[int, str] = {
+    1: "fortress", 2: "marksmen", 3: "vulcan", 4: "melting point", 5: "rhino",
+    6: "wasp", 7: "mustang", 8: "steel ball", 9: "fang", 10: "crawler",
+    11: "overlord", 12: "stormcaller", 13: "sledgehammer", 14: "hacker",
+    15: "arclight", 16: "phoenix", 17: "warfactory", 18: "wraith",
+    19: "scorpion", 20: "fire badger", 21: "sabertooth", 22: "typhoon",
+    23: "sandworm", 24: "tarantula", 25: "phantom ray", 26: "farseer",
+    27: "raiden", 28: "hound", 29: "abyss", 30: "void eye", 31: "vortex",
+}
+
 _RECENT_ROUNDS = 3
 
 
@@ -30,9 +40,22 @@ class StateViewBuilder:
 
         enemy_team: list[str] = next((t for t in teams if player_name not in t), [])
 
+        prev_round = next(
+            (r for r in rounds if r["round"] == last_round - 1),
+            None,
+        )
+        prev_unit_keys: set[tuple[str, int]] = set()
+        if prev_round:
+            for u in prev_round.get("players", {}).get(player_name, {}).get("units", []):
+                prev_unit_keys.add((u.get("name", ""), u.get("index", 0)))
+
         my_raw = players_data.get(player_name, {})
-        my_state = self._build_player_view(player_name, my_raw)
+        my_state = self._build_player_view(player_name, my_raw, prev_unit_keys)
         my_state.supply = supply  # override with manually entered value
+
+        reinforcement_units = self._extract_reinforcement_units(my_raw, my_state.units)
+        if reinforcement_units:
+            my_state.units.extend(reinforcement_units)
 
         enemy_states = [
             self._build_player_view(name, players_data.get(name, {}))
@@ -63,7 +86,12 @@ class StateViewBuilder:
 
     # ── helpers ───────────────────────────────────────────────────────────────
 
-    def _build_player_view(self, name: str, raw: dict) -> PlayerRoundView:
+    def _build_player_view(
+        self,
+        name: str,
+        raw: dict,
+        prev_unit_keys: set[tuple[str, int]] | None = None,
+    ) -> PlayerRoundView:
         tech_by_unit: dict[str, list[str]] = {}
         for t in raw.get("active_techs", []):
             uname = t.get("unit") or ""
@@ -71,22 +99,26 @@ class StateViewBuilder:
             if uname and tname:
                 tech_by_unit.setdefault(uname, []).append(tname)
 
-        units = [
-            UnitView(
-                name=u.get("name", ""),
-                unit_id=u.get("unit_id"),
-                index=u.get("index"),
-                level=u.get("level"),
-                exp=u.get("exp"),
-                rounds_survived=u.get("rounds_survived"),
-                position=Position(**u["position"]) if u.get("position") else None,
-                equipment=u.get("equipment"),
-                sell_supply=u.get("sell_supply"),
-                rotate=u.get("rotate"),
-                active_techs=tech_by_unit.get(u.get("name", ""), []),
+        units = []
+        for u in raw.get("units", []):
+            unit_key = (u.get("name", ""), u.get("index", 0))
+            is_new = unit_key not in prev_unit_keys if prev_unit_keys else True
+            units.append(
+                UnitView(
+                    name=u.get("name", ""),
+                    unit_id=u.get("unit_id"),
+                    index=u.get("index"),
+                    level=u.get("level"),
+                    exp=u.get("exp"),
+                    rounds_survived=u.get("rounds_survived"),
+                    position=Position(**u["position"]) if u.get("position") else None,
+                    equipment=u.get("equipment"),
+                    sell_supply=u.get("sell_supply"),
+                    rotate=u.get("rotate"),
+                    active_techs=tech_by_unit.get(u.get("name", ""), []),
+                    is_new=is_new,
+                )
             )
-            for u in raw.get("units", [])
-        ]
 
         # Two-pass: detect side from units + construction positions, then label.
         temp_constructions = [
@@ -118,6 +150,42 @@ class StateViewBuilder:
             contraptions=raw.get("contraptions") or [],
             shop=shop,
         )
+
+    def _extract_reinforcement_units(
+        self,
+        raw: dict,
+        existing_units: list[UnitView],
+    ) -> list[UnitView]:
+        """Detect units granted by reinforcement card_select actions not yet in units list."""
+        actions = raw.get("actions", [])
+        existing_names = {u.name.lower() for u in existing_units}
+        max_index = max((u.index or 0 for u in existing_units), default=-1)
+
+        reinforcement_units: list[UnitView] = []
+        for action in actions:
+            if action.get("type") != "card_select":
+                continue
+            card_id = action.get("card_id")
+            if card_id is None:
+                continue
+            unit_id = card_id % 100
+            unit_name = _UNIT_LOOKUP.get(unit_id)
+            if unit_name is None:
+                continue
+            if unit_name.lower() in existing_names:
+                continue
+            max_index += 1
+            reinforcement_units.append(
+                UnitView(
+                    name=unit_name,
+                    unit_id=unit_id,
+                    index=max_index,
+                    level=0,
+                    position=Position(x=0, y=-160),
+                    is_new=True,
+                )
+            )
+        return reinforcement_units
 
     def _build_round_summary(
         self,

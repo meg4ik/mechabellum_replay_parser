@@ -91,6 +91,7 @@ class UnitView(BaseModel):
     sell_supply: int | None = None
     rotate: bool | None = None
     active_techs: list[str] = []
+    is_new: bool = True
 
 
 class ConstructionType(str, Enum):

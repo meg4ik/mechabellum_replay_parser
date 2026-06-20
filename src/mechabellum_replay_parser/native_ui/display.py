@@ -69,15 +69,17 @@ _FG = "#e0e0e0"  # primary text
 _FG2 = "#9aa0b0"  # secondary / muted text
 _GREEN = "#00c853"  # new / move units
 _GREEN_DK = "#007c33"
-_GRAY = "#78909c"  # current units
+_BLUE = "#42a5f5"  # keep units (recommended to stay)
+_BLUE_DK = "#1565c0"
+_GRAY = "#78909c"  # current units (not in recommendation)
 _GRAY_DK = "#37474f"
 _GOLD = "#ffd600"  # buildings
 _GOLD_DK = "#b29100"
 _RED = "#ef5350"  # error
 _RED_UNIT = "#e57373"  # opponent units
 _RED_UNIT_DK = "#b71c1c"
-_BLUE = "#64b5f6"  # teammate units
-_BLUE_DK = "#1565c0"
+_TEAL = "#26a69a"  # teammate units
+_TEAL_DK = "#00695c"
 _BORDER = "#2e3a59"
 _GRID = "#1e2d4a"
 _MIDFIELD = "#4a3a1e"  # midfield separator
@@ -680,17 +682,12 @@ class CoachWindow:
 
         # Legend row at top of canvas
         legend_y = 16
-        self._dot_legend(canvas, 26, legend_y, _GRAY, _GRAY_DK, "свои юниты")
-        self._rect_legend(canvas, 180, legend_y, _GOLD, _GOLD_DK, "постройки")
+        self._dot_legend(canvas, 26, legend_y, _GREEN, _GREEN_DK, "новые/двигать")
+        self._dot_legend(canvas, 200, legend_y, _BLUE, _BLUE_DK, "оставить")
+        self._rect_legend(canvas, 350, legend_y, _GOLD, _GOLD_DK, "постройки")
         if full_board:
             self._dot_legend(
-                canvas, 330, legend_y, _RED_UNIT, _RED_UNIT_DK, "противник"
-            )
-            if teammate_units or teammate_constructions:
-                self._dot_legend(canvas, 500, legend_y, _BLUE, _BLUE_DK, "союзник")
-        else:
-            self._dot_legend(
-                canvas, 330, legend_y, _GREEN, _GREEN_DK, "новые / переставить"
+                canvas, 500, legend_y, _RED_UNIT, _RED_UNIT_DK, "противник"
             )
 
         # Board zone rectangle
@@ -761,24 +758,34 @@ class CoachWindow:
                 zx0 - 10, zy1, text="▼ back", fill=_FG2, font=("Arial", 7), anchor="e"
             )
 
-        # Placement (green — new/move)
+        # Placement (green=new/move, blue=keep)
+        placed_unit_names: set[str] = set()
         for u in placement:
-            if round_num == 1 or u.get("action") in ("new", "move"):
-                self._draw_unit(
-                    canvas,
-                    u["x"],
-                    u["y"],
-                    y_top,
-                    y_bot,
-                    bw,
-                    board_h,
-                    u["unit"],
-                    _GREEN,
-                    _GREEN_DK,
-                )
+            action = u.get("action", "")
+            action_str = action.value if hasattr(action, "value") else str(action)
+            unit_name = u.get("unit", "?")
+            placed_unit_names.add(unit_name.lower())
+            if action_str in ("new", "move"):
+                color, color_dk = _GREEN, _GREEN_DK
+            else:
+                color, color_dk = _BLUE, _BLUE_DK
+            self._draw_unit(
+                canvas,
+                u["x"],
+                u["y"],
+                y_top,
+                y_bot,
+                bw,
+                board_h,
+                unit_name,
+                color,
+                color_dk,
+            )
 
-        # Current units (gray)
+        # Current units (gray) — only those NOT already in placement
         for u in current_units:
+            if u.get("name", "").lower() in placed_unit_names:
+                continue
             pos = u.get("position") or {}
             x, y = pos.get("x"), pos.get("y")
             if x is None or y is None:

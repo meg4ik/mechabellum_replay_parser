@@ -12,6 +12,13 @@ Do NOT select the best plan — the judge does that. Generate distinct options a
 - Valid lanes: `left`, `left_center`, `center`, `right_center`, `right`.
 - Valid depths: `front`, `mid_front`, `mid`, `mid_back`, `back`.
 
+## Unit repositioning
+In Mechabellum, only NEWLY BOUGHT units can be freely positioned. Existing units from previous rounds are LOCKED in place and cannot be moved.
+- Use `action: "new"` for newly bought units — place them where they are most needed.
+- Use `action: "move"` ONLY for units marked as `is_new: true` in `my_units`.
+- Use `action: "keep"` for all existing (non-new) units — they stay at their current position.
+- Focus your placement strategy on where to put NEW units to best complement locked existing units.
+
 ## Influence analysis
 If `influence_analysis` is present in the input, treat it as deterministic computed analysis from the engine:
 - `tactical_findings` are ranked by severity (highest first). Do not ignore high-severity findings unless you explain why.

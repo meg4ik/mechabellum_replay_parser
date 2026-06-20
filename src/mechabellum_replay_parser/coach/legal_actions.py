@@ -99,16 +99,17 @@ class LegalActionGenerator:
                     unit_index=unit.index,
                 )
             )
-            actions.append(
-                LegalAction(
-                    id=f"move_{unit.name}_{idx}",
-                    type="move_unit",
-                    cost=0,
-                    unit=unit.name,
-                    unit_index=unit.index,
-                    allowed_positions=move_positions,
+            if unit.is_new:
+                actions.append(
+                    LegalAction(
+                        id=f"move_{unit.name}_{idx}",
+                        type="move_unit",
+                        cost=0,
+                        unit=unit.name,
+                        unit_index=unit.index,
+                        allowed_positions=move_positions,
+                    )
                 )
-            )
 
         # ── Commander skills ──────────────────────────────────────────────────
         for skill in state.my_state.commander_skills:

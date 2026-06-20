@@ -83,6 +83,75 @@ def _is_debug() -> bool:
     return os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
 
 
+def _ensure_keep_intents(
+    plan: CandidatePlan, state: StateView, frame: CoordinateFrame
+) -> CandidatePlan:
+    from .schemas import Depth, Lane, PlacementAction, PlacementIntent
+
+    mentioned_names = {pi.unit.lower() for pi in plan.placement_intents}
+
+    updated_intents = list(plan.placement_intents)
+    changed = False
+
+    for unit in state.my_state.units:
+        name_lower = unit.name.lower()
+        if not unit.position:
+            continue
+
+        if not unit.is_new:
+            if name_lower in mentioned_names:
+                updated_intents = [
+                    pi
+                    if pi.unit.lower() != name_lower
+                    else pi.model_copy(update={"action": PlacementAction.KEEP})
+                    for pi in updated_intents
+                ]
+                changed = True
+            else:
+                label = frame.position_to_label(unit.position)
+                parts = label.split("_", 1)
+                try:
+                    lane = Lane(parts[0]) if len(parts) > 0 else Lane.CENTER
+                    depth = Depth(parts[1]) if len(parts) > 1 else Depth.MID
+                except ValueError:
+                    lane = Lane.CENTER
+                    depth = Depth.MID
+                updated_intents.append(
+                    PlacementIntent(
+                        unit=unit.name,
+                        action=PlacementAction.KEEP,
+                        lane=lane,
+                        depth=depth,
+                        purpose="locked — not a new unit",
+                    )
+                )
+                changed = True
+        else:
+            if name_lower not in mentioned_names:
+                label = frame.position_to_label(unit.position)
+                parts = label.split("_", 1)
+                try:
+                    lane = Lane(parts[0]) if len(parts) > 0 else Lane.CENTER
+                    depth = Depth(parts[1]) if len(parts) > 1 else Depth.MID
+                except ValueError:
+                    lane = Lane.CENTER
+                    depth = Depth.MID
+                updated_intents.append(
+                    PlacementIntent(
+                        unit=unit.name,
+                        action=PlacementAction.KEEP,
+                        lane=lane,
+                        depth=depth,
+                        purpose="new unit — kept at current position",
+                    )
+                )
+                changed = True
+
+    if not changed:
+        return plan
+    return plan.model_copy(update={"placement_intents": updated_intents})
+
+
 def _write_debug(name: str, data) -> None:
     if not _is_debug():
         return
@@ -422,6 +491,10 @@ class CoachEngine:
             (p for p, _ in validated_plans if p.id == judge_output.best_plan_id),
             validated_plans[0][0] if validated_plans else None,
         )
+
+        if selected_plan:
+            selected_plan = _ensure_keep_intents(selected_plan, state, frame)
+
         _t = time.monotonic()
         resolved_placements = []
         if selected_plan and selected_plan.placement_intents:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .coordinates import CoordinateFrame
-from .schemas import PlacementIntent, Position, ResolvedPlacement, UnitView, Zone
+from .schemas import PlacementAction, PlacementIntent, Position, ResolvedPlacement, UnitView, Zone
 
 _COLLISION_OFFSETS: list[tuple[int, int]] = [
     (0, 0),
@@ -28,8 +28,38 @@ class PlacementResolver:
                 if u.position:
                     occupied.add((u.position.x, u.position.y))
 
+        unit_positions: dict[str, Position] = {}
+        if existing_units:
+            for u in existing_units:
+                if u.position:
+                    key = f"{u.name.lower()}_{u.index or 0}"
+                    unit_positions[key] = u.position
+
         results: list[ResolvedPlacement] = []
         for intent in intents:
+            if intent.action == PlacementAction.KEEP:
+                key = f"{intent.unit.lower()}_{getattr(intent, '_unit_index', 0)}"
+                current_pos = unit_positions.get(key)
+                if not current_pos:
+                    for k, v in unit_positions.items():
+                        if k.startswith(intent.unit.lower() + "_"):
+                            current_pos = v
+                            break
+                if current_pos:
+                    results.append(
+                        ResolvedPlacement(
+                            unit=intent.unit,
+                            action=intent.action,
+                            x=current_pos.x,
+                            y=current_pos.y,
+                            lane=intent.lane,
+                            depth=intent.depth,
+                            zone=intent.zone,
+                            purpose=intent.purpose,
+                        )
+                    )
+                    continue
+
             target_frame = frame
             if intent.zone == Zone.OPPONENT and opponent_frame is not None:
                 target_frame = opponent_frame
